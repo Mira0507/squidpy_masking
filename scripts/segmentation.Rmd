@@ -16,7 +16,7 @@ knitr::opts_chunk$set(warning=FALSE,
                       cache.lazy=FALSE)
 ```
 
-Last update: `r date()`
+Last run: `r date()`
 
 This workflow is designed to demonstrate image segmentation for Visium analysis 
 using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
@@ -57,12 +57,16 @@ channel_config = {
 
 # Specify the name of input image layer to be processed
 lyr = 'image'
+
+# Specify signal values to be tested for Gaussian smoothing
+# Sigma represents the variance for normal distribution
+sigma_options = [1, 2]
 ```
 
 # Loading demo images {.tabset}
 
 We use demo images provided by the `squidpy` package. The image is loaded by calling 
-`sq.datasets.visium_fluo_image_crop()`.
+the `squidpy.datasets.visium_fluo_image_crop` function.
 
 The following image object loaded:
 
@@ -151,13 +155,36 @@ img.show(lyr, channel=2, cmap='gray')
 
 # Converting to grayscale
 
-```{python to_grayscale, eval=FALSE}
+This step is performed by calling the `squidpy.im.process(..., method="gray")` function in squidpy.
+
+```{python to_grayscale}
 
 # --------------------------------------------------------------------------------
 # This chunk converts the images to grayscale
 # --------------------------------------------------------------------------------
 
-sq.im.process(img, layer=lyr, method="gray")
+# Convert to grayscale
+sq.im.process(img, layer=lyr, method="gray", chunks='auto')
+```
+
+`ImageContainer` updated:
+
+```{r grayscaled_obj}
+py$img
+```
+
+# Smoothing
+
+Smoothing is required to reduce noises before image masking. The current workflow uses 
+[Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) by calling 
+the `squidpy.im.process(..., method="smooth")`, which implements the `skimage.filters.gaussian` function 
+in the `scikit-image` package in python.
+
+```{python smoothing}
+
+# --------------------------------------------------------------------------------
+# This chunk runs Gaussian smoothing
+# --------------------------------------------------------------------------------
 
 ```
 
