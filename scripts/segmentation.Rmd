@@ -1,0 +1,166 @@
+---
+title: "Segmentation demo using squidpy"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last update: `r date()`
+
+This workflow is designed to demonstrate image segmentation for Visium analysis 
+using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
+Refer to the following resources for technical details:
+
+- [squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [squidpy GitHub](https://github.com/scverse/squidpy)
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv('../env')
+```
+
+```{python ppackages}
+import numpy as np
+import matplotlib.pyplot as plt
+import squidpy as sq
+import os
+```
+
+```{python configs}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to specify variables for paths to input files/directories
+# and parameter settings
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Specify argument setting for printing images
+channel_config = {
+    'Merged' : {'ch' : None, 'cm' : None},
+    'Channel 0' : {'ch' : 0, 'cm' : 'gray'},
+    'Channel 1' : {'ch' : 1, 'cm' : 'gray'},
+    'Channel 2' : {'ch' : 2, 'cm' : 'gray'},
+}
+
+# Specify the name of input image layer to be processed
+lyr = 'image'
+```
+
+# Loading demo images {.tabset}
+
+We use demo images provided by the `squidpy` package. The image is loaded by calling 
+`sq.datasets.visium_fluo_image_crop()`.
+
+The following image object loaded:
+
+```{python load_image}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to load input image files
+# ------------------------------------------------------------------------------
+
+# Load fluorescence tissue images
+img = sq.datasets.visium_fluo_image_crop()
+
+print(img)
+```
+
+## All
+
+```{python print_all_images, fig.height=12, fig.width=12}
+
+# ------------------------------------------------------------------------------
+# This chunk prints all input images at once
+# e.g.
+# fig, axes = plt.subplots(nrows=2, ncols=2)
+# img.show("image", ax=axes[0, 0])
+# _ = axes[0, 0].set_title("Merged")
+# img.show("image", channel=0, ax=axes[0, 1], cmap='gray')
+# _ = axes[0, 1].set_title("Channel 0")
+# img.show("image", channel=1, ax=axes[1, 0], cmap='gray')
+# _ = axes[1, 0].set_title("Channel 1")
+# img.show("image", channel=2, ax=axes[1, 1], cmap='gray')
+# _ = axes[1, 1].set_title("Channel 2")
+# ------------------------------------------------------------------------------
+
+# Specify plotting arguments
+rows = 2
+cols = 2
+
+# Initialize subplots
+fig, axes = plt.subplots(nrows=rows, ncols=cols)
+
+# Prep subplot dimensions
+subplot_dims = [axes[i, j] for i in range(rows) for j in range(cols)]
+
+# Print plots
+for i in range(len(subplot_dims)):
+    # Pull pre-specified variables
+    key = list(channel_config.keys())[i]
+    subdim = subplot_dims[i]
+    ch = channel_config[key]['ch']
+    cm = channel_config[key]['cm']
+    # Print
+    img.show(lyr,
+        ax=subdim,
+        channel=ch,
+        cmap=cm
+        )
+    # Add corresponding title
+    _ = subdim.set_title(key)
+```
+
+## Individuals {.tabset}
+
+### Merged
+
+```{python individual_images_merged}
+img.show(lyr)
+```
+
+### Channel 0
+
+```{python individual_images_c0}
+img.show(lyr, channel=0, cmap='gray')
+```
+
+### Channel 1
+
+```{python individual_images_c1}
+img.show(lyr, channel=1, cmap='gray')
+```
+
+### Channel 2
+
+```{python individual_images_c2}
+img.show(lyr, channel=2, cmap='gray')
+```
+
+# Converting to grayscale
+
+```{python to_grayscale, eval=FALSE}
+
+# --------------------------------------------------------------------------------
+# This chunk converts the images to grayscale
+# --------------------------------------------------------------------------------
+
+sq.im.process(img, layer=lyr, method="gray")
+
+```
+
+```{r session_info}
+sessionInfo()
+```
