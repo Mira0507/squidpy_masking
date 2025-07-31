@@ -16,14 +16,16 @@ knitr::opts_chunk$set(warning=FALSE,
                       cache.lazy=FALSE)
 ```
 
-Last update: `r date()`
+Last run: `r date()`
 
 This workflow is designed to demonstrate image segmentation for Visium analysis 
 using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
 Refer to the following resources for technical details:
 
-- [squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
-- [squidpy GitHub](https://github.com/scverse/squidpy)
+- [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [Tutorial: Analyze Visium fluorescence data]
+  (https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Squidpy GitHub](https://github.com/scverse/squidpy)
 
 ```{r rpackages}
 library(reticulate)
@@ -35,6 +37,7 @@ use_condaenv('../env')
 import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
+from skimage.color import rgb2gray
 import os
 ```
 
@@ -57,12 +60,46 @@ channel_config = {
 
 # Specify the name of input image layer to be processed
 lyr = 'image'
+
+# Specify signal values to be tested for Gaussian smoothing
+# Sigma represents the variance for normal distribution
+gaussian_sigma = 1
+
+# Specify coordinates to crop images
+crop_coord = {'height' : 2500, 'width' : 2500, 'size' : 500, 'scale' : 1}
+```
+
+```{python functions}
+
+def serial_images(rows, cols, config_dic, target_layer):
+
+    # Initialize subplots
+    fig, axes = plt.subplots(nrows=rows, ncols=cols)
+
+    # Prep subplot dimensions
+    subplot_dims = [axes[i, j] for i in range(rows) for j in range(cols)]
+
+    # Print plots
+    for i in range(len(subplot_dims)):
+        # Pull pre-specified variables
+        key = list(config_dic.keys())[i]
+        subdim = subplot_dims[i]
+        ch = config_dic[key]['ch']
+        cm = config_dic[key]['cm']
+        # Print
+        img.show(target_layer,
+            ax=subdim,
+            channel=ch,
+            cmap=cm
+            )
+        # Add corresponding title
+        _ = subdim.set_title(key)
 ```
 
 # Loading demo images {.tabset}
 
 We use demo images provided by the `squidpy` package. The image is loaded by calling 
-`sq.datasets.visium_fluo_image_crop()`.
+the `squidpy.datasets.visium_fluo_image_crop` function.
 
 The following image object loaded:
 
@@ -149,17 +186,81 @@ img.show(lyr, channel=1, cmap='gray')
 img.show(lyr, channel=2, cmap='gray')
 ```
 
-# Converting to grayscale
+# Smoothing {.tabset}
 
-```{python to_grayscale, eval=FALSE}
+Smoothing is required to reduce noises before image masking. The current workflow uses 
+[Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) by calling 
+the `squidpy.im.process(..., method="smooth")`, which implements the `skimage.filters.gaussian` function 
+in the `scikit-image` package in python.
+
+```{python smoothing}
 
 # --------------------------------------------------------------------------------
-# This chunk converts the images to grayscale
+# This chunk runs Gaussian smoothing
 # --------------------------------------------------------------------------------
 
-sq.im.process(img, layer=lyr, method="gray")
+# Run smoothing
+sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
+```
+
+`ImageContainer` updated:
+
+```{r smoothened_obj}
+py$img
+```
+
+Images are compared between the before (left) and the after (right) smoothing, as well as the original 
+(upper) and higher (lower) magnification, across the stainings.
+
+
+```{python function_smooth}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to prepare visualizing smoothened images
+# ------------------------------------------------------------------------------
+
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = "_".join([lyr, "smooth"])
+
+# Prep cropped images
+img_crp = img.crop_corner(x=crop_coord['width'],
+                          y=crop_coord['height'],
+                          size=crop_coord['size'],
+                          scale=crop_coord['scale'])
+
+# Create a function that prints images before and after Gaussian smoothing, with and without zoom-in
+def image_original_smooth(image, image_cropped, channel):
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    image.show(layer=lyr, ax=axes[0, 0], channel=channel, cmap='gray')
+    _ = axes[0, 0].set_title('Original before smoothing')
+    image.show(layer=lyr_smth, ax=axes[0, 1], channel=channel, cmap='gray')
+    _ = axes[0, 1].set_title('Original after smoothing')
+    image_cropped.show(layer=lyr, ax=axes[1, 0], channel=channel, cmap='gray')
+    _ = axes[1, 0].set_title('Zoomed before smoothing')
+    image_cropped.show(layer=lyr_smth, ax=axes[1, 1], channel=channel, cmap='gray')
+    _ = axes[1, 1].set_title('Zoomed after smoothing')
 
 ```
+
+## Channel 0
+
+```{python smth_images_c0, fig.width=12, fig.height=12}
+image_original_smooth(image=img, image_cropped=img_crp, channel=0)
+```
+
+## Channel 1
+
+```{python smth_images_c1, fig.width=12, fig.height=12}
+image_original_smooth(image=img, image_cropped=img_crp, channel=1)
+```
+
+## Channel 2
+
+```{python smth_images_c2, fig.width=12, fig.height=12}
+image_original_smooth(image=img, image_cropped=img_crp, channel=2)
+```
+
+# Segmentation
 
 ```{r session_info}
 sessionInfo()
