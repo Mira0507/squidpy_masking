@@ -2,3 +2,4 @@
 *.Rhistory
 *.html
 env/
+scripts/segmentation_files/
