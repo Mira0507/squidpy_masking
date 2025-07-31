@@ -22,8 +22,10 @@ This workflow is designed to demonstrate image segmentation for Visium analysis
 using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
 Refer to the following resources for technical details:
 
-- [squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
-- [squidpy GitHub](https://github.com/scverse/squidpy)
+- [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [Tutorial: Analyze Visium fluorescence data]
+  (https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Squidpy GitHub](https://github.com/scverse/squidpy)
 
 ```{r rpackages}
 library(reticulate)
@@ -35,6 +37,7 @@ use_condaenv('../env')
 import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
+from skimage.color import rgb2gray
 import os
 ```
 
@@ -183,38 +186,6 @@ img.show(lyr, channel=1, cmap='gray')
 img.show(lyr, channel=2, cmap='gray')
 ```
 
-# Converting to grayscale
-
-This step is performed channel-wise by calling the `squidpy.im.process(..., method="gray")` function 
-in squidpy.
-
-```{python to_grayscale}
-
-# --------------------------------------------------------------------------------
-# This chunk converts the images to grayscale
-# --------------------------------------------------------------------------------
-
-stop()
-# reticulate::repl_python()
-img.show(lyr, channel=0, cmap='gray')
-img.show(lyr, channel=1, cmap='gray')
-img.show(lyr, channel=2, cmap='gray')
-
-# Convert to grayscale
-sq.im.process(img, layer=lyr, method="gray", chunks='auto')
-
-
-img.show('image_gray', channel=0, cmap='gray')
-img.show('image_gray', channel=1, cmap='gray')
-img.show('image_gray', channel=2, cmap='gray')
-```
-
-`ImageContainer` updated:
-
-```{r grayscaled_obj}
-py$img
-```
-
 # Smoothing {.tabset}
 
 Smoothing is required to reduce noises before image masking. The current workflow uses 
@@ -229,8 +200,7 @@ in the `scikit-image` package in python.
 # --------------------------------------------------------------------------------
 
 # Run smoothing
-lyr_gry = "_".join([lyr, "gray"])
-sq.im.process(img, layer=lyr_gry, method="smooth", sigma=gaussian_sigma)
+sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
 ```
 
 `ImageContainer` updated:
@@ -250,7 +220,7 @@ Images are compared between the before (left) and the after (right) smoothing, a
 # ------------------------------------------------------------------------------
 
 # Specify the name of layer containing Gaussian smoothing
-lyr_smth = "_".join([lyr_gry, "smooth"])
+lyr_smth = "_".join([lyr, "smooth"])
 
 # Prep cropped images
 img_crp = img.crop_corner(x=crop_coord['width'],
@@ -261,11 +231,11 @@ img_crp = img.crop_corner(x=crop_coord['width'],
 # Create a function that prints images before and after Gaussian smoothing, with and without zoom-in
 def image_original_smooth(image, image_cropped, channel):
     fig, axes = plt.subplots(nrows=2, ncols=2)
-    image.show(layer=lyr_gry, ax=axes[0, 0], channel=channel, cmap='gray')
+    image.show(layer=lyr, ax=axes[0, 0], channel=channel, cmap='gray')
     _ = axes[0, 0].set_title('Original before smoothing')
     image.show(layer=lyr_smth, ax=axes[0, 1], channel=channel, cmap='gray')
     _ = axes[0, 1].set_title('Original after smoothing')
-    image_cropped.show(layer=lyr_gry, ax=axes[1, 0], channel=channel, cmap='gray')
+    image_cropped.show(layer=lyr, ax=axes[1, 0], channel=channel, cmap='gray')
     _ = axes[1, 0].set_title('Zoomed before smoothing')
     image_cropped.show(layer=lyr_smth, ax=axes[1, 1], channel=channel, cmap='gray')
     _ = axes[1, 1].set_title('Zoomed after smoothing')
@@ -281,35 +251,12 @@ image_original_smooth(image=img, image_cropped=img_crp, channel=0)
 ## Channel 1
 
 ```{python smth_images_c1, fig.width=12, fig.height=12}
-
-# reticulate::repl_python()
-
-# image_original_smooth(image=img, image_cropped=img_crp, channel=1)
-
-# img.show(layer=lyr_gry, channel=1, cmap='gray')
-img.show(layer=lyr_gry, channelwise=True)
-
-fig, axes = plt.subplots(nrows=2, ncols=2)
-img.show(layer='image_gray', ax=axes[0, 0], channel=1, cmap='gray')
-# _ = axes[0, 0].set_title('Original before smoothing')
-# img.show(layer=lyr_smth, ax=axes[0, 1], channel=1, cmap='gray')
-# _ = axes[0, 1].set_title('Original after smoothing')
-# img_crp.show(layer=lyr_gry, ax=axes[1, 0], channel=1, cmap='gray')
-# _ = axes[1, 0].set_title('Zoomed before smoothing')
-# img_crp.show(layer=lyr_smth, ax=axes[1, 1], channel=1, cmap='gray')
-# _ = axes[1, 1].set_title('Zoomed after smoothing')
-
-# >>> img["image"]
-# <xarray.DataArray 'image' (y: 7272, x: 7272, z: 1, channels: 3)> Size: 317MB
-# dask.array<transpose, shape=(7272, 7272, 1, 3), dtype=uint16, chunksize=(7272, 7272, 1, 3), chunktype=numpy.ndarray>
-# Coordinates:
-  # * z        (z) <U38 152B 'V1_Adult_Mouse_Brain_Coronal_Section_2'
-# Dimensions without coordinates: y, x, channels
+image_original_smooth(image=img, image_cropped=img_crp, channel=1)
 ```
 
 ## Channel 2
 
-```{python smth_images_c2, fig.width=12, fig.height=12, eval=FALSE}
+```{python smth_images_c2, fig.width=12, fig.height=12}
 image_original_smooth(image=img, image_cropped=img_crp, channel=2)
 ```
 
