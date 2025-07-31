@@ -60,7 +60,37 @@ lyr = 'image'
 
 # Specify signal values to be tested for Gaussian smoothing
 # Sigma represents the variance for normal distribution
-sigma_options = [1, 2]
+gaussian_sigma = 1
+
+# Specify coordinates to crop images
+crop_coord = {'x' : 2500, 'y' : 2500, 'size' : 500, 'scale' : 1}
+```
+
+```{python functions}
+
+def serial_images(rows, cols, config_dic, target_layer):
+
+    # Initialize subplots
+    fig, axes = plt.subplots(nrows=rows, ncols=cols)
+
+    # Prep subplot dimensions
+    subplot_dims = [axes[i, j] for i in range(rows) for j in range(cols)]
+
+    # Print plots
+    for i in range(len(subplot_dims)):
+        # Pull pre-specified variables
+        key = list(config_dic.keys())[i]
+        subdim = subplot_dims[i]
+        ch = config_dic[key]['ch']
+        cm = config_dic[key]['cm']
+        # Print
+        img.show(target_layer,
+            ax=subdim,
+            channel=ch,
+            cmap=cm
+            )
+        # Add corresponding title
+        _ = subdim.set_title(key)
 ```
 
 # Loading demo images {.tabset}
@@ -155,7 +185,8 @@ img.show(lyr, channel=2, cmap='gray')
 
 # Converting to grayscale
 
-This step is performed by calling the `squidpy.im.process(..., method="gray")` function in squidpy.
+This step is performed channel-wise by calling the `squidpy.im.process(..., method="gray")` function 
+in squidpy.
 
 ```{python to_grayscale}
 
@@ -173,7 +204,7 @@ sq.im.process(img, layer=lyr, method="gray", chunks='auto')
 py$img
 ```
 
-# Smoothing
+# Smoothing {.tabset}
 
 Smoothing is required to reduce noises before image masking. The current workflow uses 
 [Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) by calling 
@@ -186,7 +217,69 @@ in the `scikit-image` package in python.
 # This chunk runs Gaussian smoothing
 # --------------------------------------------------------------------------------
 
+# Run smoothing
+lyr_gry = "_".join([lyr, "gray"])
+sq.im.process(img, layer=lyr_gry, method="smooth", sigma=gaussian_sigma)
 ```
+
+`ImageContainer` updated:
+
+```{r smoothened_obj}
+py$img
+```
+
+Images are compared between the before (left) and the after (right) smoothing, as well as the original 
+(upper) and higher (lower) magnification, across the stainings.
+
+
+```{python function_smooth}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to prepare visualizing smoothened images
+# ------------------------------------------------------------------------------
+
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = "_".join([lyr_gry, "smooth"])
+
+# Prep cropped images
+img_crp = img.crop_corner(crop_coord['x'],
+                          crop_coord['y'],
+                          size=crop_coord['size'],
+                          scale=crop_coord['scale'])
+
+# Create a function that prints images before and after Gaussian smoothing, with and without zoom-in
+def image_original_smooth(image, image_cropped, channel):
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    image.show(layer=lyr_gry, ax=axes[0, 0], channel=channel, cmap='gray')
+    _ = axes[0, 0].set_title('Original before smoothing')
+    image.show(layer=lyr_smth, ax=axes[0, 1], channel=channel, cmap='gray')
+    _ = axes[0, 1].set_title('Original after smoothing')
+    image_cropped.show(layer=lyr_gry, ax=axes[1, 0], channel=channel, cmap='gray')
+    _ = axes[1, 0].set_title('Zoomed before smoothing')
+    image_cropped.show(layer=lyr_smth, ax=axes[1, 1], channel=channel, cmap='gray')
+    _ = axes[1, 1].set_title('Zoomed after smoothing')
+
+```
+
+## Channel 0
+
+```{python smth_images_c0, fig.width=12, fig.height=12}
+image_original_smooth(image=img, image_cropped=img_crp, channel=0)
+```
+
+## Channel 1
+
+```{python smth_images_c1, fig.width=12, fig.height=12}
+image_original_smooth(image=img, image_cropped=img_crp, channel=1)
+```
+
+## Channel 2
+
+```{python smth_images_c2, fig.width=12, fig.height=12}
+image_original_smooth(image=img, image_cropped=img_crp, channel=2)
+```
+
+# Segmentation
 
 ```{r session_info}
 sessionInfo()
