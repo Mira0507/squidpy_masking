@@ -13,7 +13,7 @@ the `env.archived.yaml` file.
 
 ## Workflow
 
-1. **Load Images**: Load demo images using `squidpy.datasets.visium_fluo_image_crop`.
+1. **Image Loading**: Load demo images using `squidpy.datasets.visium_fluo_image_crop`.
 
 2. **Smoothing**: Apply [Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) 
 with `squidpy.im.process` to reduce noise.  
