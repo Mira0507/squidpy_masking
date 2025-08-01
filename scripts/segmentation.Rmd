@@ -74,33 +74,6 @@ seg_method = "watershed"
 thr_method = None
 ```
 
-```{python functions}
-
-def serial_images(rows, cols, config_dic, target_layer):
-
-    # Initialize subplots
-    fig, axes = plt.subplots(nrows=rows, ncols=cols)
-
-    # Prep subplot dimensions
-    subplot_dims = [axes[i, j] for i in range(rows) for j in range(cols)]
-
-    # Print plots
-    for i in range(len(subplot_dims)):
-        # Pull pre-specified variables
-        key = list(config_dic.keys())[i]
-        subdim = subplot_dims[i]
-        ch = config_dic[key]['ch']
-        cm = config_dic[key]['cm']
-        # Print
-        img.show(target_layer,
-            ax=subdim,
-            channel=ch,
-            cmap=cm
-            )
-        # Add corresponding title
-        _ = subdim.set_title(key)
-```
-
 # Loading demo images {.tabset}
 
 We use demo images provided by the `squidpy` package. The image is loaded by calling 
