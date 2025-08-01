@@ -66,6 +66,12 @@ gaussian_sigma = 1
 
 # Specify coordinates to crop images
 crop_coord = {'height' : 2500, 'width' : 2500, 'size' : 500, 'scale' : 1}
+
+# Specify the segmentation method
+seg_method = "watershed"
+
+# Specify the thresholding method. If `None`, the Otsu method is used.
+thr_method = None
 ```
 
 ```{python functions}
@@ -260,6 +266,22 @@ image_original_smooth(image=img, image_cropped=img_crp, channel=2)
 ```
 
 # Segmentation
+
+Image segmentation is performed using [Otsu thresholding](https://en.wikipedia.org/wiki/Otsu's_method) and 
+[watershed](https://en.wikipedia.org/wiki/Watershed_(image_processing)) methods. In the Otsu method, 
+the algorithm calculates the optimal brightness level that best separates regions of varying intensity. 
+The watershed method is a region-based segmentation algorithm that divides an image into distinct adjacent
+regions based on topographic analysis of pixel intensities.
+
+```{python segmentation}
+
+# ------------------------------------------------------------------------------
+# This chunk carries out image segmentation using Otsu thresholding and watershed 
+# segmentation
+# ------------------------------------------------------------------------------
+
+sq.im.segment(img=img, layer=lyr_smth, method=seg_method, thresh=th_method)
+```
 
 ```{r session_info}
 sessionInfo()
