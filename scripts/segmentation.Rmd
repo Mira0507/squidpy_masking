@@ -23,8 +23,7 @@ using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592
 Refer to the following resources for technical details:
 
 - [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
-- [Tutorial: Analyze Visium fluorescence data]
-  (https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
 ```{r rpackages}
@@ -37,7 +36,7 @@ use_condaenv('../env')
 import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
-from skimage.color import rgb2gray
+import napari
 import os
 ```
 
@@ -67,6 +66,12 @@ gaussian_sigma = 1
 
 # Specify coordinates to crop images
 crop_coord = {'height' : 2500, 'width' : 2500, 'size' : 500, 'scale' : 1}
+
+# Specify the segmentation method
+seg_method = "watershed"
+
+# Specify the thresholding method. If `None`, the Otsu method is used.
+thr_method = None
 ```
 
 ```{python functions}
@@ -213,14 +218,14 @@ Images are compared between the before (left) and the after (right) smoothing, a
 (upper) and higher (lower) magnification, across the stainings.
 
 
-```{python function_smooth}
+```{python function_processed}
 
 # ------------------------------------------------------------------------------
 # This chunk is used to prepare visualizing smoothened images
 # ------------------------------------------------------------------------------
 
 # Specify the name of layer containing Gaussian smoothing
-lyr_smth = "_".join([lyr, "smooth"])
+lyr_smth = f"{lyr}_smooth"
 
 # Prep cropped images
 img_crp = img.crop_corner(x=crop_coord['width'],
@@ -229,38 +234,148 @@ img_crp = img.crop_corner(x=crop_coord['width'],
                           scale=crop_coord['scale'])
 
 # Create a function that prints images before and after Gaussian smoothing, with and without zoom-in
-def image_original_smooth(image, image_cropped, channel):
+def image_original_processed(l_one, l_two, image, image_cropped, channels, process):
+    # Design subplots
     fig, axes = plt.subplots(nrows=2, ncols=2)
-    image.show(layer=lyr, ax=axes[0, 0], channel=channel, cmap='gray')
-    _ = axes[0, 0].set_title('Original before smoothing')
-    image.show(layer=lyr_smth, ax=axes[0, 1], channel=channel, cmap='gray')
-    _ = axes[0, 1].set_title('Original after smoothing')
-    image_cropped.show(layer=lyr, ax=axes[1, 0], channel=channel, cmap='gray')
-    _ = axes[1, 0].set_title('Zoomed before smoothing')
-    image_cropped.show(layer=lyr_smth, ax=axes[1, 1], channel=channel, cmap='gray')
-    _ = axes[1, 1].set_title('Zoomed after smoothing')
+    image.show(layer=l_one, ax=axes[0, 0], channel=channels[0], cmap='gray')
+    _ = axes[0, 0].set_title(f"Original before {process}")
+    image.show(layer=l_two, ax=axes[0, 1], channel=channels[1], cmap='gray')
+    _ = axes[0, 1].set_title(f"Original after {process}")
+    image_cropped.show(layer=l_one, ax=axes[1, 0], channel=channels[0], cmap='gray')
+    _ = axes[1, 0].set_title(f"Zoom-in before {process}")
+    image_cropped.show(layer=l_two, ax=axes[1, 1], channel=channels[1], cmap='gray')
+    _ = axes[1, 1].set_title(f"Zoom-in after {process}")
 
 ```
 
 ## Channel 0
 
 ```{python smth_images_c0, fig.width=12, fig.height=12}
-image_original_smooth(image=img, image_cropped=img_crp, channel=0)
+i = 0
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="smoothing")
 ```
 
 ## Channel 1
 
 ```{python smth_images_c1, fig.width=12, fig.height=12}
-image_original_smooth(image=img, image_cropped=img_crp, channel=1)
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="smoothing")
 ```
 
 ## Channel 2
 
 ```{python smth_images_c2, fig.width=12, fig.height=12}
-image_original_smooth(image=img, image_cropped=img_crp, channel=2)
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="smoothing")
 ```
 
-# Segmentation
+# Segmentation {.tabset}
+
+Image segmentation is performed using [Otsu thresholding](https://en.wikipedia.org/wiki/Otsu's_method) and 
+[watershed](https://en.wikipedia.org/wiki/Watershed_(image_processing)) methods. In the Otsu method, 
+the algorithm calculates the optimal brightness level that best separates regions of varying intensity. 
+The watershed method is a region-based segmentation algorithm that divides an image into distinct adjacent
+regions based on topographic analysis of pixel intensities.
+
+```{python segmentation}
+
+# ------------------------------------------------------------------------------
+# This chunk carries out image segmentation using Otsu thresholding and watershed 
+# segmentation. Segmentation is performed for each channel individually.
+# ------------------------------------------------------------------------------
+
+for key, value in channel_config.items():
+    # For any valid channel
+    if value['ch'] != None:
+        # Specify the channel to be processed
+        ch = value['ch']
+        # Specify the name of layer for the new processed image
+        new_layer = f"seg_channel_{ch}"
+        # Run segmentation
+        sq.im.segment(img=img,
+                      layer=lyr_smth,
+                      method=seg_method,
+                      thresh=thr_method,
+                      layer_added=new_layer,
+                      channel=ch)
+
+```
+
+`ImageContainer` updated:
+
+```{r seg_obj}
+py$img
+```
+
+```{python prep_seg_visualization}
+
+# ------------------------------------------------------------------------------
+# This chunk prepares to visualize image segmentation
+# ------------------------------------------------------------------------------
+
+# Recrop images
+img_crp = img.crop_corner(x=crop_coord['width'],
+                          y=crop_coord['height'],
+                          size=crop_coord['size'],
+                          scale=crop_coord['scale'])
+
+# Prep a list consisting of channel corresponding to segmented images
+seg_lyrs = [c for c in list(img) if "seg" in c]
+```
+
+Images are compared between the before (left) and the after (right) segmentation, as well as the original 
+(upper) and higher (lower) magnification, across the stainings.
+
+## Channel 0
+
+```{python seg_images_c0, fig.width=12, fig.height=12}
+i = 0
+image_original_processed(l_one=lyr,
+                         l_two=seg_lyrs[i],
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="segmentation")
+```
+
+## Channel 1
+
+```{python seg_images_c1, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=seg_lyrs[i],
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, None],
+                         process="segmentation")
+```
+
+## Channel 2
+
+```{python seg_images_c2, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=seg_lyrs[i],
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, None],
+                         process="segmentation")
+```
 
 ```{r session_info}
 sessionInfo()
