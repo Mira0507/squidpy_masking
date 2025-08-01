@@ -1,6 +1,6 @@
 # squidpy_masking
 
-This repository is designed to demonstrate fluorescence image segmentation 
+This repository is designed to demonstrate fluorescence image masking
 for Visium analysis using the 
 [squidpy (Palla, Spitzer et al., 2022)](https://www.nature.com/articles/s41592-021-01358-2) 
 package in Python.
