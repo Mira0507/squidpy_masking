@@ -234,15 +234,16 @@ img_crp = img.crop_corner(x=crop_coord['width'],
                           scale=crop_coord['scale'])
 
 # Create a function that prints images before and after Gaussian smoothing, with and without zoom-in
-def image_original_processed(l_one, l_two, image, image_cropped, channel, process):
+def image_original_processed(l_one, l_two, image, image_cropped, channels, process):
+    # Design subplots
     fig, axes = plt.subplots(nrows=2, ncols=2)
-    image.show(layer=l_one, ax=axes[0, 0], channel=channel, cmap='gray')
+    image.show(layer=l_one, ax=axes[0, 0], channel=channels[0], cmap='gray')
     _ = axes[0, 0].set_title(f"Original before {process}")
-    image.show(layer=l_two, ax=axes[0, 1], channel=channel, cmap='gray')
+    image.show(layer=l_two, ax=axes[0, 1], channel=channels[1], cmap='gray')
     _ = axes[0, 1].set_title(f"Original after {process}")
-    image_cropped.show(layer=l_one, ax=axes[1, 0], channel=channel, cmap='gray')
+    image_cropped.show(layer=l_one, ax=axes[1, 0], channel=channels[0], cmap='gray')
     _ = axes[1, 0].set_title(f"Zoom-in before {process}")
-    image_cropped.show(layer=l_two, ax=axes[1, 1], channel=channel, cmap='gray')
+    image_cropped.show(layer=l_two, ax=axes[1, 1], channel=channels[1], cmap='gray')
     _ = axes[1, 1].set_title(f"Zoom-in after {process}")
 
 ```
@@ -250,33 +251,36 @@ def image_original_processed(l_one, l_two, image, image_cropped, channel, proces
 ## Channel 0
 
 ```{python smth_images_c0, fig.width=12, fig.height=12}
+i = 0
 image_original_processed(l_one=lyr,
                          l_two=lyr_smth,
                          image=img,
                          image_cropped=img_crp,
-                         channel=0,
+                         channels=[i, i],
                          process="smoothing")
 ```
 
 ## Channel 1
 
 ```{python smth_images_c1, fig.width=12, fig.height=12}
+i += 1
 image_original_processed(l_one=lyr,
                          l_two=lyr_smth,
                          image=img,
                          image_cropped=img_crp,
-                         channel=1,
+                         channels=[i, i],
                          process="smoothing")
 ```
 
 ## Channel 2
 
 ```{python smth_images_c2, fig.width=12, fig.height=12}
+i += 1
 image_original_processed(l_one=lyr,
                          l_two=lyr_smth,
                          image=img,
                          image_cropped=img_crp,
-                         channel=2,
+                         channels=[i, i],
                          process="smoothing")
 ```
 
@@ -298,8 +302,11 @@ regions based on topographic analysis of pixel intensities.
 for key, value in channel_config.items():
     # For any valid channel
     if value['ch'] != None:
+        # Specify the channel to be processed
         ch = value['ch']
+        # Specify the name of layer for the new processed image
         new_layer = f"seg_channel_{ch}"
+        # Run segmentation
         sq.im.segment(img=img,
                       layer=lyr_smth,
                       method=seg_method,
@@ -328,39 +335,45 @@ img_crp = img.crop_corner(x=crop_coord['width'],
                           scale=crop_coord['scale'])
 
 # Prep a list consisting of channel corresponding to segmented images
-seg_channels = [c for c in list(img) if "seg" in c]
+seg_lyrs = [c for c in list(img) if "seg" in c]
 ```
+
+Images are compared between the before (left) and the after (right) segmentation, as well as the original 
+(upper) and higher (lower) magnification, across the stainings.
 
 ## Channel 0
 
-```{python seg_images_c0, fig.width=12, fig.height=12, eval=FALSE}
+```{python seg_images_c0, fig.width=12, fig.height=12}
+i = 0
 image_original_processed(l_one=lyr,
-                         l_two=lyr_seg,
+                         l_two=seg_lyrs[i],
                          image=img,
                          image_cropped=img_crp,
-                         channel=0,
+                         channels=[i, i],
                          process="segmentation")
 ```
 
 ## Channel 1
 
-```{python seg_images_c1, fig.width=12, fig.height=12, eval=FALSE}
+```{python seg_images_c1, fig.width=12, fig.height=12}
+i += 1
 image_original_processed(l_one=lyr,
-                         l_two=lyr_seg,
+                         l_two=seg_lyrs[i],
                          image=img,
                          image_cropped=img_crp,
-                         channel=1,
+                         channels=[i, None],
                          process="segmentation")
 ```
 
 ## Channel 2
 
-```{python seg_images_c2, fig.width=12, fig.height=12, eval=FALSE}
+```{python seg_images_c2, fig.width=12, fig.height=12}
+i += 1
 image_original_processed(l_one=lyr,
-                         l_two=lyr_seg,
+                         l_two=seg_lyrs[i],
                          image=img,
                          image_cropped=img_crp,
-                         channel=2,
+                         channels=[i, None],
                          process="segmentation")
 ```
 
