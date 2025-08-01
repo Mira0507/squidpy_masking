@@ -36,7 +36,7 @@ use_condaenv('../env')
 import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
-from skimage.color import rgb2gray
+import napari
 import os
 ```
 
@@ -225,7 +225,7 @@ Images are compared between the before (left) and the after (right) smoothing, a
 # ------------------------------------------------------------------------------
 
 # Specify the name of layer containing Gaussian smoothing
-lyr_smth = "_".join([lyr, "smooth"])
+lyr_smth = f"{lyr}_smooth"
 
 # Prep cropped images
 img_crp = img.crop_corner(x=crop_coord['width'],
@@ -237,13 +237,13 @@ img_crp = img.crop_corner(x=crop_coord['width'],
 def image_original_processed(l_one, l_two, image, image_cropped, channel, process):
     fig, axes = plt.subplots(nrows=2, ncols=2)
     image.show(layer=l_one, ax=axes[0, 0], channel=channel, cmap='gray')
-    _ = axes[0, 0].set_title(" ".join(['Original before', process]))
+    _ = axes[0, 0].set_title(f"Original before {process}")
     image.show(layer=l_two, ax=axes[0, 1], channel=channel, cmap='gray')
-    _ = axes[0, 1].set_title(" ".join(['Original after', process]))
+    _ = axes[0, 1].set_title(f"Original after {process}")
     image_cropped.show(layer=l_one, ax=axes[1, 0], channel=channel, cmap='gray')
-    _ = axes[1, 0].set_title(" ".join(['Zoom-in before', process]))
+    _ = axes[1, 0].set_title(f"Zoom-in before {process}")
     image_cropped.show(layer=l_two, ax=axes[1, 1], channel=channel, cmap='gray')
-    _ = axes[1, 1].set_title(" ".join(['Zoom-in after', process]))
+    _ = axes[1, 1].set_title(f"Zoom-in after {process}")
 
 ```
 
@@ -292,12 +292,21 @@ regions based on topographic analysis of pixel intensities.
 
 # ------------------------------------------------------------------------------
 # This chunk carries out image segmentation using Otsu thresholding and watershed 
-# segmentation
+# segmentation. Segmentation is performed for each channel individually.
 # ------------------------------------------------------------------------------
 
-sq.im.segment(img=img, layer=lyr_smth, method=seg_method, thresh=thr_method, channel=0)
-# sq.im.segment(img=img, layer=lyr_smth, method=seg_method, thresh=thr_method, channel=1)
-# sq.im.segment(img=img, layer=lyr_smth, method=seg_method, thresh=thr_method, channel=2)
+for key, value in channel_config.items():
+    # For any valid channel
+    if value['ch'] != None:
+        ch = value['ch']
+        new_layer = f"seg_channel_{ch}"
+        sq.im.segment(img=img,
+                      layer=lyr_smth,
+                      method=seg_method,
+                      thresh=thr_method,
+                      layer_added=new_layer,
+                      channel=ch)
+
 ```
 
 `ImageContainer` updated:
@@ -312,20 +321,19 @@ py$img
 # This chunk prepares to visualize image segmentation
 # ------------------------------------------------------------------------------
 
-# Specify the name of layer containing Gaussian smoothing
-lyr_seg = "segmented_watershed"
-
 # Recrop images
 img_crp = img.crop_corner(x=crop_coord['width'],
                           y=crop_coord['height'],
                           size=crop_coord['size'],
                           scale=crop_coord['scale'])
 
+# Prep a list consisting of channel corresponding to segmented images
+seg_channels = [c for c in list(img) if "seg" in c]
 ```
 
 ## Channel 0
 
-```{python seg_images_c0, fig.width=12, fig.height=12}
+```{python seg_images_c0, fig.width=12, fig.height=12, eval=FALSE}
 image_original_processed(l_one=lyr,
                          l_two=lyr_seg,
                          image=img,
