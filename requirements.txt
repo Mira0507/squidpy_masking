@@ -1,6 +1,9 @@
 python=3.11
 squidpy
 napari
+napari-spatialdata
+pyqt
+pyside2
 r-base
 r-tidyverse
 r-reticulate
