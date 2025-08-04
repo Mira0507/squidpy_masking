@@ -3,3 +3,4 @@
 *.html
 env/
 scripts/segmentation_files/
+images/
