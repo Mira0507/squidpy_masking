@@ -353,19 +353,31 @@ image_original_processed(l_one=lyr,
                          process="segmentation")
 ```
 
-```{python napari_exploration, eval=TRUE}
+```{python load_napari}
 
 # Initialize napari viewer
 viewer = napari.Viewer()
 
-# Add layers of interest to napari viewer
-viewer.add_image(img.data['seg_channel_0'].values)
-viewer.add_image(img.data['seg_channel_1'].values)
-viewer.add_image(img.data['seg_channel_2'].values)
+for name in seg_lyrs:
 
+    # Extract ndarray
+    arr = img.data[name].values
+
+    # Reorder dimensions
+    d_y, d_x, d_z, d_ch = arr.shape
+    arr_reshaped = arr.reshape(d_z, d_ch, d_y, d_x)
+
+    # Add layers of interest to napari viewer
+    viewer.add_image(arr_reshaped, name=name)
+```
+
+```{python vis_napari, eval=FALSE}
+# reticulate::repl_python()
 # Explore loaded images
 napari.run()
 ```
+
+
 
 ```{r session_info}
 sessionInfo()
