@@ -364,6 +364,7 @@ for name in seg_lyrs:
     arr = img.data[name].values
 
     # Reorder dimensions
+    # NOTE: Ensure to have a compatible dimension with Napari (z, channel, y, z)
     d_y, d_x, d_z, d_ch = arr.shape
     arr_reshaped = arr.reshape(d_z, d_ch, d_y, d_x)
 
