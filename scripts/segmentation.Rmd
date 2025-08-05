@@ -90,6 +90,9 @@ The following image object loaded:
 # Load fluorescence tissue images
 img = sq.datasets.visium_fluo_image_crop()
 
+# Load adata obj corresponding to the fluorescence image
+adata = sq.datasets.visium_fluo_adata_crop()
+
 print(img)
 ```
 
@@ -349,6 +352,33 @@ image_original_processed(l_one=lyr,
                          channels=[i, None],
                          process="segmentation")
 ```
+
+```{python load_napari}
+
+# Initialize napari viewer
+viewer = napari.Viewer()
+
+for name in seg_lyrs:
+
+    # Extract ndarray
+    arr = img.data[name].values
+
+    # Reorder dimensions
+    # NOTE: Ensure to have a compatible dimension with Napari (z, channel, y, z)
+    d_y, d_x, d_z, d_ch = arr.shape
+    arr_reshaped = arr.reshape(d_z, d_ch, d_y, d_x)
+
+    # Add layers of interest to napari viewer
+    viewer.add_image(arr_reshaped, name=name)
+```
+
+```{python vis_napari, eval=FALSE}
+# reticulate::repl_python()
+# Explore loaded images
+napari.run()
+```
+
+
 
 ```{r session_info}
 sessionInfo()
