@@ -41,3 +41,16 @@ squidpy_masking
     - conda env: `env`
     - temp script: `script/image_format.py`
 
+
+2025-08-05
+----------
+
+@Mira0507
+
+- Install `bftools` in conda env (`env`) for image conversion
+    - https://docs.openmicroscopy.org/bio-formats/6.0.1/users/comlinetools/index.html
+    - https://docs.openmicroscopy.org/bio-formats/6.0.1/users/comlinetools/conversion.html
+- Convert `vsi` to `tif`/`tiff` image files
+    - conda env: `env`
+    - script: `script/image_format.py`
+
