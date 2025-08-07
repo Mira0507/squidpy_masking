@@ -380,6 +380,6 @@ napari.run()
 
 
 
-```{r session_info}
+```{r session_info, collapse=FALSE}
 sessionInfo()
 ```
