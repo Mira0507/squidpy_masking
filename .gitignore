@@ -5,3 +5,4 @@ env/
 scripts/segmentation_files/
 images/
 bftools/
+scripts/image_conversion/
