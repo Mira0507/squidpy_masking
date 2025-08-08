@@ -19,14 +19,15 @@ knitr::opts_chunk$set(warning=FALSE,
 Last run: `r date()`
 
 This workflow is designed to demonstrate how to convert image files with the `.vsi`
-format to `tif` using the `bftools` package. Assume the `bftools` package has been
-installed by calling `pip install bftools` after activating your conda environment.
+format to `tif` using the `bftools` package. **Assume the `bftools` package has been
+installed by calling `pip install bftools` after activating your conda environment.**
 
 Refer to the following resources for detailed instructions:
+
 - [GitHub repository](https://github.com/BobDotCom/bftools)
 - [Command line tools available in Bio-Formats](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/index.html)
-- [bfconvert](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/conversion.html)
-- [showinf](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/display.html)
+- [`bfconvert`](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/conversion.html)
+- [`showinf`](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/display.html)
 
 ```{r rpackages}
 library(reticulate)
@@ -59,17 +60,14 @@ output_dir = "image_conversion"
 os.makedirs(output_dir, exist_ok=True)
 
 # Specify the path to output tif file
-tif = f"{output_dir}/converted_169_series%02d.ome.tif"
+tif = f"{output_dir}/converted_169.ome.tif"
 
 # Specify the path to metadata
 meta_out = f"{output_dir}/metadata_169.txt"
 
-# Specify the path to cache directory
-cachedir = "image_conversion_cache"
-
 ```
 
-# Displaying image metadata
+# Image metadata
 
 We start from exploring the metadata of input image file using the `showinf` 
 command.
@@ -92,6 +90,10 @@ with open(meta_out, "r") as f:
 
 ```
 
+# Conversion
+
+
+
 ```{python run_bfconvert}
 
 # ------------------------------------------------------------------------------
@@ -103,8 +105,9 @@ cmd = ["bfconvert",
     "-noflat",
     "-compression LZW",
     "-overwrite",
-    "-cache",
-    f"-cache-dir {cachedir}", 
+    # "-series 2",
+    # "-cache",
+    # f"-cache-dir {cachedir}", 
     vsi,
     tif
     ]
@@ -127,6 +130,12 @@ def run_runtime():
     print(f"Runtime: {run_time_sec} seconds ({run_time_min} minutes).")
 
 run_runtime()
+```
+
+```{python print_log, eval=FALSE}
+# Print the saved log contents
+with open(f"{vsi}.log", "r") as f:
+    print(f.read())
 ```
 
 ```{r session_info, collapse=FALSE}
