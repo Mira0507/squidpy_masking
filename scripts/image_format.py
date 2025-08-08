@@ -31,5 +31,7 @@ run_runtime()
 # bfconvert -noflat -compression LZW -overwrite -cache -cache-dir image_format_cache ../images/input/NoPerm/Image_169.v
 # si ../images/output/converted_169.ome.tif
 
+# 674.548s elapsed (14.127273+12233.019ms per plane, 593ms overhead)
+# Runtime: 675.5877029895782 seconds (11.259795049826304 minutes).
 
 
