@@ -1,0 +1,77 @@
+---
+title: "Converting VSI to TIF"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to demonstrate how to convert image files with the `.vsi`
+format to `tif` using the `bftools` package. Assume the `bftools` package has been
+installed by calling `pip install bftools` after activating your conda environment.
+
+Refer to the following resources for detailed instructions:
+- [GitHub repository](https://github.com/BobDotCom/bftools)
+- [Command line tools available in Bio-Formats](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/index.html)
+- [bfconvert](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/conversion.html)
+- [showinf](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/display.html)
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv('../env')
+```
+
+```{python ppackages}
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import squidpy as sq
+# import napari
+import os
+import subprocess
+import time
+```
+
+```{python configs}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to specify variables for paths to input files/directories
+# and parameter settings
+# ------------------------------------------------------------------------------
+
+# Specify the path to input vsi image
+vsi = "../images/input/NoPerm/Image_169.vsi"
+
+```
+
+# Displaying image metadata
+
+We start from exploring the metadata of input image file using the `showinf` 
+command.
+
+
+```{python explore_metadata}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to explore metadata
+# ------------------------------------------------------------------------------
+
+subprocess.run(f"showinf {vsi}", shell=True, capture_output=True, text=True)
+```
+
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```
