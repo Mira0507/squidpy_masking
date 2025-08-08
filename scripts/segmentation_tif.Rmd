@@ -1,0 +1,107 @@
+---
+title: "Segmentation using squidpy"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to demonstrate image segmentation for Visium analysis 
+using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
+Refer to the following resources for technical details:
+
+- [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Squidpy GitHub](https://github.com/scverse/squidpy)
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv('../env')
+```
+
+```{python ppackages}
+import numpy as np
+import matplotlib.pyplot as plt
+import squidpy as sq
+import napari
+import os
+```
+
+```{python configs}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to specify variables for paths to input files/directories
+# and parameter settings
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Specify input image file
+input_image = "image_conversion/converted_169.ome.tif"
+
+# Specify argument setting for printing images
+channel_config = {
+    'Merged' : {'ch' : None, 'cm' : None},
+    'Channel 0' : {'ch' : 0, 'cm' : 'gray'},
+    'Channel 1' : {'ch' : 1, 'cm' : 'gray'},
+    'Channel 2' : {'ch' : 2, 'cm' : 'gray'},
+}
+
+# Specify the name of input image layer to be processed
+lyr = 'image'
+
+# Specify signal values to be tested for Gaussian smoothing
+# Sigma represents the variance for normal distribution
+gaussian_sigma = 1
+
+# Specify coordinates to crop images
+crop_coord = {'height' : 2500, 'width' : 2500, 'size' : 500, 'scale' : 1}
+
+# Specify the segmentation method
+seg_method = "watershed"
+
+# Specify the thresholding method. If `None`, the Otsu method is used.
+thr_method = None
+```
+
+# Loading input images {.tabset}
+
+We use `tif` image files converted from `vsi`. Refer to the [image_conversion.html](image_conversion.html) 
+for detailed processes on converting image formats.
+
+The following image object loaded:
+
+```{python load_image}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to load input image files
+# ------------------------------------------------------------------------------
+
+# Initialize ImageContainer
+img = sq.im.ImageContainer()
+
+img = img.add_img(input_image, layer=lyr)
+
+# Load adata obj corresponding to the fluorescence image
+adata = sq.datasets.visium_fluo_adata_crop()
+
+print(img)
+```
+
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```
