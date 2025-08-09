@@ -36,6 +36,7 @@ use_condaenv('../env')
 import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
+from tifffile import imread
 import napari
 import os
 ```
@@ -58,6 +59,8 @@ channel_config = {
     'Channel 0' : {'ch' : 0, 'cm' : 'gray'},
     'Channel 1' : {'ch' : 1, 'cm' : 'gray'},
     'Channel 2' : {'ch' : 2, 'cm' : 'gray'},
+    'Channel 3' : {'ch' : 3, 'cm' : 'gray'},
+    'Channel 4' : {'ch' : 4, 'cm' : 'gray'}
 }
 
 # Specify the name of input image layer to be processed
@@ -90,17 +93,31 @@ The following image object loaded:
 # This chunk is used to load input image files
 # ------------------------------------------------------------------------------
 
+# Read image as numpy array
+img_array = imread(input_image)
+
 # Initialize ImageContainer
-img = sq.im.ImageContainer()
-
-img = img.add_img(input_image, layer=lyr)
-
-# Load adata obj corresponding to the fluorescence image
-adata = sq.datasets.visium_fluo_adata_crop()
+img = sq.im.ImageContainer(img_array, layer=lyr)
 
 print(img)
 ```
 
+```{python load_napari, eval=FALSE}
+
+# Initialize napari viewer
+viewer = napari.Viewer()
+
+# Extract ndarray
+arr = img.data[lyr].values
+# Reorder dimensions
+# NOTE: Ensure to have a compatible dimension with Napari (z, channel, y, z)
+d_y, d_x, d_z, d_ch = arr.shape
+arr_reshaped = arr.reshape(d_z, d_ch, d_y, d_x)
+# Add layers of interest to napari viewer
+viewer.add_image(arr_reshaped, name=lyr)
+# Explore loaded images
+napari.run()
+```
 
 ```{r session_info, collapse=FALSE}
 sessionInfo()
