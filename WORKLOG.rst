@@ -125,3 +125,41 @@ squidpy_masking
     - conda env: `env`
     - script: `scripts/segmentation_tif.Rmd`
 
+2025-08-10
+----------
+
+@Mira0507
+
+- Update `README.md` to include the `Scripts` section
+
+
+
+2025-08-11
+----------
+
+@Mira0507
+
+- Install `jupyter` in `conda env` using conda and export updated `env` to `env.archived.yaml`
+
+- Run image masking on converted `tif` image using squidpy
+    - conda env: `env`
+    - scripts: 
+        - `scripts/segmentation_tif.Rmd`
+        - `scripts/segmentation_tif.ipynb`
+    - notes
+        - Python scripts in both `Rmd` and `ipynb` ended up being killed
+        - It appears to be associated with a memory shortage on my Macbook with 32B memory
+        - I need to rerun using cropped images
+
+- Update the script converting image from `vsi` to `tif`
+    - conda env: `env`
+    - script: `scripts/image_conversion.Rmd`
+    - notes: 
+        - script enhanced to include code scanning and selecting one series with the highest 
+          resolution and multi-channel fluorescence data
+        - QuPath nor Fiji cannot open the output `tif` file due to a memory shortage. This issue 
+          can be resolved by re-converting to the pyrimidal `tif` format.
+        - the `bfconvert` command re-ran with the following parameters added
+            - `-tilex`
+            - `-tiley`
+            - `-pyramid-resolutions`
