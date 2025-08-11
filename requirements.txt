@@ -5,6 +5,7 @@ napari-spatialdata
 pyqt
 pyside2
 wget
+jupyter
 r-base
 r-tidyverse
 r-reticulate
