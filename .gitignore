@@ -6,3 +6,4 @@ env/
 images/
 bftools/
 scripts/image_conversion/
+*/.ipynb_checkpoints/
