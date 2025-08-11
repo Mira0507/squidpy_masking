@@ -2,7 +2,7 @@
 *.Rhistory
 *.html
 env/
-scripts/segmentation_files/
+*_files/
 images/
 bftools/
 scripts/image_conversion/
