@@ -61,7 +61,7 @@ output_dir = "image_conversion"
 os.makedirs(output_dir, exist_ok=True)
 
 # Specify the path to output tif file
-tif = f"{output_dir}/converted_169_rerun.ome.tif"
+tif = f"{output_dir}/converted_169.ome.tif"
 
 # Specify the path to metadata
 input_meta_out = f"{output_dir}/input_metadata_169.txt"
