@@ -61,7 +61,6 @@ output_dir = "image_conversion"
 os.makedirs(output_dir, exist_ok=True)
 
 # Specify the path to output tif file
-# tif = f"{output_dir}/converted_169.ome.tif"
 tif = f"{output_dir}/converted_169_rerun.ome.tif"
 
 # Specify the path to metadata
@@ -75,7 +74,8 @@ n_channels = 5
 # NOTE: 
 # - Determine the series based on the input metadata. 
 # - Select one for multi-channel with the highest resolution.
-# - If `None`, 
+# - If `None`, python specifies the optimal series by scanning the resolution 
+#   and channel info in each series
 ser = None
 
 ## Series #14 :
@@ -118,7 +118,22 @@ We start from exploring the metadata of the *input* image file using the `showin
 # Save the metadata of input images as a text file
 subprocess.run(f"showinf {vsi} &> {input_meta_out}", shell=True)
 
+# Print
+with open(input_meta_out, "r") as f:
+    print(f.read())
+
+```
+
+The `vsi` contains many image *series* with varying resolutions and channel data. We are required 
+to select the optimal series to convert it to `tif`/`tiff` format.
+
+If unspecified, Python scans the optimal series based on the resolution and channel data.
+
+```{python scan_and_select_series}
+
 if ser == None:
+
+    print("Series not selected. Series scanned to select one with the highest resolution and multi-channel.")
 
     # Initialize lists to store metadata for each series
     s = []
@@ -171,12 +186,17 @@ if ser == None:
     maxw_series = w_multi.index(max(w_multi))
     maxh_series = h_multi.index(max(h_multi))
 
+    # Determine series where both width and height are the maximum values 
+    # along with the same index in each list
     if maxw_series == maxh_series:
         ser = str(c_multi[maxw_series])
     else:
         raise ValueError("Values unmatched between max width and max height!")
 
+else:
+    print("User specified the following series:", ser)
 
+print("The following series is converted to TIF/TIFF:", ser)
 ```
 
 
