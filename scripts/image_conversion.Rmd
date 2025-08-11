@@ -36,10 +36,6 @@ use_condaenv('../env')
 ```
 
 ```{python ppackages}
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import squidpy as sq
-# import napari
 import os
 import subprocess
 import time
@@ -61,7 +57,7 @@ output_dir = "image_conversion"
 os.makedirs(output_dir, exist_ok=True)
 
 # Specify the path to output tif file
-tif = f"{output_dir}/converted_169.ome.tif"
+tif = f"{output_dir}/converted_169_pyramidal.ome.tif"
 
 # Specify the path to metadata
 input_meta_out = f"{output_dir}/input_metadata_169.txt"
@@ -218,6 +214,8 @@ cmd = ["bfconvert",
     "-compression LZW",
     "-overwrite",
     f"-series {ser}",
+    "-tilex 512 -tiley 512",
+    "-pyramid-resolutions 5",
     vsi,
     tif
     ]
