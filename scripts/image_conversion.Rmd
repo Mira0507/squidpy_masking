@@ -62,20 +62,21 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Specify the path to output tif file
 # tif = f"{output_dir}/converted_169.ome.tif"
-tif = f"{output_dir}/converted_169.ome.tif"
+tif = f"{output_dir}/converted_169_rerun.ome.tif"
 
 # Specify the path to metadata
 input_meta_out = f"{output_dir}/input_metadata_169.txt"
 output_meta_out = f"{output_dir}/output_metadata_169.txt"
 
 # Specify the number of channels in the output converted image
-n_channels = "5"
+n_channels = 5
 
 # Specify the series to be converted. 
 # NOTE: 
 # - Determine the series based on the input metadata. 
 # - Select one for multi-channel with the highest resolution.
-ser = "14"
+# - If `None`, 
+ser = None
 
 ## Series #14 :
 ##  Image count = 5
@@ -117,59 +118,67 @@ We start from exploring the metadata of the *input* image file using the `showin
 # Save the metadata of input images as a text file
 subprocess.run(f"showinf {vsi} &> {input_meta_out}", shell=True)
 
+if ser == None:
 
-best_series = None
-max_pixels = 0
-current_series = None
-series_dic = {}
+    # Initialize lists to store metadata for each series
+    s = []
+    c = []
+    w = []
+    h = []
 
-# Initialize lists to store metadata for each series
-s = []
-c = []
-w = []
-h = []
+    # Fill the lists
+    with open(input_meta_out, "r") as f:
 
-# Fill the lists
-with open(input_meta_out, "r") as f:
+        # Extract series, channel, width, and height data in the lists
+        for line in f:
+            match_series = re.match(r"Series\s+#(\d+)", line)
+            match_c = re.search(r"SizeC\s+=\s(\d+)", line)
+            match_w = re.search(r"Width\s+=\s(\d+)", line)
+            match_h = re.search(r"Height\s+=\s(\d+)", line)
+            if match_series:
+                s.append(match_series)
+            if match_c:
+                c.append(match_c)
+            if match_w:
+                w.append(match_w)
+            if match_h:
+                h.append(match_h)
+        # Break if any of the list elements have different lengths
+        if len(s) != len(c) or len(s) != len(w) or len(s) != len(h):
+            raise ValueError("Lists aren't sharing the same length!")
 
-    # Extract series, channel, width, and height data in the lists
-    for line in f:
-        match_series = re.match(r"Series\s+#(\d+)", line)
-        match_c = re.search(r"SizeC\s+=\s(\d+)", line)
-        match_w = re.search(r"Width\s+=\s(\d+)", line)
-        match_h = re.search(r"Height\s+=\s(\d+)", line)
-        if match_series:
-            s.append(match_series)
-        if match_c:
-            c.append(match_c)
-        if match_w:
-            w.append(match_w)
-        if match_h:
-            h.append(match_h)
-    # Break if any of the list elements have different lengths
-    if len(s) != len(c) or len(s) != len(w) or len(s) != len(h):
-        raise ValueError("Lists aren't sharing the same length!")
+        # Clean each list by converting re.Match obj to integer
+        sub_dic = {"s": s, "c": c, "w": w, "h": h}
+        for key,value in sub_dic.items():
+            value = [x.group(0) for x in value]
+            if key == "s":
+                value = [x.split("#")[1] for x in value]
+            else:
+                value = [x.split(" = ")[1] for x in value]
+            sub_dic[key] = [int(x) for x in value]
+        # Override the lists by unpacking `sub_dic`
+        s, c, w, h = sub_dic.values()
 
-    # Clean each list by converting re.Match obj to integer
-    sub_dic = {"s": s, "c": c, "w": w, "h": h}
-    for key,value in sub_dic.items():
-        value = [x.group(0) for x in value]
-        if key == "s":
-            value = [x.split("#")[1] for x in value]
-        else:
-            value = [x.split(" = ")[1] for x in value]
-        sub_dic[key] = [int(x) for x in value]
-    s, c, w, h = sub_dic.values()
+    # Filter series containing multi-channel fluorescence images
+    c_multi = [x[0] for x in enumerate(c) if x[1] == max(c)]
+    w_multi = []
+    h_multi = []
+    for i in c_multi:
+        w_multi.append(w[i])
+        h_multi.append(h[i])
 
+    # Find the final series for max width and max height
+    maxw_series = w_multi.index(max(w_multi))
+    maxh_series = h_multi.index(max(h_multi))
 
+    if maxw_series == maxh_series:
+        ser = str(c_multi[maxw_series])
+    else:
+        raise ValueError("Values unmatched between max width and max height!")
 
 
-
-number_to_extract = text.split(" = ")[1]
-    # print(f.read())
-
-    SizeC = 5
 ```
+
 
 # Conversion
 
