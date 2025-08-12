@@ -149,7 +149,7 @@ squidpy_masking
     - notes
         - Python scripts in both `Rmd` and `ipynb` ended up being killed
         - It appears to be associated with a memory shortage on my Macbook with 32B memory
-        - I need to rerun using cropped images
+        - Images need to be cropped when running locally
 
 - Update the script converting image from `vsi` to `tif`
     - conda env: `env`
@@ -162,3 +162,5 @@ squidpy_masking
         - the `bfconvert` command re-ran with the following parameters added
             - `-pyramid-resolutions`
             - `-pyramid-scale`
+        - QuPath reading the converted file from the series with the highest resolution (33874 x 33872) 
+          crashed on MacBook. Decided to select the second highest resolution for image conversion for now.
