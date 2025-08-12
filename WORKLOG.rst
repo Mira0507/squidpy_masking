@@ -161,6 +161,6 @@ squidpy_masking
           whether converting to the pyrimidal `tif` format can resolve this issue.
         - the `bfconvert` command re-ran with the following parameters added
             - `-pyramid-resolutions`
-            - `-pyramid-scale`
-        - QuPath reading the converted file from the series with the highest resolution (33874 x 33872) 
-          crashed on MacBook. Decided to select the second highest resolution for image conversion for now.
+            - `-pyramid-scale` 
+        - QuPath successfully read the converted file from the series with the highest 
+          resolution (33874 x 33872) when the output was the pyramidal format.
