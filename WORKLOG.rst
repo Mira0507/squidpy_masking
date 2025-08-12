@@ -157,10 +157,8 @@ squidpy_masking
     - notes: 
         - script enhanced to include code scanning and selecting one series with the highest 
           resolution and multi-channel fluorescence data 
-        - QuPath nor Fiji cannot open the output `tif` file due to a memory shortage. I’m testing 
-          whether converting to the pyrimidal `tif` format can resolve this issue.
-        - the `bfconvert` command re-ran with the following parameters added
+        - the `bfconvert` required to rerun with the following parameters generating *pyramidal* output
             - `-pyramid-resolutions`
             - `-pyramid-scale` 
-        - QuPath successfully read the converted file from the series with the highest 
+        - QuPath and napari successfully read the converted `tif` file from the series with the highest 
           resolution (33874 x 33872) when the output was the pyramidal format.
