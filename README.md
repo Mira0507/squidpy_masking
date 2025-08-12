@@ -32,5 +32,8 @@ with `squidpy.im.process` to reduce noise.
 
 - `scripts/segmentation.Rmd`: Masking demo fluorescence images from 
 `squidpy.datasets.visium_fluo_image_crop`.
-- `scripts/image_conversion.Rmd`: Converting user images from `vsi` to `tif` 
+- `scripts/image_conversion_<sample>.Rmd`: Converting user images from `vsi` to `tif` 
 using the `bftools` package.
+- `scripts/segmentation_<sample>_<dimension>.Rmd`: Masking `tif` fluorescence images 
+using Squidpy’s default segmentation workflow with different cropping dimensions
+
