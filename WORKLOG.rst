@@ -160,6 +160,5 @@ squidpy_masking
         - QuPath nor Fiji cannot open the output `tif` file due to a memory shortage. I’m testing 
           whether converting to the pyrimidal `tif` format can resolve this issue.
         - the `bfconvert` command re-ran with the following parameters added
-            - `-tilex`
-            - `-tiley`
             - `-pyramid-resolutions`
+            - `-pyramid-scale`
