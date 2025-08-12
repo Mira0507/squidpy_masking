@@ -205,7 +205,7 @@ lyr_smth = f"{lyr}_smooth"
 # Create a function that prints images before and after Gaussian smoothing
 def image_original_processed(l_one, l_two, image, channel, process):
     # Design subplots
-    fig, axes = plt.subplots(nrows=2, ncols=1)
+    fig, axes = plt.subplots(nrows=1, ncols=2)
     image.show(layer=l_one, channel=channel, cmap='gray', ax=axes[0])
     _ = axes[0].set_title(f"Original before {process}")
     image.show(layer=l_two, channel=channel, cmap='gray', ax=axes[1])
@@ -266,6 +266,44 @@ image_original_processed(l_one=lyr,
                          image=img,
                          channel=i,
                          process="smoothing")
+```
+
+# Segmentation {.tabset}
+
+Image segmentation is performed using [Otsu thresholding](https://en.wikipedia.org/wiki/Otsu's_method) and 
+[watershed](https://en.wikipedia.org/wiki/Watershed_(image_processing)) methods. In the Otsu method, 
+the algorithm calculates the optimal brightness level that best separates regions of varying intensity. 
+The watershed method is a region-based segmentation algorithm that divides an image into distinct adjacent
+regions based on topographic analysis of pixel intensities.
+
+```{python segmentation}
+
+# ------------------------------------------------------------------------------
+# This chunk carries out image segmentation using Otsu thresholding and watershed 
+# segmentation. Segmentation is performed for each channel individually.
+# ------------------------------------------------------------------------------
+
+for key, value in channel_config.items():
+    # For any valid channel
+    if value['ch'] != None:
+        # Specify the channel to be processed
+        ch = value['ch']
+        # Specify the name of layer for the new processed image
+        new_layer = f"seg_channel_{ch}"
+        # Run segmentation
+        sq.im.segment(img=img,
+                      layer=lyr_smth,
+                      method=seg_method,
+                      thresh=thr_method,
+                      layer_added=new_layer,
+                      channel=ch)
+
+```
+
+`ImageContainer` updated:
+
+```{r seg_obj}
+py$img
 ```
 
 ```{python load_napari, eval=FALSE}
