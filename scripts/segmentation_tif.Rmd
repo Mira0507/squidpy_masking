@@ -71,8 +71,11 @@ lyr = 'image'
 # Sigma represents the variance for normal distribution
 gaussian_sigma = 1
 
+# Specify whether input images will be cropped
+crop_images = True
+
 # Specify coordinates to crop images
-crop_coord = {'height' : 2500, 'width' : 2500, 'size' : 500, 'scale' : 1}
+crop_coord = {'height' : 0.3, 'width' : 0.3, 'size' : 5000, 'scale' : 1}
 
 # Specify the segmentation method
 seg_method = "watershed"
@@ -101,6 +104,15 @@ img_array = imread(input_image)
 img = sq.im.ImageContainer(img_array, layer=lyr)
 
 print(img)
+
+# Crop input images if specified
+if crop_images:
+    print("Image cropped. Refer to the following dimension:", crop_coord)
+    print(crop_coord)
+    img = img.crop_corner(x=crop_coord['width'],
+                          y=crop_coord['height'],
+                          size=crop_coord['size'],
+                          scale=crop_coord['scale'])
 ```
 
 ## All
