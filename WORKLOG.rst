@@ -125,3 +125,73 @@ squidpy_masking
     - conda env: `env`
     - script: `scripts/segmentation_tif.Rmd`
 
+2025-08-10
+----------
+
+@Mira0507
+
+- Update `README.md` to include the `Scripts` section
+
+
+
+2025-08-11
+----------
+
+@Mira0507
+
+- Install `jupyter` in `conda env` using conda and export updated `env` to `env.archived.yaml`
+
+- Run image masking on converted `tif` image using squidpy
+    - conda env: `env`
+    - scripts: 
+        - `scripts/segmentation_tif.Rmd`
+        - `scripts/segmentation_tif.ipynb`
+    - notes
+        - Python scripts in both `Rmd` and `ipynb` ended up being killed
+        - It appears to be associated with a memory shortage on my Macbook with 32B memory
+        - Images need to be cropped when running locally
+
+- Update the script converting image from `vsi` to `tif`
+    - conda env: `env`
+    - script: `scripts/image_conversion.Rmd`
+    - notes: 
+        - script enhanced to include code scanning and selecting one series with the highest 
+          resolution and multi-channel fluorescence data 
+        - the `bfconvert` required to rerun with the following parameters generating *pyramidal* output
+            - `-pyramid-resolutions`
+            - `-pyramid-scale` 
+        - QuPath and napari successfully read the converted `tif` file from the series with the highest 
+          resolution (33874 x 33872) when the output was the pyramidal format.
+
+
+2025-08-12
+----------
+
+@Mira0507
+
+- Convert image format from `vsi` to `tif` 
+    - conda env: `env`
+    - input:
+        - `images/input/Perm/Image_169.vsi`
+        - `images/input/NoPerm/Image_168.vsi`
+    - scripts:
+        - `scripts/image_conversion_perm.Rmd`
+        - `scripts/image_conversion_noperm.Rmd`
+    - notes:
+        - analysis performed using my work computer
+        - `scripts/image_conversion.Rmd` deleted
+
+- Run Squidpy segmentation on cropped TIF image
+    - conda env: `env`
+    - scripts: 
+        - `scripts/segmentation_perm_500.Rmd`
+        - `scripts/segmentation_perm_1000.Rmd`
+        - `scripts/segmentation_noperm_500.Rmd`
+        - `scripts/segmentation_noperm_1000.Rmd`
+    - notes
+        - 500 and 1000 indicate N x N dimension in pixels
+        - analyzing a full image crashed
+        - unnecessary files deleted
+            - `scripts/segmentation_tif.Rmd`
+            - `scripts/segmentation_tif.ipynb`
+

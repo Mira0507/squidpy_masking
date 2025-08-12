@@ -1,0 +1,292 @@
+---
+title: "Converting VSI to TIF"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to demonstrate how to convert image files with the `.vsi`
+format to `tif` using the `bftools` package. **Assume the `bftools` package has been
+installed by calling `pip install bftools` after activating your conda environment.**
+
+Refer to the following resources for detailed instructions:
+
+- [GitHub repository](https://github.com/BobDotCom/bftools)
+- [Command line tools available in Bio-Formats](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/index.html)
+- [`bfconvert`](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/conversion.html)
+- [`showinf`](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/display.html)
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv('../env')
+```
+
+```{python ppackages}
+import os
+import subprocess
+import time
+import re
+```
+
+```{python configs}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to specify variables for paths to input files/directories
+# and parameter settings
+# ------------------------------------------------------------------------------
+
+# Specify the path to input vsi image
+vsi = "../images/input/Perm/Image_168.vsi"
+
+# Specify the path to output directory
+output_dir = "image_conversion_perm"
+os.makedirs(output_dir, exist_ok=True)
+
+# Specify the path to output tif file
+tif = f"{output_dir}/converted_168.ome.tif"
+
+# Specify the path to metadata
+input_meta_out = f"{output_dir}/input_metadata_168.txt"
+output_meta_out = f"{output_dir}/output_metadata_168.txt"
+
+# Specify the number of channels in the output converted image
+n_channels = 5
+
+# Specify the series to be converted. 
+# NOTE: 
+# - Determine the series based on the input metadata. 
+# - Select one for multi-channel with a desired resolution
+# - If `None`, python specifies one series with the highest resolution
+#   and multi-channel data
+ser = None
+
+## Series #14 :
+##  Image count = 5
+##  RGB = false (1) 
+##  Interleaved = false
+##  Indexed = false (false color)
+##  Width = 33874
+##  Height = 33872
+##  SizeZ = 1
+##  SizeT = 1
+##  SizeC = 5
+##  Tile size = 512 x 512
+##  Thumbnail size = 128 x 127
+##  Endianness = motorola (big)
+##  Dimension order = XYCZT (uncertain)
+##  Pixel type = uint16
+##  Valid bits per pixel = 16
+##  Metadata complete = true
+##  Thumbnail series = false
+##  -----
+##  Plane #0 <=> Z 0, C 0, T 0
+##  Plane #2 <=> Z 0, C 2, T 0
+##  Plane #4 <=> Z 0, C 4, T 0
+
+# Specify True if you want to save as pyramidal output
+# See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
+to_pyramidal = True
+```
+
+# Input image metadata
+
+We start from exploring the metadata of the *input* image file using the `showinf` command.
+
+
+```{python explore_input_metadata}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to explore metadata
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Save the metadata of input images as a text file
+subprocess.run(f"showinf {vsi} &> {input_meta_out}", shell=True)
+
+# Print
+with open(input_meta_out, "r") as f:
+    print(f.read())
+
+```
+
+The `vsi` contains many image *series* with varying resolutions and channel data. We are required 
+to select the optimal series to convert it to `tif`/`tiff` (OME-TIFF) format.
+
+If unspecified, Python scans the optimal series based on the resolution and channel data.
+
+```{python scan_and_select_series}
+
+if ser == None:
+
+    print("Series not selected. Series scanned to select one with the highest resolution and multi-channel.")
+
+    # Initialize lists to store metadata for each series
+    s = []
+    c = []
+    w = []
+    h = []
+
+    # Fill the lists
+    with open(input_meta_out, "r") as f:
+
+        # Extract series, channel, width, and height data in the lists
+        for line in f:
+            match_series = re.match(r"Series\s+#(\d+)", line)
+            match_c = re.search(r"SizeC\s+=\s(\d+)", line)
+            match_w = re.search(r"Width\s+=\s(\d+)", line)
+            match_h = re.search(r"Height\s+=\s(\d+)", line)
+            if match_series:
+                s.append(match_series)
+            if match_c:
+                c.append(match_c)
+            if match_w:
+                w.append(match_w)
+            if match_h:
+                h.append(match_h)
+        # Break if any of the list elements have different lengths
+        if len(s) != len(c) or len(s) != len(w) or len(s) != len(h):
+            raise ValueError("Lists aren't sharing the same length!")
+
+        # Clean each list by converting re.Match obj to integer
+        sub_dic = {"s": s, "c": c, "w": w, "h": h}
+        for key,value in sub_dic.items():
+            value = [x.group(0) for x in value]
+            if key == "s":
+                value = [x.split("#")[1] for x in value]
+            else:
+                value = [x.split(" = ")[1] for x in value]
+            sub_dic[key] = [int(x) for x in value]
+        # Override the lists by unpacking `sub_dic`
+        s, c, w, h = sub_dic.values()
+
+    # Filter series containing multi-channel fluorescence images
+    c_multi = [x[0] for x in enumerate(c) if x[1] == max(c)]
+    w_multi = []
+    h_multi = []
+    for i in c_multi:
+        w_multi.append(w[i])
+        h_multi.append(h[i])
+
+    # Find the final series for max width and max height
+    maxw_series = w_multi.index(max(w_multi))
+    maxh_series = h_multi.index(max(h_multi))
+
+    # Determine series where both width and height are the maximum values 
+    # along with the same index in each list
+    if maxw_series == maxh_series:
+        ser = str(c_multi[maxw_series])
+    else:
+        raise ValueError("Values unmatched between max width and max height!")
+
+else:
+    print("User specified the following series:", ser)
+
+print("The following series is converted to TIF/TIFF:", ser)
+```
+
+
+# Conversion
+
+Given the series explored in the metadata, we select the optimal series based on the resolution
+multi-channel configuration. In the current analysis, `r py$ser` is selected for 
+conversion. Refer to the [recommended image sizes](https://cdn.10xgenomics.com/image/upload/v1683310955/support-documents/CG000521_VisiumCytAssistImagingGuidelinesTN_RevD.pdf) suggested by 10x Genomics. 
+
+| Objective Magnification / numerical aperture (NA) | Image Size (pixels) for 8 × 8 mm area | Image Pixel Size (µm) | Image Resolution |
+|------------------------------|---------------------------------------|-----------------------|------------------|
+| 4× / 0.1 - 5× / 0.16         | 2,000–11,500                          | 0.7–4                 | Tissue morphology and compartments with > 10 cells (50–200 µm) |
+| 4× / 0.2 - 5× / 0.25         | 4,000–11,500                          | 0.7–2                 | Tissue compartments with 3–10 cells (20–100 µm) |
+| 10× / 0.25                   | 5,000–20,000                          | 0.4–1.6               | Tissue compartments with 3–10 cells (20–100 µm) |
+| 10× / 0.45 - 10× / 0.5       | 10,000–20,000                         | 0.4–0.8               | Tissue compartments with 1–10 cells (3–10 µm) |
+| 20× / 0.8                    | 15,000–45,000                         | 0.2–0.5               | Subcellular resolution, nuclear features (0.5–2.5 µm) |
+
+```{python run_bfconvert}
+
+# ------------------------------------------------------------------------------
+# This chunk runs bfconvert
+# ------------------------------------------------------------------------------
+
+# Add additional parameters for pyramidal output if necessary
+if  to_pyramidal:
+    print("Image saved as pyramidal format!")
+    # Override parameters of bfconvert for pyramidal output
+    # - `-pyramid-resolutions`: N pyramid levels
+    # - `-pyramid-scale: N times reduction in dimension for at each level
+    # -`-tilex` and `tiley`: tile dimension in pixel
+    pyramidal_param = "-pyramid-scale 2 -pyramid-resolutions 4"
+else:
+    print("Image saved as non-pyramidal format!")
+    # Override parameters of bfconvert for non-pyramidal output
+    pyramidal_param = ""
+
+# Build command and parameters
+cmd = ["bfconvert",
+    "-compression LZW",
+    "-overwrite",
+    f"-series {ser}",
+    f"{pyramidal_param}",
+    vsi,
+    tif
+    ]
+
+# Add input and output file paths
+cmd = " ".join(cmd)
+
+# Print the command
+print(cmd)
+
+# Call the command along with measuring runtime
+def run_runtime():
+    # Save start time
+    start_time = time.time()
+    # Run the conversion
+    subprocess.run(cmd, shell=True)
+    # Save end time
+    end_time = time.time()
+    # Calculate runtime
+    run_time_sec = end_time - start_time
+    run_time_min = run_time_sec / 60
+    print(f"Runtime: {run_time_sec} seconds ({run_time_min} minutes).")
+
+run_runtime()
+```
+
+# Output image metadata
+
+We start from exploring the metadata of the *output* image file using the `showinf` command.
+
+
+```{python explore_output_metadata}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to explore metadata
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Save the metadata of input images as a text file
+subprocess.run(f"showinf {tif} &> {output_meta_out}", shell=True)
+
+# Print the saved metadata contents
+with open(output_meta_out, "r") as f:
+    print(f.read())
+
+```
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```

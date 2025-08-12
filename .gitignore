@@ -2,7 +2,10 @@
 *.Rhistory
 *.html
 env/
-scripts/segmentation_files/
+*_files/
 images/
 bftools/
 scripts/image_conversion/
+*/.ipynb_checkpoints/
+scripts/image_conversion_perm/
+scripts/image_conversion_noperm/
