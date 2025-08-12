@@ -57,7 +57,7 @@ output_dir = "image_conversion"
 os.makedirs(output_dir, exist_ok=True)
 
 # Specify the path to output tif file
-tif = f"{output_dir}/converted_169_pyramidal.ome.tif"
+tif = f"{output_dir}/converted_169.ome.tif"
 
 # Specify the path to metadata
 input_meta_out = f"{output_dir}/input_metadata_169.txt"
@@ -69,9 +69,9 @@ n_channels = 5
 # Specify the series to be converted. 
 # NOTE: 
 # - Determine the series based on the input metadata. 
-# - Select one for multi-channel with the highest resolution.
-# - If `None`, python specifies the optimal series by scanning the resolution 
-#   and channel info in each series
+# - Select one for multi-channel with a desired resolution
+# - If `None`, python specifies one series with the highest resolution
+#   and multi-channel data
 ser = None
 
 ## Series #14 :
@@ -99,7 +99,7 @@ ser = None
 
 # Specify True if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
-to_pyramidal = True
+to_pyramidal = False
 ```
 
 # Input image metadata
@@ -125,7 +125,7 @@ with open(input_meta_out, "r") as f:
 ```
 
 The `vsi` contains many image *series* with varying resolutions and channel data. We are required 
-to select the optimal series to convert it to `tif`/`tiff` format.
+to select the optimal series to convert it to `tif`/`tiff` (OME-TIFF) format.
 
 If unspecified, Python scans the optimal series based on the resolution and channel data.
 
@@ -202,10 +202,20 @@ print("The following series is converted to TIF/TIFF:", ser)
 
 # Conversion
 
-Given the series explored in the metadata, only the highest resolution with multi-channel 
-series is selected for conversion. In the current analysis, `r py$ser` is selected for 
-conversion.
+Given the series explored in the metadata, we select the optimal series based on the resolution
+multi-channel configuration. In the current analysis, `r py$ser` is selected for 
+conversion. Refer to the [recommended image sizes](https://cdn.10xgenomics.com/image/upload/v1683310955/support-documents/CG000521_VisiumCytAssistImagingGuidelinesTN_RevD.pdf) suggested by 10x Genomics. 
 
+| Objective Magnification / numerical aperture (NA) | Image Size (pixels) for 8 × 8 mm area | Image Pixel Size (µm) | Image Resolution |
+|------------------------------|---------------------------------------|-----------------------|------------------|
+| 4× / 0.1                     | 2,000–11,500                          | 0.7–4                 | Tissue morphology and compartments with > 10 cells (50–200 µm) |
+| 5× / 0.16                    |                                       |                       |                  |
+| 4× / 0.2                     | 4,000–11,500                          | 0.7–2                 | Tissue compartments with 3–10 cells (20–100 µm) |
+| 5× / 0.25                    |                                       |                       |                  |
+| 10× / 0.25                   | 5,000–20,000                          | 0.4–1.6               |                  |
+| 10× / 0.45                   | 10,000–20,000                         | 0.4–0.8               | Tissue compartments with 1–10 cells (3–10 µm) |
+| 10× / 0.5                    |                                       |                       |                  |
+| 20× / 0.8                    | 15,000–45,000                         | 0.2–0.5               | Subcellular resolution, nuclear features (0.5–2.5 µm) |
 
 ```{python run_bfconvert}
 
@@ -217,7 +227,10 @@ conversion.
 if  to_pyramidal:
     print("Image saved as pyramidal format!")
     # Override parameters of bfconvert for pyramidal output
-    pyramidal_param = "-tilex 512 -tiley 512 -pyramid-resolutions 5"
+    # - `-pyramid-resolutions`: N pyramid levels
+    # - `-pyramid-scale: N times reduction in dimension for at each level
+    # -`-tilex` and `tiley`: tile dimension in pixel
+    pyramidal_param = "-pyramid-scale 2 -pyramid-resolutions 4"
 else:
     print("Image saved as non-pyramidal format!")
     # Override parameters of bfconvert for non-pyramidal output
