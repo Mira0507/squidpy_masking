@@ -99,7 +99,7 @@ ser = None
 
 # Specify True if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
-to_pyramidal = False
+to_pyramidal = True
 ```
 
 # Input image metadata
@@ -208,13 +208,10 @@ conversion. Refer to the [recommended image sizes](https://cdn.10xgenomics.com/i
 
 | Objective Magnification / numerical aperture (NA) | Image Size (pixels) for 8 × 8 mm area | Image Pixel Size (µm) | Image Resolution |
 |------------------------------|---------------------------------------|-----------------------|------------------|
-| 4× / 0.1                     | 2,000–11,500                          | 0.7–4                 | Tissue morphology and compartments with > 10 cells (50–200 µm) |
-| 5× / 0.16                    |                                       |                       |                  |
-| 4× / 0.2                     | 4,000–11,500                          | 0.7–2                 | Tissue compartments with 3–10 cells (20–100 µm) |
-| 5× / 0.25                    |                                       |                       |                  |
-| 10× / 0.25                   | 5,000–20,000                          | 0.4–1.6               |                  |
-| 10× / 0.45                   | 10,000–20,000                         | 0.4–0.8               | Tissue compartments with 1–10 cells (3–10 µm) |
-| 10× / 0.5                    |                                       |                       |                  |
+| 4× / 0.1 - 5× / 0.16         | 2,000–11,500                          | 0.7–4                 | Tissue morphology and compartments with > 10 cells (50–200 µm) |
+| 4× / 0.2 - 5× / 0.25         | 4,000–11,500                          | 0.7–2                 | Tissue compartments with 3–10 cells (20–100 µm) |
+| 10× / 0.25                   | 5,000–20,000                          | 0.4–1.6               | Tissue compartments with 3–10 cells (20–100 µm) |
+| 10× / 0.45 - 10× / 0.5       | 10,000–20,000                         | 0.4–0.8               | Tissue compartments with 1–10 cells (3–10 µm) |
 | 20× / 0.8                    | 15,000–45,000                         | 0.2–0.5               | Subcellular resolution, nuclear features (0.5–2.5 µm) |
 
 ```{python run_bfconvert}
