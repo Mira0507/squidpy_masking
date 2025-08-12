@@ -75,7 +75,7 @@ gaussian_sigma = 1
 crop_images = True
 
 # Specify coordinates to crop images
-crop_coord = {'height' : 0.3, 'width' : 0.3, 'size' : 5000, 'scale' : 1}
+crop_coord = {'height' : 0.5, 'width' : 0.5, 'size' : 1000, 'scale' : 1}
 
 # Specify the segmentation method
 seg_method = "watershed"
@@ -103,21 +103,19 @@ img_array = imread(input_image)
 # Initialize ImageContainer
 img = sq.im.ImageContainer(img_array, layer=lyr)
 
-print(img)
+print("ImageContainer obj created using input image:", img)
 
 # Crop input images if specified
 if crop_images:
     print("Image cropped. Refer to the following dimension:", crop_coord)
-    print(crop_coord)
     img = img.crop_corner(x=crop_coord['width'],
                           y=crop_coord['height'],
                           size=crop_coord['size'],
                           scale=crop_coord['scale'])
+    print("ImageContainer obj updated:", img)
 ```
 
-## All
-
-```{python print_all_images, fig.height=12, fig.width=12}
+```{python print_all_images, fig.height=12, fig.width=12, eval=FALSE}
 
 # ------------------------------------------------------------------------------
 # This chunk prints all input images at once
@@ -137,45 +135,145 @@ if crop_images:
 # _ = axes[2, 1].set_title("Channel 4")
 # ------------------------------------------------------------------------------
 
-# Specify plotting arguments
-rows = 3
-cols = 2
+# img.show("image", channel=None, channelwise=False)
+```
 
-# Initialize subplots
-fig, axes = plt.subplots(nrows=rows, ncols=cols)
+## Channel 0
 
-img.show("image", channel=None, cmap=None)
-_ = axes[0, 0].set_title("Merged")
+```{python individual_images_c0, fig.height=12, fig.width=12}
+img.show(lyr, channel=0, cmap='gray')
+```
+
+## Channel 1
+
+```{python individual_images_c1, fig.height=12, fig.width=12}
+img.show(lyr, channel=1, cmap='gray')
+```
+
+## Channel 2
+
+```{python individual_images_c2, fig.height=12, fig.width=12}
+img.show(lyr, channel=2, cmap='gray')
+```
+
+## Channel 3
+
+```{python individual_images_c3, fig.height=12, fig.width=12}
+img.show(lyr, channel=3, cmap='gray')
+```
+
+## Channel 4
+
+```{python individual_images_c4, fig.height=12, fig.width=12}
+img.show(lyr, channel=4, cmap='gray')
+```
+
+# Smoothing {.tabset}
+
+Smoothing is required to reduce noises before image masking. The current workflow uses 
+[Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) by calling 
+the `squidpy.im.process(..., method="smooth")`, which implements the `skimage.filters.gaussian` function 
+in the `scikit-image` package in python.
+
+```{python smoothing}
+
+# --------------------------------------------------------------------------------
+# This chunk runs Gaussian smoothing
+# --------------------------------------------------------------------------------
+
+# Run smoothing
+sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
+```
+`ImageContainer` updated:
+
+```{r smoothened_obj}
+py$img
+```
+
+Images are compared between the before (left) and the after (right) smoothing across the stainings.
+
+
+```{python function_processed}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to prepare visualizing smoothened images
+# ------------------------------------------------------------------------------
+
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = f"{lyr}_smooth"
+
+# Create a function that prints images before and after Gaussian smoothing
+def image_original_processed(l_one, l_two, image, channel, process):
+    # Design subplots
+    fig, axes = plt.subplots(nrows=2, ncols=1)
+    image.show(layer=l_one, channel=channel, cmap='gray', ax=axes[0])
+    _ = axes[0].set_title(f"Original before {process}")
+    image.show(layer=l_two, channel=channel, cmap='gray', ax=axes[1])
+    _ = axes[1].set_title(f"Original after {process}")
+
+```
+
+## Channel 0
+
+```{python smth_images_c0, fig.width=12, fig.height=12}
+i = 0
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channel=i,
+                         process="smoothing")
+```
+
+## Channel 1
+
+```{python smth_images_c1, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channel=i,
+                         process="smoothing")
+```
+
+## Channel 2
+
+```{python smth_images_c2, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channel=i,
+                         process="smoothing")
+```
+
+## Channel 3
+
+```{python smth_images_c3, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channel=i,
+                         process="smoothing")
+```
+
+## Channel 4
+
+```{python smth_images_c4, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channel=i,
+                         process="smoothing")
 ```
 
 ```{python load_napari, eval=FALSE}
-img.show("image", ax=axes[0, 0])
-_ = axes[0, 0].set_title("Merged")
-img.show("image", channel=0, ax=axes[0, 1], cmap='gray')
-_ = axes[0, 1].set_title("Channel 0")
-img.show("image", channel=1, ax=axes[1, 0], cmap='gray')
-_ = axes[1, 0].set_title("Channel 1")
-img.show("image", channel=2, ax=axes[1, 1], cmap='gray')
-_ = axes[1, 1].set_title("Channel 2")
-img.show("image", channel=1, ax=axes[2, 0], cmap='gray')
-_ = axes[2, 0].set_title("Channel 3")
-img.show("image", channel=2, ax=axes[2, 1], cmap='gray')
-_ = axes[2, 1].set_title("Channel 4")
 
-# Prep subplot dimensions
-subplot_dims = [axes[i, j] for i in range(rows) for j in range(cols)]
-# Print plots
-for i in range(len(subplot_dims)):
-    # Pull pre-specified variables
-    key = list(channel_config.keys())[i]
-    subdim = subplot_dims[i]
-    ch = channel_config[key]['ch']
-    cm = channel_config[key]['cm']
-    print(subdim, ch, cm)
-    # Print
-    img.show(lyr, ax=subdim, channel=ch, cmap=cm)
-    # Add corresponding title
-    _ = subdim.set_title(key)
+# ------------------------------------------------------------------------------
+# This chunk is used to explore images using the Napari image viewer. 
+# Manually reorder the dimension if necessary.
+# ------------------------------------------------------------------------------
 
 # Initialize napari viewer
 viewer = napari.Viewer()
