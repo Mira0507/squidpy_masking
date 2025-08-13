@@ -200,3 +200,10 @@ squidpy_masking
     - re-build the conda environment using `requirements.txt`
     - add `bftools` to the `requirements.txt` instead of using `pip`
     - update `env.archived.yaml` on HPC
+    - rerun analyses 
+        - conda env: `env`
+        - scripts
+            - `scripts/image_conversion_perm.Rmd`
+            - `scripts/image_conversion_noperm.Rmd`
+            - `scripts/segmentation_perm_500.Rmd`
+            - `scripts/segmentation_perm_1000.Rmd`
