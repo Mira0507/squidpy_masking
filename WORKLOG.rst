@@ -207,3 +207,15 @@ squidpy_masking
             - `scripts/image_conversion_noperm.Rmd`
             - `scripts/segmentation_perm_500.Rmd`
             - `scripts/segmentation_perm_1000.Rmd`
+
+
+2025-08-13
+----------
+
+@Mira0507
+
+- rerun analyses on HPC
+    - conda env: `env`
+    - scripts
+        `scripts/segmentation_noperm_1000.Rmd`
+        `scripts/segmentation_noperm_500.Rmd`
