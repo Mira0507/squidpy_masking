@@ -178,7 +178,7 @@ squidpy_masking
         - `scripts/image_conversion_perm.Rmd`
         - `scripts/image_conversion_noperm.Rmd`
     - notes:
-        - analysis performed using my work computer
+        - analysis performed locally on work computer
         - `scripts/image_conversion.Rmd` deleted
 
 - Run Squidpy segmentation on cropped TIF image
@@ -189,9 +189,14 @@ squidpy_masking
         - `scripts/segmentation_noperm_500.Rmd`
         - `scripts/segmentation_noperm_1000.Rmd`
     - notes
+        - ran locally on work computer
         - 500 and 1000 indicate N x N dimension in pixels
         - analyzing a full image crashed
         - unnecessary files deleted
             - `scripts/segmentation_tif.Rmd`
             - `scripts/segmentation_tif.ipynb`
 
+- Transfer the working directory to HPC. 
+    - re-build the conda environment using `requirements.txt`
+    - add `bftools` to the `requirements.txt` instead of using `pip`
+    - update `env.archived.yaml` on HPC
