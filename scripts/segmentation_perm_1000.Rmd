@@ -30,7 +30,6 @@ Refer to the following resources for technical details:
 library(reticulate)
 library(tidyverse)
 use_condaenv('../env')
-source('helpers.R')
 ```
 
 ```{python ppackages}
@@ -51,8 +50,9 @@ import os
 
 # reticulate::repl_python()
 
-# Specify input image file
+# Specify file paths to input and output files
 input_image = "image_conversion_perm/converted_168.ome.tif"
+output_obj = "image_conversion_perm/icontainer_168_1000.rds"
 
 # Specify argument setting for printing images
 channel_config = {
@@ -363,6 +363,13 @@ image_original_processed(l_one=lyr,
                          image=img,
                          channels=[i, None],
                          process="segmentation")
+```
+
+```{r save_obj}
+# ------------------------------------------------------------------------------
+# This chunk saves the `ImageContainer` obj
+# ------------------------------------------------------------------------------
+saveRDS(py$img, py$output_obj, compress=FALSE)
 ```
 
 ```{python load_napari, eval=FALSE}
