@@ -4,6 +4,7 @@ napari
 napari-spatialdata
 pyqt
 pyside2
+bftools
 wget
 jupyter
 r-base
