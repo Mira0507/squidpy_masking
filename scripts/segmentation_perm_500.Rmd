@@ -365,7 +365,71 @@ image_original_processed(l_one=lyr,
                          process="segmentation")
 ```
 
-```{r save_obj}
+# Merging masked images {.tabset}
+
+We are merging binarized signals across the antibodies of interest.
+
+```{python color_configures}
+
+# ------------------------------------------------------------------------------
+# this chunk is used to manually prepare merged arrays
+# ------------------------------------------------------------------------------
+# colors = ['blue', 'yellow', 'orange', 'cyan', 'purple']
+
+color_dic = {'dapi_tdp': {}, 'iba_map': {}, 'iba_aldh': {}, 'map_aldh': {}, 'all': {}}
+
+    numbers = [1, 2, 3, 4, 5]
+    squares_dict = {num: num**2 for num in numbers}
+
+arr_dic = {}
+
+for key, value in channel_config.items():
+    # For any valid channel
+    if value['ch'] != None:
+
+# Extract all binarized array data
+binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
+
+dapi_tdp = binary_arr[0] + binary_arr[2]
+dapi_tdp = dapi_tdp / dapi_tdp.max()
+
+dapi_cols = ListedColormap(['white', 'blue'])
+tdp_cols = ListedColormap(['white', 'orange'])
+
+plt.imshow(binary_arr[0], cmap=dapi_cols, alpha=0.5)
+plt.imshow(binary_arr[2], cmap=tdp_cols, alpha=0.5)  # semi-transparent overlay
+plt.axis("off")
+plt.show()
+```
+
+# Preparing segmented object
+
+We build a new `ImageContainer` object using numpy arrays consisting of segmentation data.
+
+```{python prep_seg_obj}
+
+# ------------------------------------------------------------------------------
+# this chunk prepares a new imagecontainer object using segmented numpy arrays
+# ------------------------------------------------------------------------------
+
+# Get all 2D arrays for layers of interest
+all_seg_layers = [img[layer] for layer in seg_lyrs if layer.startswith("seg_channel")]
+
+# Stack along the channel dimension, creating 3D array
+# NOTE: With `axis=-1`, new dimensions come later
+#      e.g. (500, 500, N_channels)
+stacked = np.stack(all_seg_layers, axis=-1)
+
+# Flatten unnecessary dimensions
+stacked = np.squeeze(stacked)
+
+# Build a new ImageContainer obj using the segmented array
+img_merged = sq.im.ImageContainer(stacked, layer='merged')
+
+print(img_merged)
+```
+
+```{r save_obj, eval=FALSE}
 # ------------------------------------------------------------------------------
 # This chunk saves the `ImageContainer` obj
 # ------------------------------------------------------------------------------
