@@ -219,3 +219,16 @@ squidpy_masking
     - scripts
         `scripts/segmentation_noperm_1000.Rmd`
         `scripts/segmentation_noperm_500.Rmd`
+
+- run segmentation without cropping
+    - conda env: `env`
+    - script: `scripts/segmentation_perm.Rmd`
+    - notes
+        - 200G exceeded 200G memory
+        - we can put this on hold while focus on improving cropped images
+
+- add a step to merge binarized signals (in progress)
+    - conda env: `env`
+    - script: `scripts/segmentation_perm_500.Rmd`
+
+
