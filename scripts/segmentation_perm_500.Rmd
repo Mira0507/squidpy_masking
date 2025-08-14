@@ -90,7 +90,7 @@ col_dic = {
     'iba': 'green',
     'tdp': 'orange',
     'map': 'cyan',
-    'aldh': 'purple'}
+    'aldh': 'magenta'}
 
 # Specify merges
 merge_list = ['dapi_tdp', 'iba_map_aldh']
@@ -379,23 +379,27 @@ image_original_processed(l_one=lyr,
 
 # Merging masked images {.tabset}
 
-We are merging binarized signals across the antibodies of interest.
+We are merging binarized signals across the antibodies of interest. Refer to the following pseudo-colors:
 
-```{python color_configures}
+```{r print_pseudocolors}
+print(py$col_dic)
+```
+
+
+```{python prep_merge}
 
 # ------------------------------------------------------------------------------
-# this chunk is used to manually prepare merged arrays
+# this chunk is used to prepare arrays and function
 # ------------------------------------------------------------------------------
 # colors = ['blue', 'yellow', 'orange', 'cyan', 'purple']
 
 # Extract all binarized array data
 binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
 
+def display_merge(merge_name):
 
-
-for m in merge_list:
     # Extract antibody and channel
-    ch_list = list(m.split("_"))
+    ch_list = list(merge_name.split("_"))
     ch_dic = {ab: i for i, ab in enumerate(col_dic.keys()) if ab in ch_list}
 
     # Print merged binary images
@@ -403,27 +407,30 @@ for m in merge_list:
         plt.imshow(binary_arr[i],
                    cmap=ListedColormap(['white', col_dic[ab]]),
                    alpha=0.5)
-    plt.axis('off')
-    plt.show()
-
-    # # Prep merged arrays
-    # arr = np.zeros((binary_arr[0].shape), dtype=int)
-    # for i in range(len(ch_dic.keys())):
-        # arr += binary_arr[i]
-
-    # Normalize the merged array
-    # arr = arr / arr.max()
+        plt.axis('off')
+        plt.show()
 
 ```
 
+## DAPI + TDP43
 
+```{python merge0, fig.width=12, fig.height=12}
+i = 0
+display_merge(merge_list[i])
+```
+
+## IBA1 + MAP2 + ALDH1L1
+
+```{python merge1, fig.width=12, fig.height=12}
+i += 1
+display_merge(merge_list[i])
+```
 
 ```{r save_obj, eval=FALSE}
 # Preparing segmented object
 
 We build a new `ImageContainer` object using numpy arrays consisting of segmentation data.
 
-```{python prep_seg_obj}
 
 # ------------------------------------------------------------------------------
 # this chunk prepares a new imagecontainer object using segmented numpy arrays
@@ -444,7 +451,7 @@ stacked = np.squeeze(stacked)
 img_merged = sq.im.ImageContainer(stacked, layer='merged')
 
 print(img_merged)
-```
+
 # ------------------------------------------------------------------------------
 # This chunk saves the `ImageContainer` obj
 # ------------------------------------------------------------------------------
