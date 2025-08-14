@@ -90,7 +90,7 @@ col_dic = {
     'iba': 'green',
     'tdp': 'orange',
     'map': 'cyan',
-    'aldh': 'magenta'}
+    'aldh': 'pink'}
 
 # Specify merges
 merge_list = ['dapi_tdp', 'iba_map_aldh']
@@ -402,13 +402,14 @@ def display_merge(merge_name):
     ch_list = list(merge_name.split("_"))
     ch_dic = {ab: i for i, ab in enumerate(col_dic.keys()) if ab in ch_list}
 
-    # Print merged binary images
+    # Stack binary images
     for ab, i in ch_dic.items():
         plt.imshow(binary_arr[i],
                    cmap=ListedColormap(['white', col_dic[ab]]),
                    alpha=0.5)
-        plt.axis('off')
-        plt.show()
+    plt.xticks([])
+    plt.yticks([])
+    plt.show()
 
 ```
 
