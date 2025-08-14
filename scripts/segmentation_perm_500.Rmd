@@ -37,6 +37,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
 from tifffile import imread
+from matplotlib.colors import ListedColormap
 import napari
 import os
 ```
@@ -82,6 +83,17 @@ seg_method = "watershed"
 
 # Specify the thresholding method. If `None`, the Otsu method is used.
 thr_method = None
+
+# Specify pseudocolors across the channels
+col_dic = {
+    'dapi': 'blue',
+    'iba': 'green',
+    'tdp': 'orange',
+    'map': 'cyan',
+    'aldh': 'purple'}
+
+# Specify merges
+merge_list = ['dapi_tdp', 'iba_map_aldh']
 ```
 
 # Loading input images {.tabset}
@@ -376,32 +388,37 @@ We are merging binarized signals across the antibodies of interest.
 # ------------------------------------------------------------------------------
 # colors = ['blue', 'yellow', 'orange', 'cyan', 'purple']
 
-color_dic = {'dapi_tdp': {}, 'iba_map': {}, 'iba_aldh': {}, 'map_aldh': {}, 'all': {}}
-
-    numbers = [1, 2, 3, 4, 5]
-    squares_dict = {num: num**2 for num in numbers}
-
-arr_dic = {}
-
-for key, value in channel_config.items():
-    # For any valid channel
-    if value['ch'] != None:
-
 # Extract all binarized array data
 binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
 
-dapi_tdp = binary_arr[0] + binary_arr[2]
-dapi_tdp = dapi_tdp / dapi_tdp.max()
 
-dapi_cols = ListedColormap(['white', 'blue'])
-tdp_cols = ListedColormap(['white', 'orange'])
 
-plt.imshow(binary_arr[0], cmap=dapi_cols, alpha=0.5)
-plt.imshow(binary_arr[2], cmap=tdp_cols, alpha=0.5)  # semi-transparent overlay
-plt.axis("off")
-plt.show()
+for m in merge_list:
+    # Extract antibody and channel
+    ch_list = list(m.split("_"))
+    ch_dic = {ab: i for i, ab in enumerate(col_dic.keys()) if ab in ch_list}
+
+    # Print merged binary images
+    for ab, i in ch_dic.items():
+        plt.imshow(binary_arr[i],
+                   cmap=ListedColormap(['white', col_dic[ab]]),
+                   alpha=0.5)
+    plt.axis('off')
+    plt.show()
+
+    # # Prep merged arrays
+    # arr = np.zeros((binary_arr[0].shape), dtype=int)
+    # for i in range(len(ch_dic.keys())):
+        # arr += binary_arr[i]
+
+    # Normalize the merged array
+    # arr = arr / arr.max()
+
 ```
 
+
+
+```{r save_obj, eval=FALSE}
 # Preparing segmented object
 
 We build a new `ImageContainer` object using numpy arrays consisting of segmentation data.
@@ -428,8 +445,6 @@ img_merged = sq.im.ImageContainer(stacked, layer='merged')
 
 print(img_merged)
 ```
-
-```{r save_obj, eval=FALSE}
 # ------------------------------------------------------------------------------
 # This chunk saves the `ImageContainer` obj
 # ------------------------------------------------------------------------------
