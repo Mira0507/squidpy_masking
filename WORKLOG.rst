@@ -232,3 +232,17 @@ squidpy_masking
     - script: `scripts/segmentation_perm_500.Rmd`
 
 
+2025-08-14
+----------
+
+@Mira0507
+
+- merge binarized signals 
+    - conda env: `env`
+    - script: `scripts/segmentation_perm_500.Rmd`
+    - script: `scripts/segmentation_perm_1000.Rmd`
+    - notes:
+        - output images saved
+        - channels of interest
+            - merge 1: DAPI + TDP43
+            - merge 2: IBA1 + MAP2 + ALDH1L1
