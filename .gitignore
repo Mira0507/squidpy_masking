@@ -9,3 +9,4 @@ scripts/image_conversion/
 */.ipynb_checkpoints/
 scripts/image_conversion_perm/
 scripts/image_conversion_noperm/
+scripts/segmentation_*/
