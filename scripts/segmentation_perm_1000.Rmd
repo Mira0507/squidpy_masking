@@ -90,14 +90,15 @@ thr_method = None
 
 # Specify pseudocolors across the channels
 col_dic = {
-    'dapi': 'blue',
-    'iba': 'green',
+    'dapi': 'dodgerblue',
+    'iba': 'rosybrown',
     'tdp': 'orange',
     'map': 'cyan',
-    'aldh': 'pink'}
+    'aldh': 'darkkhaki'}
+
 
 # Specify merges
-merge_list = ['dapi_tdp', 'iba_map_aldh', 'dtp_map']
+merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
 ```
 
 # Loading input images {.tabset}
@@ -398,7 +399,7 @@ def display_merge(merge_name):
     # Stack binary images
     for ab, i in ch_dic.items():
         plt.imshow(binary_arr[i],
-                   cmap=ListedColormap(['white', col_dic[ab]]),
+                   cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
                    alpha=0.5)
     plt.xticks([])
     plt.yticks([])
