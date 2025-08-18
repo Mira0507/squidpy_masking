@@ -57,7 +57,7 @@ import os
 
 # Specify file paths to input and output files
 outdir = "segmentation_perm_1000_adaptive"
-input_image = f"image_conversion_perm/converted_168.ome.tif"
+input_image = "image_conversion_perm/converted_168.ome.tif"
 output_obj = f"{outdir}/icontainer_168_1000.zarr"
 
 # Create the output directory 
@@ -155,9 +155,12 @@ if crop_images:
 
 # Equalize of specified
 if equalize:
-    img = equalize_adapthist(img[lyr])
+    # Run adaptive equalization
+    eq_img = equalize_adapthist(img[lyr])
     # Convert to xarray
-    img = xr.DataArray(img)
+    eq_img = xr.DataArray(eq_img)
+    # Replace the input array with equalized array
+    img[lyr] = eq_img
     print("Adaptive equalization applied to the input image!")
 ```
 
@@ -448,7 +451,7 @@ def adaptive_thresh(block_size, offset, channel, erosion=True):
 
 ### DAPI
 
-```{python daptive_dapi, fig.height=12, fig.width=12}
+```{python adaptive_dapi, fig.height=12, fig.width=12}
 i = 0
 adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
 outfile = f"{outdir}/adaptive_channel_{i}.png"
@@ -458,7 +461,7 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 ### IBA1
 
-```{python daptive_iba, fig.height=12, fig.width=12}
+```{python adaptive_iba, fig.height=12, fig.width=12}
 i += 1
 adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
 outfile = f"{outdir}/adaptive_channel_{i}.png"
@@ -468,7 +471,7 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 ### TDP43
 
-```{python daptive_tdp, fig.height=12, fig.width=12}
+```{python adaptive_tdp, fig.height=12, fig.width=12}
 i += 1
 adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
 outfile = f"{outdir}/adaptive_channel_{i}.png"
@@ -478,7 +481,7 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 ### MAP2
 
-```{python daptive_map, fig.height=12, fig.width=12}
+```{python adaptive_map, fig.height=12, fig.width=12}
 i += 1
 adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
 outfile = f"{outdir}/adaptive_channel_{i}.png"
@@ -488,7 +491,7 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 ### ALDH1L1
 
-```{python daptive_aldh, fig.height=12, fig.width=12}
+```{python adaptive_aldh, fig.height=12, fig.width=12}
 i += 1
 adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
 outfile = f"{outdir}/adaptive_channel_{i}.png"
@@ -500,7 +503,7 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 ### DAPI
 
-```{python erosion_erosion_dapi, fig.height=12, fig.width=12}
+```{python erosion_dapi, fig.height=12, fig.width=12}
 i = 0
 adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
 outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
