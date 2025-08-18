@@ -268,3 +268,24 @@ squidpy_masking
         - it's unclear what part of image processing resulted in dimming
           the upper part 
         _ I need to try adaptive thresholding separately
+
+
+2025-08-18
+----------
+
+@Mira0507
+
+- remask images using adaptive thresholding in progress
+    - conda env: `env`
+    - script
+        - adaptive thresholding on raw images: 
+          `scripts/segmentation_perm_1000_adaptive.Rmd`
+        - adaptive thresholding on equalized images: 
+          `scripts/segmentation_perm_1000_adaptive_eq.Rmd`
+    - notes:
+        - adaptive thresholding was performed using the `skimage.filters.threshold_local` 
+          function 
+        - erosion was performed, on top of adaptive thresholding, using 
+          the `skimage.morphology.binary_erosion` function
+        - image equalization performed to enhance contrast, using 
+          the `skimage.exposure.equalize_adapthist` function
