@@ -40,6 +40,7 @@ from tifffile import imread
 from matplotlib.colors import ListedColormap
 from skimage.filters import threshold_local
 from skimage.morphology import binary_erosion
+from skimage.exposure import equalize_adapthist
 import xarray as xr
 import napari
 import os
@@ -83,7 +84,7 @@ gaussian_sigma = 1
 equalize = False
 
 # Specify whether input images will be cropped
-crop_images = False
+crop_images = True
 
 # Specify coordinates to crop images
 crop_coord = {'height' : 0.5, 'width' : 0.5, 'size' : 1000, 'scale' : 1}
@@ -93,6 +94,13 @@ seg_method = "watershed"
 
 # Specify the thresholding method. If `None`, the Otsu method is used.
 thr_method = None
+
+# Set parameters for adaptive thresholding
+# - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.
+# - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
+#           higher offset results in more stringent thresholding
+block_size = round(crop_coord['size'] / 2) + 1
+offset = -100
 
 # Specify pseudocolors across the channels
 col_dic = {
@@ -105,18 +113,20 @@ col_dic = {
 # Specify merges
 merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
 
-# Set parameters for adaptive thresholding
-# - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.
-# - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
-#           higher offset results in more stringent thresholding
-block_size = round(crop_coord['size'] / 2) + 1
-offset = -100
+# Specify the prefix of layers being merged
+merge_prefix = "erosion"
 ```
 
 # Loading input images {.tabset}
 
 We use `tif` image files converted from `vsi`. Refer to the [image_conversion.html](image_conversion.html) 
-for detailed processes on converting image formats.
+for detailed processes on converting image formats. The following channels correspond to individual IFs.
+
+- **Channel 0**: DAPI
+- **Channel 1**: IBA1
+- **Channel 2**: TDP43
+- **Channel 3**: MAP2
+- **Channel 4**: ALDH1L1
 
 The following image object loaded:
 
@@ -148,6 +158,7 @@ if equalize:
     img = equalize_adapthist(img[lyr])
     # Convert to xarray
     img = xr.DataArray(img)
+    print("Adaptive equalization applied to the input image!")
 ```
 
 ## Channel 0
@@ -390,76 +401,6 @@ image_original_processed(l_one=lyr,
                          process="segmentation")
 ```
 
-# Merging masked images {.tabset}
-
-We are merging binarized signals across the antibodies of interest. Refer to the following pseudo-colors:
-
-```{r print_pseudocolors}
-print(py$col_dic)
-```
-
-
-```{python prep_merge}
-
-# ------------------------------------------------------------------------------
-# this chunk is used to prepare arrays and function
-# ------------------------------------------------------------------------------
-
-# Extract all binarized array data
-binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
-
-def display_merge(merge_name, method):
-
-    # Extract antibody and channel
-    ch_list = list(merge_name.split("_"))
-    ch_dic = {ab: i for i, ab in enumerate(col_dic.keys()) if ab in ch_list}
-
-    # Stack binary images
-    for ab, i in ch_dic.items():
-        plt.imshow(binary_arr[i],
-                   cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
-                   alpha=0.5)
-    plt.xticks([])
-    plt.yticks([])
-    plt.savefig(f"{outdir}/{method}_{merge_name}.png", dpi=1000)
-    plt.show()
-
-```
-
-## DAPI + TDP43
-
-```{python merge0, fig.width=12, fig.height=12}
-method = "otsu"
-i = 0
-merge_name = merge_list[i]
-display_merge(merge_name=merge_name, method=method)
-outfile = f"{outdir}/{method}_{merge_name}.png"
-```
-
-- Download: [`r py$outfile`](`r py$outfile`)
-
-## IBA1 + MAP2 + ALDH1L1
-
-```{python merge1, fig.width=12, fig.height=12}
-i += 1
-merge_name = merge_list[i]
-display_merge(merge_name=merge_name, method=method)
-outfile = f"{outdir}/{method}_{merge_name}.png"
-```
-
-- Download: [`r py$outfile`](`r py$outfile`)
-
-## TDP43 + MAP2
-
-```{python merge2, fig.width=12, fig.height=12}
-i += 1
-merge_name = merge_list[i]
-display_merge(merge_name=merge_name, method=method)
-outfile = f"{outdir}/{method}_{merge_name}.png"
-```
-
-- Download: [`r py$outfile`](`r py$outfile`)
-
 # Adaptive thresholding {.tabset}
 
 We rerun thresholding to address the uneven results produced by the Otsu method. [Adaptive thresholding (aka local thresholding)](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding) is applied to achieve more uniform thresholding results across the pixels,
@@ -502,11 +443,10 @@ def adaptive_thresh(block_size, offset, channel, erosion=True):
 
 ```
 
-## Masking {.tabset}
 
-### Before erosion {.tabset}
+## Before erosion {.tabset}
 
-#### DAPI
+### DAPI
 
 ```{python daptive_dapi, fig.height=12, fig.width=12}
 i = 0
@@ -516,7 +456,7 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-#### IBA1
+### IBA1
 
 ```{python daptive_iba, fig.height=12, fig.width=12}
 i += 1
@@ -526,7 +466,7 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-#### TDP43
+### TDP43
 
 ```{python daptive_tdp, fig.height=12, fig.width=12}
 i += 1
@@ -536,7 +476,7 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-#### MAP2
+### MAP2
 
 ```{python daptive_map, fig.height=12, fig.width=12}
 i += 1
@@ -556,9 +496,9 @@ outfile = f"{outdir}/adaptive_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-### After erosion {.tabset}
+## After erosion {.tabset}
 
-#### DAPI
+### DAPI
 
 ```{python erosion_erosion_dapi, fig.height=12, fig.width=12}
 i = 0
@@ -568,7 +508,7 @@ outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-#### IBA1
+### IBA1
 
 ```{python erosion_iba, fig.height=12, fig.width=12}
 i += 1
@@ -578,7 +518,7 @@ outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-#### TDP43
+### TDP43
 
 ```{python erosion_tdp, fig.height=12, fig.width=12}
 i += 1
@@ -588,7 +528,7 @@ outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-#### MAP2
+### MAP2
 
 ```{python erosion_map, fig.height=12, fig.width=12}
 i += 1
@@ -608,20 +548,54 @@ outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-## Merging channels {.tabset}
+`ImageContainer` updated:
 
-```{python filter_adaptive_layers}
+```{r obj_after_adaptive_thresh}
+py$img
+```
+
+# Merging masked images {.tabset}
+
+We are merging binarized signals across the antibodies of interest. Refer to the following pseudo-colors:
+
+```{python setup_merge}
 
 # --------------------------------------------------------------------------------
 # This chunk prepares numpy arrays processed with the adaptive thresholding
 # --------------------------------------------------------------------------------
 
 # Extract all binarized array data
-adaptive_lyrs = [c for c in list(img) if "adaptive_erosion" in c]
+adaptive_lyrs = [l for l in list(img) if merge_prefix in l]
 binary_arr = [np.squeeze(img[l].values) for l in adaptive_lyrs]
+
+# Specify a function to merge layers
+def display_merge(merge_name, method):
+
+    # Extract antibody and channel
+    ch_list = list(merge_name.split("_"))
+    ch_dic = {ab: i for i, ab in enumerate(col_dic.keys()) if ab in ch_list}
+
+    # Stack binary images
+    for ab, i in ch_dic.items():
+        plt.imshow(binary_arr[i],
+                   cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
+                   alpha=0.5)
+    plt.xticks([])
+    plt.yticks([])
+    plt.savefig(f"{outdir}/{method}_{merge_name}.png", dpi=1000)
+    plt.show()
+
+for ab, color in col_dic.items():
+    print(f"- {ab}: {color}")
 ```
 
-### DAPI + TDP43
+Layers used to merge signals:
+
+```{r merge_layers}
+print(py$adaptive_lyrs)
+```
+
+## DAPI + TDP43
 
 ```{python adaptive_merge0, fig.width=12, fig.height=12}
 method = "adaptive_erosion"
@@ -633,7 +607,7 @@ outfile = f"{outdir}/{method}_{merge_name}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-### IBA1 + MAP2 + ALDH1L1
+## IBA1 + MAP2 + ALDH1L1
 
 ```{python adaptive_merge1, fig.width=12, fig.height=12}
 i += 1
@@ -644,7 +618,7 @@ outfile = f"{outdir}/{method}_{merge_name}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-### TDP43 + MAP2
+## TDP43 + MAP2
 
 ```{python adaptive_merge2, fig.width=12, fig.height=12}
 i += 1
@@ -654,12 +628,6 @@ outfile = f"{outdir}/{method}_{merge_name}.png"
 ```
 
 - Download: [`r py$outfile`](`r py$outfile`)
-
-`ImageContainer` updated:
-
-```{r obj_after_adaptive_thresh}
-py$img
-```
 
 ```{python save_zarr}
 img.save(output_obj)
