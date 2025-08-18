@@ -451,9 +451,8 @@ outfile = f"{outdir}/{method}_{merge_name}.png"
 
 # Adaptive thresholding {.tabset}
 
-We rerun thresholding to overcome uneven thresholding when performed using the Otsu method. The 
-[adaptive (aka local) thresholding](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding) is performed for more uniform thresholding throughout the pixels,
-using the `threshold_local` function provided in the `scikit-image` package. Threshold values are
+We rerun thresholding to address the uneven results produced by the Otsu method. [Adaptive thresholding (aka local thresholding)](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding) is applied to achieve more uniform thresholding results across the pixels,
+using the `threshold_local` function from the `scikit-image` package. Threshold values are
 calculated as the weighted mean of the local neighborhood minus an offset value.
 
 ```{python prep_local_thresholding}
@@ -581,6 +580,11 @@ outfile = f"{outdir}/{method}_{merge_name}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
+`ImageContainer` updated:
+
+```{r obj_after_adaptive_thresh}
+py$img
+```
 
 ```{python save_zarr}
 img.save(output_obj)
