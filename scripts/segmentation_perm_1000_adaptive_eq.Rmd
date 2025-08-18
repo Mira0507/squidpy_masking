@@ -155,9 +155,11 @@ if crop_images:
 
 # Equalize of specified
 if equalize:
-    img = equalize_adapthist(img[lyr])
+    eq_img = equalize_adapthist(img[lyr])
     # Convert to xarray
-    img = xr.DataArray(img)
+    eq_img = xr.DataArray(eq_img)
+    img[lyr] = eq_img
+    print("Adaptive equalization applied to the input image!")
 ```
 
 ## Channel 0
@@ -400,20 +402,6 @@ image_original_processed(l_one=lyr,
                          process="segmentation")
 ```
 
-
-
-
-```{python prep_merge}
-
-# ------------------------------------------------------------------------------
-# this chunk is used to prepare arrays and function
-# ------------------------------------------------------------------------------
-
-# Extract all binarized array data
-binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
-
-```
-
 # Adaptive thresholding {.tabset}
 
 We rerun thresholding to address the uneven results produced by the Otsu method. [Adaptive thresholding (aka local thresholding)](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding) is applied to achieve more uniform thresholding results across the pixels,
@@ -567,7 +555,6 @@ outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 py$img
 ```
 
-
 # Merging masked images {.tabset}
 
 We are merging binarized signals across the antibodies of interest. Refer to the following pseudo-colors:
@@ -599,7 +586,14 @@ def display_merge(merge_name, method):
     plt.savefig(f"{outdir}/{method}_{merge_name}.png", dpi=1000)
     plt.show()
 
-print(py$col_dic)
+for ab, color in col_dic.items():
+    print(f"- {ab}: {color}")
+```
+
+Layers used to merge signals:
+
+```{r merge_layers}
+print(py$adaptive_lyrs)
 ```
 
 ## DAPI + TDP43
