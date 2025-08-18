@@ -97,7 +97,6 @@ col_dic = {
     'map': 'cyan',
     'aldh': 'darkkhaki'}
 
-
 # Specify merges
 merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
 
@@ -398,7 +397,7 @@ print(py$col_dic)
 # Extract all binarized array data
 binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
 
-def display_merge(merge_name):
+def display_merge(merge_name, method):
 
     # Extract antibody and channel
     ch_list = list(merge_name.split("_"))
@@ -411,7 +410,7 @@ def display_merge(merge_name):
                    alpha=0.5)
     plt.xticks([])
     plt.yticks([])
-    plt.savefig(f"{outdir}/{merge_name}.png", dpi=1000)
+    plt.savefig(f"{outdir}/{method}_{merge_name}.png", dpi=1000)
     plt.show()
 
 ```
@@ -419,29 +418,36 @@ def display_merge(merge_name):
 ## DAPI + TDP43
 
 ```{python merge0, fig.width=12, fig.height=12}
+method = "otsu"
 i = 0
-display_merge(merge_list[i])
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
 ```
 
-- Download: [`r py$outdir`/`r py$merge_list[1]`.png](`r py$outdir`/`r py$merge_list[1]`.png)
+- Download: [`r py$outfile`](`r py$outfile`)
 
 ## IBA1 + MAP2 + ALDH1L1
 
 ```{python merge1, fig.width=12, fig.height=12}
 i += 1
-display_merge(merge_list[i])
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
 ```
 
-- Download: [`r py$outdir`/`r py$merge_list[2]`.png](`r py$outdir`/`r py$merge_list[2]`.png)
+- Download: [`r py$outfile`](`r py$outfile`)
 
 ## TDP43 + MAP2
 
 ```{python merge2, fig.width=12, fig.height=12}
 i += 1
-display_merge(merge_list[i])
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
 ```
 
-- Download: [`r py$outdir`/`r py$merge_list[3]`.png](`r py$outdir`/`r py$merge_list[3]`.png)
+- Download: [`r py$outfile`](`r py$outfile`)
 
 # Adaptive thresholding {.tabset}
 
@@ -486,7 +492,7 @@ adaptive_thresh(block_size=block_size, offset=offset, channel=i)
 outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
 ```
 
-- Download: [`r py$outdir`/`r py$outfile`](`r py$outdir`/`r py$outfile`)
+- Download: [`r py$outfile`](`r py$outfile`)
 
 ### IBA1
 
@@ -496,7 +502,7 @@ adaptive_thresh(block_size=block_size, offset=offset, channel=i)
 outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
 ```
 
-- Download: [`r py$outdir`/`r py$outfile`](`r py$outdir`/`r py$outfile`)
+- Download: [`r py$outfile`](`r py$outfile`)
 
 ### TDP43
 
@@ -506,7 +512,7 @@ adaptive_thresh(block_size=block_size, offset=offset, channel=i)
 outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
 ```
 
-- Download: [`r py$outdir`/`r py$outfile`](`r py$outdir`/`r py$outfile`)
+- Download: [`r py$outfile`](`r py$outfile`)
 
 ### MAP2
 
@@ -516,7 +522,7 @@ adaptive_thresh(block_size=block_size, offset=offset, channel=i)
 outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
 ```
 
-- Download: [`r py$outdir`/`r py$outfile`](`r py$outdir`/`r py$outfile`)
+- Download: [`r py$outfile`](`r py$outfile`)
 
 ### ALDH1L1
 
@@ -526,15 +532,54 @@ adaptive_thresh(block_size=block_size, offset=offset, channel=i)
 outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
 ```
 
-- Download: [`r py$outdir`/`r py$outfile`](`r py$outdir`/`r py$outfile`)
+- Download: [`r py$outfile`](`r py$outfile`)
 
 ## Merging channels {.tabset}
 
-```{r }
+```{python filter_adaptive_layers}
+
+# --------------------------------------------------------------------------------
+# This chunk prepares numpy arrays processed with the adaptive thresholding
+# --------------------------------------------------------------------------------
+
 # Extract all binarized array data
 adaptive_lyrs = [c for c in list(img) if "adaptive" in c]
 binary_arr = [np.squeeze(img[l].values) for l in adaptive_lyrs]
 ```
+
+### DAPI + TDP43
+
+```{python adaptive_merge0, fig.width=12, fig.height=12}
+method = "adaptive"
+i = 0
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### IBA1 + MAP2 + ALDH1L1
+
+```{python adaptive_merge1, fig.width=12, fig.height=12}
+i += 1
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### TDP43 + MAP2
+
+```{python adaptive_merge2, fig.width=12, fig.height=12}
+i += 1
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
 
 
 ```{python save_zarr}
