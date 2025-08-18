@@ -275,9 +275,9 @@ squidpy_masking
 
 @Mira0507
 
-- remask images using adaptive thresholding in progress
+- testing adaptive thresholding
     - conda env: `env`
-    - script
+    - scripts
         - adaptive thresholding on raw images: 
           `scripts/segmentation_perm_1000_adaptive.Rmd`
         - adaptive thresholding on equalized images: 
@@ -289,3 +289,14 @@ squidpy_masking
           the `skimage.morphology.binary_erosion` function
         - image equalization performed to enhance contrast, using 
           the `skimage.exposure.equalize_adapthist` function
+        - adaptive thresholding resulted in masking zero pixels on equalized images
+        - erosion was helpful to remove noisy specks
+        - decided to proceed without equalization for now
+
+- apply adaptive thresholding
+    - conda env: `env`
+    - scripts
+        - `scripts/segmentation_perm_1000_adaptive.Rmd`
+        - `scripts/segmentation_perm_500_adaptive.Rmd`
+        - `scripts/segmentation_noperm_1000_adaptive.Rmd`
+        - `scripts/segmentation_noperm_500_adaptive.Rmd`
