@@ -38,7 +38,6 @@ import matplotlib.pyplot as plt
 import squidpy as sq
 from tifffile import imread
 from matplotlib.colors import ListedColormap
-from skimage.filters import threshold_local
 import napari
 import os
 ```
@@ -435,74 +434,6 @@ display_merge(merge_list[i])
 ```
 
 - Download: [`r py$outdir`/`r py$merge_list[3]`.png](`r py$outdir`/`r py$merge_list[3]`.png)
-
-# Adaptive thresholding {.tabset}
-
-In the previous thresholding, the Otsu method, 
-
-```{python prep_adaptive_thresholding}
-
-# --------------------------------------------------------------------------------
-# This chunk runs image masking using adaptive thresholding
-# --------------------------------------------------------------------------------
-
-# Set parameters for adaptive thresholding
-# - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.
-# - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
-#           higher offset results in more stringent thresholding
-block_size = round(crop_coord['size'] / 2) + 1
-offset = -100
-
-def display_adaptive_thresh(i):
-    color = list(col_dic.values())[i]
-    
-    dapi = img['image'].values[:, :, 0, i]
-    
-    adaptive_thresh = threshold_local(dapi, block_size=block_size, offset=offset)
-    mask = dapi > adaptive_thresh
-    
-    plt.imshow(mask, cmap=ListedColormap([(1, 1, 1, 0), color]), alpha=0.5)
-    plt.xticks([])  # Remove x-axis ticks
-    plt.yticks([])  # Remove y-axis ticks
-    plt.savefig(f"{outdir}/adaptive_thresh_channel_{i}.png", dpi=1000)
-    plt.show()
-
-```
-
-## DAPI
-
-```{python daptive_dapi, fig.height=12, fig.width=12}
-i = 0
-display_adaptive_thresh(i)
-```
-
-## IBA1
-
-```{python daptive_iba, fig.height=12, fig.width=12}
-i += 1
-display_adaptive_thresh(i)
-```
-
-## TDP43
-
-```{python daptive_tdp, fig.height=12, fig.width=12}
-i += 1
-display_adaptive_thresh(i)
-```
-
-## MAP2
-
-```{python daptive_map, fig.height=12, fig.width=12}
-i += 1
-display_adaptive_thresh(i)
-```
-
-## ALDH1L1
-
-```{python daptive_aldh, fig.height=12, fig.width=12}
-i += 1
-display_adaptive_thresh(i)
-```
 
 ```{python save_zarr}
 img.save(output_obj)
