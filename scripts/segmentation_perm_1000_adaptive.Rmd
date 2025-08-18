@@ -39,6 +39,8 @@ import squidpy as sq
 from tifffile import imread
 from matplotlib.colors import ListedColormap
 from skimage.filters import threshold_local
+from skimage.morphology import binary_erosion
+import xarray as xr
 import napari
 import os
 ```
@@ -77,8 +79,11 @@ lyr = 'image'
 # Sigma represents the variance for normal distribution
 gaussian_sigma = 1
 
+# Specify whether to equalize contrasts
+equalize = False
+
 # Specify whether input images will be cropped
-crop_images = True
+crop_images = False
 
 # Specify coordinates to crop images
 crop_coord = {'height' : 0.5, 'width' : 0.5, 'size' : 1000, 'scale' : 1}
@@ -137,6 +142,12 @@ if crop_images:
                           size=crop_coord['size'],
                           scale=crop_coord['scale'])
     print("ImageContainer obj updated:", img)
+
+# Equalize of specified
+if equalize:
+    img = equalize_adapthist(img[lyr])
+    # Convert to xarray
+    img = xr.DataArray(img)
 ```
 
 ## Channel 0
@@ -461,7 +472,7 @@ calculated as the weighted mean of the local neighborhood minus an offset value.
 # This chunk prepares a function to run adaptive thresholding
 # --------------------------------------------------------------------------------
 
-def adaptive_thresh(block_size, offset, channel):
+def adaptive_thresh(block_size, offset, channel, erosion=True):
     # Extract smoothened array per channel
     smth = img[lyr_smth].values[:, :, 0, channel]
     
@@ -469,56 +480,68 @@ def adaptive_thresh(block_size, offset, channel):
     local_thresh = threshold_local(smth, block_size=block_size, offset=offset)
     mask = smth > local_thresh
 
+    prefix = "adaptive"
+
+    # Run erosion of specified
+    if erosion:
+        mask = binary_erosion(mask)
+        prefix = f"{prefix}_erosion"
+
+    # Specify file path prefix
+    prefix = f"{prefix}_channel_{channel}"
+
     # Add the binarized image to the `img` obj
-    img.add_img(mask.astype(np.uint8), layer=f"adaptive_channel_{channel}")
+    img.add_img(mask.astype(np.uint8), layer=prefix)
     
     # print and save
     plt.imshow(mask, cmap=ListedColormap(['black', 'white']))
     plt.xticks([])
     plt.yticks([])
-    plt.savefig(f"{outdir}/adaptive_thresh_channel_{channel}.png", dpi=1000)
+    plt.savefig(f"{outdir}/{prefix}.png", dpi=1000)
     plt.show()
 
 ```
 
 ## Masking {.tabset}
 
-### DAPI
+### Before erosion {.tabset}
+
+#### DAPI
 
 ```{python daptive_dapi, fig.height=12, fig.width=12}
 i = 0
-adaptive_thresh(block_size=block_size, offset=offset, channel=i)
-outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
 ```
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-### IBA1
+#### IBA1
 
 ```{python daptive_iba, fig.height=12, fig.width=12}
 i += 1
-adaptive_thresh(block_size=block_size, offset=offset, channel=i)
-outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
 ```
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-### TDP43
+#### TDP43
 
 ```{python daptive_tdp, fig.height=12, fig.width=12}
 i += 1
-adaptive_thresh(block_size=block_size, offset=offset, channel=i)
-outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
 ```
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
-### MAP2
+#### MAP2
 
 ```{python daptive_map, fig.height=12, fig.width=12}
 i += 1
-adaptive_thresh(block_size=block_size, offset=offset, channel=i)
-outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
 ```
 
 - Download: [`r py$outfile`](`r py$outfile`)
@@ -527,8 +550,60 @@ outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
 
 ```{python daptive_aldh, fig.height=12, fig.width=12}
 i += 1
-adaptive_thresh(block_size=block_size, offset=offset, channel=i)
-outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### After erosion {.tabset}
+
+#### DAPI
+
+```{python erosion_erosion_dapi, fig.height=12, fig.width=12}
+i = 0
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+#### IBA1
+
+```{python erosion_iba, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+#### TDP43
+
+```{python erosion_tdp, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+#### MAP2
+
+```{python erosion_map, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### ALDH1L1
+
+```{python erosion_aldh, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 ```
 
 - Download: [`r py$outfile`](`r py$outfile`)
@@ -542,14 +617,14 @@ outfile = f"{outdir}/adaptive_thresh_channel_{i}.png"
 # --------------------------------------------------------------------------------
 
 # Extract all binarized array data
-adaptive_lyrs = [c for c in list(img) if "adaptive" in c]
+adaptive_lyrs = [c for c in list(img) if "adaptive_erosion" in c]
 binary_arr = [np.squeeze(img[l].values) for l in adaptive_lyrs]
 ```
 
 ### DAPI + TDP43
 
 ```{python adaptive_merge0, fig.width=12, fig.height=12}
-method = "adaptive"
+method = "adaptive_erosion"
 i = 0
 merge_name = merge_list[i]
 display_merge(merge_name=merge_name, method=method)
