@@ -1,0 +1,6 @@
+import os
+import yaml
+import pandas as pd
+
+# Specify path to config file
+config = 'config/config.yaml'
