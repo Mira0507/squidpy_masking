@@ -300,3 +300,12 @@ squidpy_masking
         - `scripts/segmentation_perm_500_adaptive.Rmd`
         - `scripts/segmentation_noperm_1000_adaptive.Rmd`
         - `scripts/segmentation_noperm_500_adaptive.Rmd`
+
+
+2025-08-19
+----------
+
+@Mira0507
+
+- update `README.md`
+
