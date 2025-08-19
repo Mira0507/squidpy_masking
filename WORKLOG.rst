@@ -309,3 +309,11 @@ squidpy_masking
 
 - update `README.md`
 
+- prep snakemake environment 
+    - `snakemake<9` installed in `env`
+    - `scripts/WRAPPER_SLURM` added
+    - config added
+        - `scripts/config/sampletable.txt` (tab-separated file)
+        - `scripts/config/config.yaml`
+    - writing `Snakefile` in progress
+
