@@ -1,0 +1,665 @@
+---
+title: "Segmentation using squidpy"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to demonstrate image segmentation for Visium analysis 
+using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
+Refer to the following resources for technical details:
+
+- [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Squidpy GitHub](https://github.com/scverse/squidpy)
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv('../env')
+```
+
+```{python ppackages}
+import numpy as np
+import matplotlib.pyplot as plt
+import squidpy as sq
+from tifffile import imread
+from matplotlib.colors import ListedColormap
+from skimage.filters import threshold_local
+from skimage.morphology import binary_erosion
+from skimage.exposure import equalize_adapthist
+import xarray as xr
+import napari
+import os
+```
+
+```{python configs}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to specify variables for paths to input files/directories
+# and parameter settings
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Specify file paths to input and output files
+outdir = "segmentation_perm_500_adaptive"
+input_image = "image_conversion_perm/converted_168.ome.tif"
+output_obj = f"{outdir}/icontainer_168_500.zarr"
+
+# Create the output directory 
+os.makedirs(outdir, exist_ok=True)
+
+# Specify argument setting for printing images
+channel_config = {
+    'Merged' : {'ch' : None, 'cm' : None},
+    'Channel 0' : {'ch' : 0, 'cm' : 'gray'},
+    'Channel 1' : {'ch' : 1, 'cm' : 'gray'},
+    'Channel 2' : {'ch' : 2, 'cm' : 'gray'},
+    'Channel 3' : {'ch' : 3, 'cm' : 'gray'},
+    'Channel 4' : {'ch' : 4, 'cm' : 'gray'}
+}
+
+# Specify the name of input image layer to be processed
+lyr = 'image'
+
+# Specify signal values to be tested for Gaussian smoothing
+# Sigma represents the variance for normal distribution
+gaussian_sigma = 1
+
+# Specify whether to equalize contrasts
+equalize = False
+
+# Specify whether input images will be cropped
+crop_images = True
+
+# Specify coordinates to crop images
+crop_coord = {'height' : 0.5, 'width' : 0.5, 'size' : 500, 'scale' : 1}
+
+# Specify the segmentation method
+seg_method = "watershed"
+
+# Specify the thresholding method. If `None`, the Otsu method is used.
+thr_method = None
+
+# Set parameters for adaptive thresholding
+# - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.
+# - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
+#           higher offset results in more stringent thresholding
+block_size = round(crop_coord['size'] / 2) + 1
+offset = -100
+
+# Specify pseudocolors across the channels
+col_dic = {
+    'dapi': 'dodgerblue',
+    'iba': 'rosybrown',
+    'tdp': 'orange',
+    'map': 'cyan',
+    'aldh': 'darkkhaki'}
+
+# Specify merges
+merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
+
+# Specify the prefix of layers being merged
+merge_prefix = "erosion"
+```
+
+# Loading input images {.tabset}
+
+We use `tif` image files converted from `vsi`. Refer to the [image_conversion.html](image_conversion.html) 
+for detailed processes on converting image formats. The following channels correspond to individual IFs.
+
+- **Channel 0**: DAPI
+- **Channel 1**: IBA1
+- **Channel 2**: TDP43
+- **Channel 3**: MAP2
+- **Channel 4**: ALDH1L1
+
+The following image object loaded:
+
+```{python load_image}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to load input image files
+# ------------------------------------------------------------------------------
+
+# Read image as numpy array
+img_array = imread(input_image)
+
+# Initialize ImageContainer
+img = sq.im.ImageContainer(img_array, layer=lyr)
+
+print("ImageContainer obj created using input image:", img)
+
+# Crop input images if specified
+if crop_images:
+    print("Image cropped. Refer to the following dimension:", crop_coord)
+    img = img.crop_corner(x=crop_coord['width'],
+                          y=crop_coord['height'],
+                          size=crop_coord['size'],
+                          scale=crop_coord['scale'])
+    print("ImageContainer obj updated:", img)
+
+# Equalize of specified
+if equalize:
+    # Run adaptive equalization
+    eq_img = equalize_adapthist(img[lyr])
+    # Convert to xarray
+    eq_img = xr.DataArray(eq_img)
+    # Replace the input array with equalized array
+    img[lyr] = eq_img
+    print("Adaptive equalization applied to the input image!")
+```
+
+## Channel 0
+
+```{python individual_images_c0, fig.height=12, fig.width=12}
+i = 0
+img.show(lyr, channel=i, cmap='gray')
+plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
+```
+
+## Channel 1
+
+```{python individual_images_c1, fig.height=12, fig.width=12}
+i += 1
+img.show(lyr, channel=i, cmap='gray')
+plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
+```
+
+## Channel 2
+
+```{python individual_images_c2, fig.height=12, fig.width=12}
+i += 1
+img.show(lyr, channel=i, cmap='gray')
+plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
+```
+
+## Channel 3
+
+```{python individual_images_c3, fig.height=12, fig.width=12}
+i += 1
+img.show(lyr, channel=i, cmap='gray')
+plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
+```
+
+## Channel 4
+
+```{python individual_images_c4, fig.height=12, fig.width=12}
+i += 1
+img.show(lyr, channel=i, cmap='gray')
+plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
+```
+
+# Smoothing {.tabset}
+
+Smoothing is required to reduce noises before image masking. The current workflow uses 
+[Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) by calling 
+the `squidpy.im.process(..., method="smooth")`, which implements the `skimage.filters.gaussian` function 
+in the `scikit-image` package in python.
+
+```{python smoothing}
+
+# --------------------------------------------------------------------------------
+# This chunk runs Gaussian smoothing
+# --------------------------------------------------------------------------------
+
+# Run smoothing
+sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
+```
+`ImageContainer` updated:
+
+```{r smoothened_obj}
+py$img
+```
+
+Images are compared between the before (left) and the after (right) smoothing across the stainings.
+
+
+```{python function_processed}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to prepare visualizing smoothened images
+# ------------------------------------------------------------------------------
+
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = f"{lyr}_smooth"
+
+# Create a function that prints images before and after Gaussian smoothing
+def image_original_processed(l_one, l_two, image, channels, process):
+    # Design subplots
+    fig, axes = plt.subplots(nrows=1, ncols=2)
+    image.show(layer=l_one, channel=channels[0], cmap='gray', ax=axes[0])
+    _ = axes[0].set_title(f"Original before {process}")
+    image.show(layer=l_two, channel=channels[1], cmap='gray', ax=axes[1])
+    _ = axes[1].set_title(f"Original after {process}")
+    # Save
+    ch = "_".join([str(x) for x in channels])
+    plt.savefig(f"{outdir}/masked_channel_{ch}.png", dpi=1000)
+
+```
+
+## Channel 0
+
+```{python smth_images_c0, fig.width=12, fig.height=12}
+i = 0
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 1
+
+```{python smth_images_c1, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 2
+
+```{python smth_images_c2, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 3
+
+```{python smth_images_c3, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 4
+
+```{python smth_images_c4, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+# Segmentation {.tabset}
+
+Image segmentation is performed using [Otsu thresholding](https://en.wikipedia.org/wiki/Otsu's_method) and 
+[watershed](https://en.wikipedia.org/wiki/Watershed_(image_processing)) methods. In the Otsu method, 
+the algorithm calculates the optimal brightness level that best separates regions of varying intensity. 
+The watershed method is a region-based segmentation algorithm that divides an image into distinct adjacent
+regions based on topographic analysis of pixel intensities.
+
+```{python segmentation}
+
+# ------------------------------------------------------------------------------
+# This chunk carries out image segmentation using Otsu thresholding and watershed 
+# segmentation. Segmentation is performed for each channel individually.
+# ------------------------------------------------------------------------------
+
+for key, value in channel_config.items():
+    # For any valid channel
+    if value['ch'] != None:
+        # Specify the channel to be processed
+        ch = value['ch']
+        # Specify the name of layer for the new processed image
+        new_layer = f"seg_channel_{ch}"
+        # Run segmentation
+        sq.im.segment(img=img,
+                      layer=lyr_smth,
+                      method=seg_method,
+                      thresh=thr_method,
+                      layer_added=new_layer,
+                      channel=ch)
+
+# Prep a list consisting of channel corresponding to segmented images
+seg_lyrs = [c for c in list(img) if "seg" in c]
+```
+
+`ImageContainer` updated:
+
+```{r seg_obj}
+py$img
+```
+
+Images are compared between the before (left) and the after (right) segmentation across the stainings.
+
+## Channel 0
+
+```{python seg_images_c0, fig.width=12, fig.height=12}
+i = 0
+image_original_processed(l_one=lyr,
+                         l_two=seg_lyrs[i],
+                         image=img,
+                         channels=[i, None],
+                         process="segmentation")
+```
+
+## Channel 1
+
+```{python seg_images_c1, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=seg_lyrs[i],
+                         image=img,
+                         channels=[i, None],
+                         process="segmentation")
+```
+
+## Channel 2
+
+```{python seg_images_c2, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=seg_lyrs[i],
+                         image=img,
+                         channels=[i, None],
+                         process="segmentation")
+```
+
+## Channel 3
+
+```{python seg_images_c3, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=seg_lyrs[i],
+                         image=img,
+                         channels=[i, None],
+                         process="segmentation")
+```
+
+## Channel 4
+
+```{python seg_images_c4, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=seg_lyrs[i],
+                         image=img,
+                         channels=[i, None],
+                         process="segmentation")
+```
+
+# Adaptive thresholding {.tabset}
+
+We rerun thresholding to address the uneven results produced by the Otsu method. [Adaptive thresholding (aka local thresholding)](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding) is applied to achieve more uniform thresholding results across the pixels,
+using the `threshold_local` function from the `scikit-image` package. Threshold values are
+calculated as the weighted mean of the local neighborhood minus an offset value.
+
+```{python prep_local_thresholding}
+
+# --------------------------------------------------------------------------------
+# This chunk prepares a function to run adaptive thresholding
+# --------------------------------------------------------------------------------
+
+def adaptive_thresh(block_size, offset, channel, erosion=True):
+    # Extract smoothened array per channel
+    smth = img[lyr_smth].values[:, :, 0, channel]
+    
+    # Run local thresholding
+    local_thresh = threshold_local(smth, block_size=block_size, offset=offset)
+    mask = smth > local_thresh
+
+    prefix = "adaptive"
+
+    # Run erosion of specified
+    if erosion:
+        mask = binary_erosion(mask)
+        prefix = f"{prefix}_erosion"
+
+    # Specify file path prefix
+    prefix = f"{prefix}_channel_{channel}"
+
+    # Add the binarized image to the `img` obj
+    img.add_img(mask.astype(np.uint8), layer=prefix)
+    
+    # print and save
+    plt.imshow(mask, cmap=ListedColormap(['black', 'white']))
+    plt.xticks([])
+    plt.yticks([])
+    plt.savefig(f"{outdir}/{prefix}.png", dpi=1000)
+    plt.show()
+
+```
+
+
+## Before erosion {.tabset}
+
+### DAPI
+
+```{python adaptive_dapi, fig.height=12, fig.width=12}
+i = 0
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### IBA1
+
+```{python adaptive_iba, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### TDP43
+
+```{python adaptive_tdp, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### MAP2
+
+```{python adaptive_map, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### ALDH1L1
+
+```{python adaptive_aldh, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=False)
+outfile = f"{outdir}/adaptive_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+## After erosion {.tabset}
+
+### DAPI
+
+```{python erosion_dapi, fig.height=12, fig.width=12}
+i = 0
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### IBA1
+
+```{python erosion_iba, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### TDP43
+
+```{python erosion_tdp, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### MAP2
+
+```{python erosion_map, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### ALDH1L1
+
+```{python erosion_aldh, fig.height=12, fig.width=12}
+i += 1
+adaptive_thresh(block_size=block_size, offset=offset, channel=i, erosion=True)
+outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+`ImageContainer` updated:
+
+```{r obj_after_adaptive_thresh}
+py$img
+```
+
+# Merging masked images {.tabset}
+
+We are merging binarized signals across the antibodies of interest. Refer to the following pseudo-colors:
+
+```{python setup_merge}
+
+# --------------------------------------------------------------------------------
+# This chunk prepares numpy arrays processed with the adaptive thresholding
+# --------------------------------------------------------------------------------
+
+# Extract all binarized array data
+adaptive_lyrs = [l for l in list(img) if merge_prefix in l]
+binary_arr = [np.squeeze(img[l].values) for l in adaptive_lyrs]
+
+# Specify a function to merge layers
+def display_merge(merge_name, method):
+
+    # Extract antibody and channel
+    ch_list = list(merge_name.split("_"))
+    ch_dic = {ab: i for i, ab in enumerate(col_dic.keys()) if ab in ch_list}
+
+    # Stack binary images
+    for ab, i in ch_dic.items():
+        plt.imshow(binary_arr[i],
+                   cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
+                   alpha=0.5)
+    plt.xticks([])
+    plt.yticks([])
+    plt.savefig(f"{outdir}/{method}_{merge_name}.png", dpi=1000)
+    plt.show()
+
+for ab, color in col_dic.items():
+    print(f"- {ab}: {color}")
+```
+
+Layers used to merge signals:
+
+```{r merge_layers}
+print(py$adaptive_lyrs)
+```
+
+## DAPI + TDP43
+
+```{python adaptive_merge0, fig.width=12, fig.height=12}
+method = "adaptive_erosion"
+i = 0
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+## IBA1 + MAP2 + ALDH1L1
+
+```{python adaptive_merge1, fig.width=12, fig.height=12}
+i += 1
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+## TDP43 + MAP2
+
+```{python adaptive_merge2, fig.width=12, fig.height=12}
+i += 1
+merge_name = merge_list[i]
+display_merge(merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+```{python save_zarr}
+img.save(output_obj)
+```
+
+```{python load_napari, eval=FALSE}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to explore images using the Napari image viewer. 
+# Manually reorder the dimension if necessary.
+# ------------------------------------------------------------------------------
+
+# Initialize napari viewer
+viewer = napari.Viewer()
+
+for l in seg_lyrs:
+    # Extract ndarray
+    arr = img.data[l].values
+    # Reorder dimensions
+    # NOTE: Ensure to have a compatible dimension with Napari (z, channel, y, z)
+    d_y, d_x, d_z, d_ch = arr.shape
+    arr_reshaped = arr.reshape(d_z, d_ch, d_y, d_x)
+    # Add layers of interest to napari viewer
+    viewer.add_image(arr_reshaped, name=l)
+
+# Explore loaded images
+napari.run()
+```
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```

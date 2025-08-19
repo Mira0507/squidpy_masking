@@ -25,8 +25,15 @@ with `squidpy.im.process` to reduce noise.
 3. **Segmentation**: Segment images using the following approaches
    - [Otsu thresholding](https://en.wikipedia.org/wiki/Otsu's_method)
    - [Watershed segmentation](https://en.wikipedia.org/wiki/Watershed_(image_processing))
+   - [Adaptive thresholding](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding)
 
-4. **Visualization**: Compare pre/post-smoothing and pre/post-segmentation results.  
+4. (Optional) **Additional processing**:
+   - [Erosion](https://en.wikipedia.org/wiki/Erosion_(morphology))
+
+5. **Visualization**: Compare pre/post-smoothing and pre/post-segmentation results.  
+
+6. **Channel merge**: Merge channels of interest
+
 
 ## Scripts
 
@@ -34,6 +41,10 @@ with `squidpy.im.process` to reduce noise.
 `squidpy.datasets.visium_fluo_image_crop`.
 - `scripts/image_conversion_<sample>.Rmd`: Converting user images from `vsi` to `tif` 
 using the `bftools` package.
-- `scripts/segmentation_<sample>_<dimension>.Rmd`: Masking `tif` fluorescence images 
-using Squidpy’s default segmentation workflow with different cropping dimensions
+- `scripts/segmentation_<sample>_<dimension>.Rmd`: masking `tif` fluorescence images 
+using Squidpy’s default segmentation workflow (Otsu thresholding and Watershed 
+segmentation) with different cropping dimensions
+- `scripts/segmentation_<sample>_dimension>_adaptive.Rmd`: masking `tif` fluorescence
+images using adaptive thresholding and erosion with different cropping dimensions
+
 
