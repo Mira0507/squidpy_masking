@@ -1,4 +1,7 @@
-# Specify path to a tab-separated sampletable
+# Specify path to a tab-separated sampletable, consisting of 
+# the following columns:
+# - samplename: unique sample identifier
+# - input_vsi: path to a vsi file
 sampletable: 'config/sampletable.txt'
 
 # Specify the series to be converted. 
@@ -9,7 +12,7 @@ sampletable: 'config/sampletable.txt'
 #   and multi-channel data
 ser: None
 
-# Specify True if you want to save as pyramidal output
+# Set to `True` if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
 to_pyramidal: True
 
