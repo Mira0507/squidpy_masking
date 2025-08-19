@@ -63,9 +63,6 @@ tif = f"{output_dir}/converted_168.ome.tif"
 input_meta_out = f"{output_dir}/input_metadata_168.txt"
 output_meta_out = f"{output_dir}/output_metadata_168.txt"
 
-# Specify the number of channels in the output converted image
-n_channels = 5
-
 # Specify the series to be converted. 
 # NOTE: 
 # - Determine the series based on the input metadata. 
