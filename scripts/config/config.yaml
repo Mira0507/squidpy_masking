@@ -1,0 +1,15 @@
+# Specify path to a tab-separated sampletable
+sampletable: 'config/sampletable.txt'
+
+# Specify the series to be converted. 
+# NOTE: 
+# - Determine the series based on the input metadata. 
+# - Select one for multi-channel with a desired resolution
+# - If `None`, python specifies one series with the highest resolution
+#   and multi-channel data
+ser: None
+
+# Specify True if you want to save as pyramidal output
+# See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
+to_pyramidal: True
+
