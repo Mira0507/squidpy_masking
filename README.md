@@ -27,9 +27,12 @@ with `squidpy.im.process` to reduce noise.
    - [Watershed segmentation](https://en.wikipedia.org/wiki/Watershed_(image_processing))
    - [Adaptive thresholding](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding)
 
-4. **Visualization**: Compare pre/post-smoothing and pre/post-segmentation results.  
+4. (Optional) **Additional processing**:
+   - [Erosion](https://en.wikipedia.org/wiki/Erosion_(morphology))
 
-5. **Channel merge**: Merge channels of interest
+5. **Visualization**: Compare pre/post-smoothing and pre/post-segmentation results.  
+
+6. **Channel merge**: Merge channels of interest
 
 
 ## Scripts
@@ -42,6 +45,6 @@ using the `bftools` package.
 using Squidpy’s default segmentation workflow (Otsu thresholding and Watershed 
 segmentation) with different cropping dimensions
 - `scripts/segmentation_<sample>_dimension>_adaptive.Rmd`: masking `tif` fluorescence
-images using adaptive thresholding with different cropping dimensions
+images using adaptive thresholding and erosion with different cropping dimensions
 
 
