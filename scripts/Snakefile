@@ -8,11 +8,10 @@ import pandas as pd
 
 
 # Specify path to config file
-config = 'config/config.yaml'
+configfile: 'config/config.yaml'
 
 # Prep sampletable
-sample = pd.read_csv(config['sampletable'], sep='\t')
-sample.set_index('samplename', inplace=True)
+sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False)
 
 # Output directory
 outdir = config['outdir']
@@ -26,8 +25,10 @@ rule convert:
     This rule converts VSI images to OME-TIFF format 
     using the bftools package
     """
-    input: sample.loc[name, 'input_vsi']
-    output: "{outputdir}/{name}/converted.ome.tif"
+    input: 
+        lambda wildcards: sample.loc[wildcards.name, 'input_vsi']
+    output: 
+        "{outputdir}/{name}/converted.ome.tif"
     threads: 1
     resources:
         mem_mb=1024 * 40,
