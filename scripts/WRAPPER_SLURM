@@ -23,7 +23,7 @@ elif [ -n "$SNAKEMAKE_PROFILE" ]; then
     PROFILE_CMD="--profile $SNAKEMAKE_PROFILE"
 else
     PROFILE_CMD=""
-    echo "No environment variable SNAKEMAKE_PROFILE or LCDBWF_SNAKEMAKE_PROFILE found."
+    echo "No environment variable SNAKEMAKE_PROFILE or SNAKEMAKE_PROFILE_V8 found."
     echo "snakemake will run in single job."
 fi
 
