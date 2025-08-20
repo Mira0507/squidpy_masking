@@ -4,6 +4,9 @@
 # - input_vsi: path to a vsi file
 sampletable: 'config/sampletable.txt'
 
+# Output directory
+outdir: '../images/converted'
+
 # Specify the series to be converted. 
 # NOTE: 
 # - Determine the series based on the input metadata. 
