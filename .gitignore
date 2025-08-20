@@ -10,3 +10,4 @@ scripts/image_conversion/
 scripts/image_conversion_perm/
 scripts/image_conversion_noperm/
 scripts/segmentation_*/
+*.snakemake/
