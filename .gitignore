@@ -12,3 +12,4 @@ scripts/image_conversion_noperm/
 scripts/segmentation_*/
 *.snakemake/
 *Snakefile.log
+*logs/
