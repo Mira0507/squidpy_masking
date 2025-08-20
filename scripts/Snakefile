@@ -46,8 +46,8 @@ rule convert:
             vsi = "{input.vsi}",
             output_dir = "{params.outdir}",
             tif = "{output.tif}",
-            input_meta_out = "{params.outdir}/input_metadata.txt",
-            output_meta_out = "{params.outdir}/output_metadata.txt",
+            input_meta_out = "{params.outdir}/{wildcards.name}/input_metadata.txt",
+            output_meta_out = "{params.outdir}/{wildcards.name}/output_metadata.txt",
             ser = "{params.series}",
             to_pyramidal = "{params.pyramidal});"
         rmarkdown::render("{input.rmd}",
