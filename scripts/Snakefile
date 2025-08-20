@@ -1,6 +1,38 @@
 import os
-import yaml
 import pandas as pd
+
+##### for interactive debugging
+# import yaml
+# with open("config/config.yaml", 'r') as stream:
+# config = yaml.safe_load(stream)
+
 
 # Specify path to config file
 config = 'config/config.yaml'
+
+# Prep sampletable
+sample = pd.read_csv(config['sampletable'], sep='\t')
+sample.set_index('samplename', inplace=True)
+
+# Output directory
+outdir = config['outdir']
+
+rule all:
+    input:
+        expand("{outputdir}/{name}/converted.ome.tif", outputdir=outdir, name=list(sample.index))
+
+rule convert:
+    """
+    This rule converts VSI images to OME-TIFF format 
+    using the bftools package
+    """
+    input: sample.loc[name, 'input_vsi']
+    output: "{outputdir}/{name}/converted.ome.tif"
+    threads: 1
+    resources:
+        mem_mb=1024 * 40,
+        diskmb=1024 * 20,
+        runtime=60 * 6
+    shell:
+        "touch {output}"
+
