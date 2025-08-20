@@ -7,6 +7,9 @@ sampletable: 'config/sampletable.txt'
 # Output directory
 outdir: '../images/converted'
 
+# Directory containing wrapper scripts
+wrapper_dir: 'wrapper_rmd'
+
 # Specify the series to be converted. 
 # NOTE: 
 # - Determine the series based on the input metadata. 
@@ -17,5 +20,5 @@ ser: None
 
 # Set to `True` if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
-to_pyramidal: True
+pyramidal: True
 
