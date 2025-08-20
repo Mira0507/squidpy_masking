@@ -317,3 +317,25 @@ squidpy_masking
         - `scripts/config/config.yaml`
     - writing `Snakefile` in progress
 
+
+2025-08-20
+----------
+
+@Mira0507
+
+- add `snakemake-executor-plugin-cluster-generic` to conda env (`env`)
+    - this is required to avoid the following error when running 
+      with the `v8 profile 
+      <https://github.com/NIH-HPC/snakemake_profile/tree/snakemake8>`_
+
+    .. code-block:: bash
+
+        # snakemake --dry-run --profile $SNAKEMAKE_PROFILE_V8
+        snakemake: error: argument --executor/-e: invalid choice: 'cluster-generic' (choose from 'local', 'dryrun', 'touch')
+
+    - Refer to https://github.com/NIH-HPC/snakemake_profile/pull/4/commits/005dfaa174552cbc9b300d4c87c3a5a75540e4b8
+      for more info
+
+- write `Snakefile`
+    - rule `convert` added
+    - wrapper script `scripts/wrapper_rmd/image_conversion.Rmd` scripting in progress
