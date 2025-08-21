@@ -34,8 +34,9 @@ rule convert:
     threads: 1
     resources:
         mem_mb=1024 * 40,
-        diskmb=1024 * 20,
-        runtime=60 * 6
+        disk_mb=1024 * 20,
+        runtime=60 * 8,
+        tmpdir=config['outdir']
     params:
         outdir = config['outdir'],
         series = config['ser'],
@@ -49,7 +50,7 @@ rule convert:
             input_meta_out = "{params.outdir}/{wildcards.name}/input_metadata.txt",
             output_meta_out = "{params.outdir}/{wildcards.name}/output_metadata.txt",
             ser = "{params.series}",
-            to_pyramidal = "{params.pyramidal});"
+            to_pyramidal = "{params.pyramidal}");
         rmarkdown::render("{input.rmd}",
             params = params,
             intermediates_dir = "{wildcards.outputdir}/{wildcards.name}",
