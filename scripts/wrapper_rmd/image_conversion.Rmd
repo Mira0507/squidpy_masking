@@ -42,6 +42,22 @@ import time
 import re
 ```
 
+
+```{r import_params}
+
+# ------------------------------------------------------------------------------
+# This chunk loads all params set within the rule
+# ------------------------------------------------------------------------------
+
+vsi <- params[['vsi']]
+output_dir <- params[['output_dir']]
+tif <- params[['tif']]
+input_meta_out <- params[['input_meta_out']]
+output_meta_out <- params[['output_meta_out']]
+to_pyramidal <- params[['pyramidal']]
+ser <- params[['ser']]
+```
+
 ```{python configs}
 
 # ------------------------------------------------------------------------------
@@ -50,18 +66,17 @@ import re
 # ------------------------------------------------------------------------------
 
 # Specify the path to input vsi image
-vsi = "../images/input/Perm/Image_168.vsi"
+vsi = r.vsi
 
 # Specify the path to output directory
-output_dir = "image_conversion_perm"
-os.makedirs(output_dir, exist_ok=True)
+output_dir = r.output_dir
 
 # Specify the path to output tif file
-tif = f"{output_dir}/converted_168.ome.tif"
+tif = r.tif
 
 # Specify the path to metadata
-input_meta_out = f"{output_dir}/input_metadata_168.txt"
-output_meta_out = f"{output_dir}/output_metadata_168.txt"
+input_meta_out = r.input_meta_out
+output_meta_out = r.output_meta_out
 
 # Specify the series to be converted. 
 # NOTE: 
@@ -69,7 +84,7 @@ output_meta_out = f"{output_dir}/output_metadata_168.txt"
 # - Select one for multi-channel with a desired resolution
 # - If `None`, python specifies one series with the highest resolution
 #   and multi-channel data
-ser = None
+ser = r.ser
 
 ## Series #14 :
 ##  Image count = 5
@@ -96,7 +111,7 @@ ser = None
 
 # Specify True if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
-to_pyramidal = True
+to_pyramidal = r.to_pyramidal
 ```
 
 # Input image metadata
