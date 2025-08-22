@@ -1,3 +1,6 @@
+# Specify path to conda env
+conda_env: '../env'
+
 # Specify path to a tab-separated sampletable, consisting of 
 # the following columns:
 # - samplename: unique sample identifier
