@@ -52,10 +52,9 @@ images using adaptive thresholding and erosion with different cropping dimension
 ### Snakemake converting `vsi` to `tif`
 
 - `scripts/snakemake/Snakefile`: Running Snakemake pipeline to convert `vsi` to `tif`
-   - `scripts/snakemake/config/config.yaml`: Configuring Snakemake
-   - `scripts/snakemake/config/sampletable.txt`: 
-   Specifying sample names and corresponding input image paths
-
+- `scripts/snakemake/config/config.yaml`: Configuring Snakemake
+- `scripts/snakemake/config/sampletable.txt`: 
+Specifying sample names and corresponding input image paths
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
 
