@@ -37,26 +37,26 @@ with `squidpy.im.process` to reduce noise.
 
 ## Scripts
 
-### Demo scripts
+### Individual demo scripts
 
-- `scripts/segmentation.Rmd`: Masking demo fluorescence images from 
+- `scripts/individual/segmentation.Rmd`: Masking demo fluorescence images from 
 `squidpy.datasets.visium_fluo_image_crop`.
-- `scripts/image_conversion_<sample>.Rmd`: Converting user images from `vsi` to `tif` 
+- `scripts/individual/image_conversion_<sample>.Rmd`: Converting user images from `vsi` to `tif` 
 using the `bftools` package.
-- `scripts/segmentation_<sample>_<dimension>.Rmd`: masking `tif` fluorescence images 
+- `scripts/individual/segmentation_<sample>_<dimension>.Rmd`: masking `tif` fluorescence images 
 using Squidpy’s default segmentation workflow (Otsu thresholding and Watershed 
 segmentation) with different cropping dimensions
-- `scripts/segmentation_<sample>_dimension>_adaptive.Rmd`: masking `tif` fluorescence
+- `scripts/individual/segmentation_<sample>_dimension>_adaptive.Rmd`: masking `tif` fluorescence
 images using adaptive thresholding and erosion with different cropping dimensions
 
 ### Snakemake converting `vsi` to `tif`
 
-- `scripts/Snakefile`: Running Snakemake pipeline to convert `vsi` to `tif`
-   - `scripts/config/config.yaml`: Configuring Snakemake
-   - `scripts/config/sampletable.txt`: 
+- `scripts/snakemake/Snakefile`: Running Snakemake pipeline to convert `vsi` to `tif`
+   - `scripts/snakemake/config/config.yaml`: Configuring Snakemake
+   - `scripts/snakemake/config/sampletable.txt`: 
    Specifying sample names and corresponding input image paths
 
-- `scripts/wrapper_rmd/image_conversion.Rmd`: 
+- `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
 
 
