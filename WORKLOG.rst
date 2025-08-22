@@ -7,9 +7,9 @@ squidpy_masking
 @Mira0507
 
 - Image masking using toy images
-    - conda env: `env`
-    - script: `script/segmentation.Rmd`
-        - update: masking performed using `sq.im.segment` based on the following methods:
+    - conda env: ``env``
+    - script: ``script/segmentation.Rmd``
+        - update: masking performed using ``sq.im.segment`` based on the following methods:
             - Otsu thresholding
             - watershed segmentation
 
@@ -19,8 +19,8 @@ squidpy_masking
 @Mira0507
 
 - Conda env updated
-    - path: `env`
-    - packages: `wget`, `vst2tif`
+    - path: ``env``
+    - packages: ``wget``, ``vst2tif``
     - GitHub: https://github.com/andreped/vsi2tif
     - Tutorial: https://github.com/andreped/vsi2tif/blob/main/notebooks/conversion_tutorial_macos.ipynb
 
@@ -32,14 +32,14 @@ squidpy_masking
         unzip bftools.zip
 
 - Update Masking script
-    - conda env: `env`
-    - script: `script/segmentation.Rmd`
+    - conda env: ``env``
+    - script: ``script/segmentation.Rmd``
     - updates
         - explore images using napari
 
-- Script image conversion from `vsi` to `tif` (in progress)
-    - conda env: `env`
-    - temp script: `script/image_format.py`
+- Script image conversion from ``vsi`` to ``tif`` (in progress)
+    - conda env: ``env``
+    - temp script: ``script/image_format.py``
 
 
 2025-08-05
@@ -47,12 +47,12 @@ squidpy_masking
 
 @Mira0507
 
-- Install `bftools` in conda env (`env`) for image conversion
+- Install ``bftools`` in conda env (``env``) for image conversion
     - https://docs.openmicroscopy.org/bio-formats/6.0.1/users/comlinetools/index.html
     - https://docs.openmicroscopy.org/bio-formats/6.0.1/users/comlinetools/conversion.html
-- Convert `vsi` to `tif`/`tiff` image files
-    - conda env: `env`
-    - script: `script/image_format.py`
+- Convert ``vsi`` to ``tif``/``tiff`` image files
+    - conda env: ``env``
+    - script: ``script/image_format.py``
 
 
 2025-08-07
@@ -61,12 +61,12 @@ squidpy_masking
 @Mira0507
 
 - Start to work on work computer (MacBook M2 Pro Sequoia 15.6)
-    - Build a new conda env using the `requirements.txt` file
-    - Export as `env.archived.yaml`
+    - Build a new conda env using the ``requirements.txt`` file
+    - Export as ``env.archived.yaml``
 
-- Install `bftools` in `env` by calling `pip install bftools`
+- Install ``bftools`` in ``env`` by calling ``pip install bftools``
     - GitHub repo: https://github.com/BobDotCom/bftools
-    - Aim: Convert `vst` to `tif` using the `bftools` package
+    - Aim: Convert ``vst`` to ``tif`` using the ``bftools`` package
       as documented in https://bio-formats.readthedocs.io/en/stable/users/comlinetools/index.html
 
 
@@ -75,9 +75,9 @@ squidpy_masking
 
 @Mira0507
 
-- Convert `vsi` to `tif` using `bfconvert`
-    - conda env: `env`
-    - demo script: `scripts/image_conversion.Rmd`
+- Convert ``vsi`` to ``tif`` using ``bfconvert``
+    - conda env: ``env``
+    - demo script: ``scripts/image_conversion.Rmd``
     - key commands
 
     .. code-block:: bash
@@ -122,15 +122,15 @@ squidpy_masking
         - The output TIF file showed 5 channels on the Napari viewer.
 
 - Perform image masking on the converted TIF file (in progress)
-    - conda env: `env`
-    - script: `scripts/segmentation_tif.Rmd`
+    - conda env: ``env``
+    - script: ``scripts/segmentation_tif.Rmd``
 
 2025-08-10
 ----------
 
 @Mira0507
 
-- Update `README.md` to include the `Scripts` section
+- Update ``README.md`` to include the ``Scripts`` section
 
 
 
@@ -139,27 +139,27 @@ squidpy_masking
 
 @Mira0507
 
-- Install `jupyter` in `conda env` using conda and export updated `env` to `env.archived.yaml`
+- Install ``jupyter`` in ``conda env`` using conda and export updated ``env`` to ``env.archived.yaml``
 
-- Run image masking on converted `tif` image using squidpy
-    - conda env: `env`
+- Run image masking on converted ``tif`` image using squidpy
+    - conda env: ``env``
     - scripts: 
-        - `scripts/segmentation_tif.Rmd`
-        - `scripts/segmentation_tif.ipynb`
+        - ``scripts/segmentation_tif.Rmd``
+        - ``scripts/segmentation_tif.ipynb``
     - notes
-        - Python scripts in both `Rmd` and `ipynb` ended up being killed
+        - Python scripts in both ``Rmd`` and ``ipynb`` ended up being killed
         - It appears to be associated with a memory shortage on my Macbook with 32B memory
         - Images need to be cropped when running locally
 
-- Update the script converting image from `vsi` to `tif`
-    - conda env: `env`
-    - script: `scripts/image_conversion.Rmd`
+- Update the script converting image from ``vsi`` to ``tif``
+    - conda env: ``env``
+    - script: ``scripts/image_conversion.Rmd``
     - notes: 
         - script enhanced to include code scanning and selecting one series with the highest 
           resolution and multi-channel fluorescence data 
-        - the `bfconvert` required to rerun with the following parameters generating *pyramidal* output
-            - `-pyramid-resolutions`
-            - `-pyramid-scale` 
+        - the ``bfconvert`` required to rerun with the following parameters generating *pyramidal* output
+            - ``-pyramid-resolutions``
+            - ``-pyramid-scale`` 
         - QuPath and napari successfully read the converted `tif` file from the series with the highest 
           resolution (33874 x 33872) when the output was the pyramidal format.
 
@@ -169,44 +169,44 @@ squidpy_masking
 
 @Mira0507
 
-- Convert image format from `vsi` to `tif` 
-    - conda env: `env`
+- Convert image format from ``vsi`` to ``tif`` 
+    - conda env: ``env``
     - input:
-        - `images/input/Perm/Image_169.vsi`
-        - `images/input/NoPerm/Image_168.vsi`
+        - ``images/input/Perm/Image_169.vsi``
+        - ``images/input/NoPerm/Image_168.vsi``
     - scripts:
-        - `scripts/image_conversion_perm.Rmd`
-        - `scripts/image_conversion_noperm.Rmd`
+        - ``scripts/image_conversion_perm.Rmd``
+        - ``scripts/image_conversion_noperm.Rmd``
     - notes:
         - analysis performed locally on work computer
-        - `scripts/image_conversion.Rmd` deleted
+        - ``scripts/image_conversion.Rmd`` deleted
 
 - Run Squidpy segmentation on cropped TIF image
-    - conda env: `env`
+    - conda env: ``env``
     - scripts: 
-        - `scripts/segmentation_perm_500.Rmd`
-        - `scripts/segmentation_perm_1000.Rmd`
-        - `scripts/segmentation_noperm_500.Rmd`
-        - `scripts/segmentation_noperm_1000.Rmd`
+        - ``scripts/segmentation_perm_500.Rmd``
+        - ``scripts/segmentation_perm_1000.Rmd``
+        - ``scripts/segmentation_noperm_500.Rmd``
+        - ``scripts/segmentation_noperm_1000.Rmd``
     - notes
         - ran locally on work computer
         - 500 and 1000 indicate N x N dimension in pixels
         - analyzing a full image crashed
         - unnecessary files deleted
-            - `scripts/segmentation_tif.Rmd`
-            - `scripts/segmentation_tif.ipynb`
+            - ``scripts/segmentation_tif.Rmd``
+            - ``scripts/segmentation_tif.ipynb``
 
 - Transfer the working directory to HPC. 
-    - re-build the conda environment using `requirements.txt`
-    - add `bftools` to the `requirements.txt` instead of using `pip`
-    - update `env.archived.yaml` on HPC
+    - re-build the conda environment using ``requirements.txt``
+    - add ``bftools`` to the ``requirements.txt`` instead of using ``pip``
+    - update ``env.archived.yaml`` on HPC
     - rerun analyses 
-        - conda env: `env`
+        - conda env: ``env``
         - scripts
-            - `scripts/image_conversion_perm.Rmd`
-            - `scripts/image_conversion_noperm.Rmd`
-            - `scripts/segmentation_perm_500.Rmd`
-            - `scripts/segmentation_perm_1000.Rmd`
+            - ``scripts/image_conversion_perm.Rmd``
+            - ``scripts/image_conversion_noperm.Rmd``
+            - ``scripts/segmentation_perm_500.Rmd``
+            - ``scripts/segmentation_perm_1000.Rmd``
 
 
 2025-08-13
@@ -215,21 +215,21 @@ squidpy_masking
 @Mira0507
 
 - rerun analyses on HPC
-    - conda env: `env`
+    - conda env: ``env``
     - scripts
-        `scripts/segmentation_noperm_1000.Rmd`
-        `scripts/segmentation_noperm_500.Rmd`
+        ``scripts/segmentation_noperm_1000.Rmd``
+        ``scripts/segmentation_noperm_500.Rmd``
 
 - run segmentation without cropping
-    - conda env: `env`
-    - script: `scripts/segmentation_perm.Rmd`
+    - conda env: ``env``
+    - script: ``scripts/segmentation_perm.Rmd``
     - notes
         - 200G exceeded 200G memory
         - we can put this on hold while focus on improving cropped images
 
 - add a step to merge binarized signals (in progress)
-    - conda env: `env`
-    - script: `scripts/segmentation_perm_500.Rmd`
+    - conda env: ``env``
+    - script: ``scripts/segmentation_perm_500.Rmd``
 
 
 2025-08-14
@@ -238,10 +238,10 @@ squidpy_masking
 @Mira0507
 
 - merge binarized signals 
-    - conda env: `env`
+    - conda env: ``env``
     - scripts: 
-        - `scripts/segmentation_perm_500.Rmd`
-        - `scripts/segmentation_perm_1000.Rmd`
+        - ``scripts/segmentation_perm_500.Rmd``
+        - ``scripts/segmentation_perm_1000.Rmd``
     - notes:
         - output images saved
         - channels of interest
@@ -255,12 +255,12 @@ squidpy_masking
 @Mira0507
 
 - merge binarized signals
-    - conda env: `env`
+    - conda env: ``env``
     - scripts: 
-        - `scripts/segmentation_perm_500.Rmd`
-        - `scripts/segmentation_perm_1000.Rmd`
-        - `scripts/segmentation_noperm_500.Rmd`
-        - `scripts/segmentation_noperm_1000.Rmd`
+        - ``scripts/segmentation_perm_500.Rmd``
+        - ``scripts/segmentation_perm_1000.Rmd``
+        - ``scripts/segmentation_noperm_500.Rmd``
+        - ``scripts/segmentation_noperm_1000.Rmd``
     - notes:
         - pseudocolor palette upated
         - only the lower half of each masking was captured, presumably 
@@ -276,30 +276,30 @@ squidpy_masking
 @Mira0507
 
 - testing adaptive thresholding
-    - conda env: `env`
+    - conda env: ``env``
     - scripts
         - adaptive thresholding on raw images: 
-          `scripts/segmentation_perm_1000_adaptive.Rmd`
+          ``scripts/segmentation_perm_1000_adaptive.Rmd``
         - adaptive thresholding on equalized images: 
-          `scripts/segmentation_perm_1000_adaptive_eq.Rmd`
+          ``scripts/segmentation_perm_1000_adaptive_eq.Rmd``
     - notes:
-        - adaptive thresholding was performed using the `skimage.filters.threshold_local` 
+        - adaptive thresholding was performed using the ``skimage.filters.threshold_local`` 
           function 
         - erosion was performed, on top of adaptive thresholding, using 
-          the `skimage.morphology.binary_erosion` function
+          the ``skimage.morphology.binary_erosion`` function
         - image equalization performed to enhance contrast, using 
-          the `skimage.exposure.equalize_adapthist` function
+          the ``skimage.exposure.equalize_adapthist`` function
         - adaptive thresholding resulted in masking zero pixels on equalized images
         - erosion was helpful to remove noisy specks
         - decided to proceed without equalization for now
 
 - apply adaptive thresholding
-    - conda env: `env`
+    - conda env: ``env``
     - scripts
-        - `scripts/segmentation_perm_1000_adaptive.Rmd`
-        - `scripts/segmentation_perm_500_adaptive.Rmd`
-        - `scripts/segmentation_noperm_1000_adaptive.Rmd`
-        - `scripts/segmentation_noperm_500_adaptive.Rmd`
+        - ``scripts/segmentation_perm_1000_adaptive.Rmd``
+        - ``scripts/segmentation_perm_500_adaptive.Rmd``
+        - ``scripts/segmentation_noperm_1000_adaptive.Rmd``
+        - ``scripts/segmentation_noperm_500_adaptive.Rmd``
 
 
 2025-08-19
@@ -307,5 +307,108 @@ squidpy_masking
 
 @Mira0507
 
-- update `README.md`
+- update ``README.md``
+
+- prep snakemake environment 
+    - ``snakemake<9`` installed in ``env``
+    - ``scripts/WRAPPER_SLURM`` added
+    - config added
+        - ``scripts/config/sampletable.txt`` (tab-separated file)
+        - ``scripts/config/config.yaml``
+    - writing ``Snakefile`` in progress
+
+
+2025-08-20
+----------
+
+@Mira0507
+
+- add ``snakemake-executor-plugin-cluster-generic`` to conda env (``env``)
+    - this is required to avoid the following error when running 
+      with the `v8 profile 
+      <https://github.com/NIH-HPC/snakemake_profile/tree/snakemake8>`_
+
+    .. code-block:: bash
+
+        # snakemake --dry-run --profile $SNAKEMAKE_PROFILE_V8
+        snakemake: error: argument --executor/-e: invalid choice: 'cluster-generic' (choose from 'local', 'dryrun', 'touch')
+
+    - Refer to https://github.com/NIH-HPC/snakemake_profile/pull/4/commits/005dfaa174552cbc9b300d4c87c3a5a75540e4b8
+      for more info
+
+- write ``Snakefile``
+    - rule ``convert`` added
+    - wrapper script ``scripts/wrapper_rmd/image_conversion.rmd`` scripting in progress
+
+
+2025-08-21
+----------
+
+@Mira0507
+
+- write ``Snakefile``
+    - rule ``convert`` updated
+    - wrapper script ``scripts/wrapper_rmd/image_conversion.Rmd`` updated 
+
+- update ``README.md``
+
+
+2025-08-22
+----------
+
+@Mira0507
+
+- reorganize directory structure
+    - ``scripts/*.Rmd`` files moved into the ``scripts/individual`` directory
+
+    .. code-block:: bash
+
+        $ ls scripts/individual | grep Rmd
+        image_conversion_noperm.Rmd
+        image_conversion_perm.Rmd
+        segmentation_noperm_1000_adaptive.Rmd
+        segmentation_noperm_1000.Rmd
+        segmentation_noperm_500_adaptive.Rmd
+        segmentation_noperm_500.Rmd
+        segmentation_perm_1000_adaptive_eq.Rmd
+        segmentation_perm_1000_adaptive.Rmd
+        segmentation_perm_1000.Rmd
+        segmentation_perm_500_adaptive.Rmd
+        segmentation_perm_500.Rmd
+        segmentation_perm.Rmd
+        segmentation.Rmd
+
+    - rerun the moved scripts in the ``scripts/individual`` directory
+    - move files for snakemake into the ``scripts/snakemake`` directory
+
+    .. code-block:: bash
+
+        $ tree scripts/snakemake/
+        scripts/snakemake/
+        ├── config
+        │   ├── config.yaml
+        │   └── sampletable.txt
+        ├── image_conversion.Rmd
+        ├── Snakefile
+        └── WRAPPER_SLURM
+
+- run snakemake converting ``vsi`` to ``tif``
+    - conda env: ``env``
+    - working directory: ``scripts/snakemake``
+    - output
+
+    .. code-block:: bash
+
+        $ tree images/converted/
+        images/converted/
+        ├── noperm
+        │   ├── converted.ome.tif
+        │   ├── image_conversion.html
+        │   ├── input_metadata.txt
+        │   └── output_metadata.txt
+        └── perm
+            ├── converted.ome.tif
+            ├── image_conversion.html
+            ├── input_metadata.txt
+            └── output_metadata.txt
 

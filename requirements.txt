@@ -1,4 +1,6 @@
 python=3.11
+snakemake<9
+snakemake-executor-plugin-cluster-generic
 squidpy
 napari
 napari-spatialdata

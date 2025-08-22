@@ -1,0 +1,55 @@
+import os
+import pandas as pd
+
+##### for interactive debugging
+# import yaml
+# with open("config/config.yaml", 'r') as stream:
+# config = yaml.safe_load(stream)
+
+
+# Specify path to config file
+configfile: 'config/config.yaml'
+
+# Prep sampletable
+sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False)
+
+rule all:
+    input:
+        expand("{outputdir}/{name}/converted.ome.tif", outputdir=config['outdir'], name=list(sample.index))
+
+rule convert:
+    """
+    This rule converts VSI images to OME-TIFF format 
+    using the bftools package
+    """
+    input: 
+        vsi = lambda wildcards: sample.loc[wildcards.name, 'input_vsi'],
+        rmd = "image_conversion.Rmd"
+    output: 
+        tif = "{outputdir}/{name}/converted.ome.tif",
+        html = "{outputdir}/{name}/image_conversion.html"
+    threads: 1
+    resources:
+        mem_mb=1024 * 40,
+        disk_mb=1024 * 20,
+        runtime=60 * 6
+    params:
+        series = config['ser'],
+        pyramidal = config['pyramidal'],
+        conda_env = config['conda_env']
+    shell:
+        """
+        Rscript -e 'params = list(
+            vsi = "{input.vsi}",
+            tif = "{output.tif}",
+            input_meta_out = "{wildcards.outputdir}/{wildcards.name}/input_metadata.txt",
+            output_meta_out = "{wildcards.outputdir}/{wildcards.name}/output_metadata.txt",
+            ser = "{params.series}",
+            conda_env = "{params.conda_env}",
+            to_pyramidal = "{params.pyramidal}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.outputdir}/{wildcards.name}",
+            intermediates_dir = "{wildcards.outputdir}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
