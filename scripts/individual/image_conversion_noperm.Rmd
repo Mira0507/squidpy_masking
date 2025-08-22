@@ -32,7 +32,7 @@ Refer to the following resources for detailed instructions:
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
-use_condaenv('../env')
+use_condaenv('../../env')
 ```
 
 ```{python ppackages}
@@ -50,18 +50,18 @@ import re
 # ------------------------------------------------------------------------------
 
 # Specify the path to input vsi image
-vsi = "../images/input/Perm/Image_168.vsi"
+vsi = "../../images/input/NoPerm/Image_169.vsi"
 
 # Specify the path to output directory
-output_dir = "image_conversion_perm"
+output_dir = "image_conversion_noperm"
 os.makedirs(output_dir, exist_ok=True)
 
 # Specify the path to output tif file
-tif = f"{output_dir}/converted_168.ome.tif"
+tif = f"{output_dir}/converted_169.ome.tif"
 
 # Specify the path to metadata
-input_meta_out = f"{output_dir}/input_metadata_168.txt"
-output_meta_out = f"{output_dir}/output_metadata_168.txt"
+input_meta_out = f"{output_dir}/input_metadata_169.txt"
+output_meta_out = f"{output_dir}/output_metadata_169.txt"
 
 # Specify the series to be converted. 
 # NOTE: 
