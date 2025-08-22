@@ -350,3 +350,65 @@ squidpy_masking
     - rule ``convert`` updated
     - wrapper script ``scripts/wrapper_rmd/image_conversion.Rmd`` updated 
 
+- update ``README.md``
+
+
+2025-08-22
+----------
+
+@Mira0507
+
+- reorganize directory structure
+    - ``scripts/*.Rmd`` files moved into the ``scripts/individual`` directory
+
+    .. code-block:: bash
+
+        $ ls scripts/individual | grep Rmd
+        image_conversion_noperm.Rmd
+        image_conversion_perm.Rmd
+        segmentation_noperm_1000_adaptive.Rmd
+        segmentation_noperm_1000.Rmd
+        segmentation_noperm_500_adaptive.Rmd
+        segmentation_noperm_500.Rmd
+        segmentation_perm_1000_adaptive_eq.Rmd
+        segmentation_perm_1000_adaptive.Rmd
+        segmentation_perm_1000.Rmd
+        segmentation_perm_500_adaptive.Rmd
+        segmentation_perm_500.Rmd
+        segmentation_perm.Rmd
+        segmentation.Rmd
+
+    - rerun the moved scripts in the ``scripts/individual`` directory
+    - move files for snakemake into the ``scripts/snakemake`` directory
+
+    .. code-block:: bash
+
+        $ tree scripts/snakemake/
+        scripts/snakemake/
+        ├── config
+        │   ├── config.yaml
+        │   └── sampletable.txt
+        ├── image_conversion.Rmd
+        ├── Snakefile
+        └── WRAPPER_SLURM
+
+- run snakemake converting ``vsi`` to ``tif``
+    - conda env: ``env``
+    - working directory: ``scripts/snakemake``
+    - output
+
+    .. code-block:: bash
+
+        $ tree images/converted/
+        images/converted/
+        ├── noperm
+        │   ├── converted.ome.tif
+        │   ├── image_conversion.html
+        │   ├── input_metadata.txt
+        │   └── output_metadata.txt
+        └── perm
+            ├── converted.ome.tif
+            ├── image_conversion.html
+            ├── input_metadata.txt
+            └── output_metadata.txt
+
