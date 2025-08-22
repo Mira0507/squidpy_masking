@@ -35,25 +35,24 @@ rule convert:
     resources:
         mem_mb=1024 * 40,
         disk_mb=1024 * 20,
-        runtime=60 * 8,
-        tmpdir=config['outdir']
+        runtime=60 * 8
     params:
-        outdir = config['outdir'],
         series = config['ser'],
-        pyramidal = config['pyramidal']
+        pyramidal = config['pyramidal'],
+        conda_env = config['conda_env']
     shell:
         """
         Rscript -e 'params = list(
             vsi = "{input.vsi}",
-            output_dir = "{params.outdir}",
             tif = "{output.tif}",
-            input_meta_out = "{params.outdir}/{wildcards.name}/input_metadata.txt",
-            output_meta_out = "{params.outdir}/{wildcards.name}/output_metadata.txt",
+            input_meta_out = "{wildcards.outputdir}/{wildcards.name}/input_metadata.txt",
+            output_meta_out = "{wildcards.outputdir}/{wildcards.name}/output_metadata.txt",
             ser = "{params.series}",
+            conda_env = "{params.conda_env}",
             to_pyramidal = "{params.pyramidal}");
         rmarkdown::render("{input.rmd}",
-            params = params,
+            output_dir = "{wildcards.outputdir}/{wildcards.name}",
             intermediates_dir = "{wildcards.outputdir}/{wildcards.name}",
+            params = params,
             output_file = "{output.html}")'
         """
-
