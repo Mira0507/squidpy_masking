@@ -7,8 +7,7 @@ images/
 bftools/
 scripts/image_conversion/
 */.ipynb_checkpoints/
-scripts/image_conversion_perm/
-scripts/image_conversion_noperm/
+scripts/individual/image_*
 scripts/segmentation_*/
 *.snakemake/
 *Snakefile.log
