@@ -1,0 +1,3 @@
+samplename	input_vsi
+perm	../../images/input/Perm/Image_168.vsi
+noperm	../../images/input/NoPerm/Image_169.vsi

@@ -13,9 +13,6 @@ configfile: 'config/config.yaml'
 # Prep sampletable
 sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False)
 
-# Wrapper script directory
-wrapper_dir = config['wrapper_dir']
-
 rule all:
     input:
         expand("{outputdir}/{name}/converted.ome.tif", outputdir=config['outdir'], name=list(sample.index))
@@ -27,7 +24,7 @@ rule convert:
     """
     input: 
         vsi = lambda wildcards: sample.loc[wildcards.name, 'input_vsi'],
-        rmd = f"{wrapper_dir}/image_conversion.Rmd"
+        rmd = "image_conversion.Rmd"
     output: 
         tif = "{outputdir}/{name}/converted.ome.tif",
         html = "{outputdir}/{name}/image_conversion.html"
@@ -35,7 +32,7 @@ rule convert:
     resources:
         mem_mb=1024 * 40,
         disk_mb=1024 * 20,
-        runtime=60 * 8
+        runtime=60 * 6
     params:
         series = config['ser'],
         pyramidal = config['pyramidal'],
