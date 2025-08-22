@@ -1,6 +1,7 @@
 *.DS_Store
 *.Rhistory
 *.html
+*run_rmd.sh
 env/
 *_files/
 images/
