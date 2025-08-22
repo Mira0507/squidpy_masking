@@ -1,0 +1,313 @@
+---
+title: "Segmentation using squidpy"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to demonstrate image segmentation for Visium analysis 
+using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
+Refer to the following resources for technical details:
+
+- [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Squidpy GitHub](https://github.com/scverse/squidpy)
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv('../../env')
+```
+
+```{python ppackages}
+import numpy as np
+import matplotlib.pyplot as plt
+import squidpy as sq
+from tifffile import imread
+import napari
+import os
+```
+
+```{python configs}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to specify variables for paths to input files/directories
+# and parameter settings
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Specify file paths to input and output files
+input_image = "image_conversion_perm/converted_168.ome.tif"
+output_obj = "image_conversion_perm/icontainer_168.rds"
+
+# Specify argument setting for printing images
+channel_config = {
+    'Merged' : {'ch' : None, 'cm' : None},
+    'Channel 0' : {'ch' : 0, 'cm' : 'gray'},
+    'Channel 1' : {'ch' : 1, 'cm' : 'gray'},
+    'Channel 2' : {'ch' : 2, 'cm' : 'gray'},
+    'Channel 3' : {'ch' : 3, 'cm' : 'gray'},
+    'Channel 4' : {'ch' : 4, 'cm' : 'gray'}
+}
+
+# Specify the name of input image layer to be processed
+lyr = 'image'
+
+# Specify signal values to be tested for Gaussian smoothing
+# Sigma represents the variance for normal distribution
+gaussian_sigma = 1
+
+# Specify whether input images will be cropped
+crop_images = False
+
+# Specify coordinates to crop images
+crop_coord = {'height' : 0.5, 'width' : 0.5, 'size' : 500, 'scale' : 1}
+
+# Specify the segmentation method
+seg_method = "watershed"
+
+# Specify the thresholding method. If `None`, the Otsu method is used.
+thr_method = None
+```
+
+# Loading input images {.tabset}
+
+We use `tif` image files converted from `vsi`. Refer to the [image_conversion.html](image_conversion.html) 
+for detailed processes on converting image formats.
+
+The following image object loaded:
+
+```{python load_image}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to load input image files
+# ------------------------------------------------------------------------------
+
+# Read image as numpy array
+img_array = imread(input_image)
+
+# Initialize ImageContainer
+img = sq.im.ImageContainer(img_array, layer=lyr)
+
+print("ImageContainer obj created using input image:", img)
+
+# Crop input images if specified
+if crop_images:
+    print("Image cropped. Refer to the following dimension:", crop_coord)
+    img = img.crop_corner(x=crop_coord['width'],
+                          y=crop_coord['height'],
+                          size=crop_coord['size'],
+                          scale=crop_coord['scale'])
+    print("ImageContainer obj updated:", img)
+```
+
+```{python print_all_images, fig.height=12, fig.width=12, eval=FALSE}
+
+# ------------------------------------------------------------------------------
+# This chunk prints all input images at once
+# e.g.
+# fig, axes = plt.subplots(nrows=3, ncols=2)
+# img.show("image", ax=axes[0, 0])
+# _ = axes[0, 0].set_title("Merged")
+# img.show("image", channel=0, ax=axes[0, 1], cmap='gray')
+# _ = axes[0, 1].set_title("Channel 0")
+# img.show("image", channel=1, ax=axes[1, 0], cmap='gray')
+# _ = axes[1, 0].set_title("Channel 1")
+# img.show("image", channel=2, ax=axes[1, 1], cmap='gray')
+# _ = axes[1, 1].set_title("Channel 2")
+# img.show("image", channel=1, ax=axes[2, 0], cmap='gray')
+# _ = axes[2, 0].set_title("Channel 3")
+# img.show("image", channel=2, ax=axes[2, 1], cmap='gray')
+# _ = axes[2, 1].set_title("Channel 4")
+# ------------------------------------------------------------------------------
+
+# img.show("image", channel=None, channelwise=False)
+```
+
+## Channel 0
+
+```{python individual_images_c0, fig.height=12, fig.width=12}
+img.show(lyr, channel=0, cmap='gray')
+```
+
+## Channel 1
+
+```{python individual_images_c1, fig.height=12, fig.width=12}
+img.show(lyr, channel=1, cmap='gray')
+```
+
+## Channel 2
+
+```{python individual_images_c2, fig.height=12, fig.width=12}
+img.show(lyr, channel=2, cmap='gray')
+```
+
+## Channel 3
+
+```{python individual_images_c3, fig.height=12, fig.width=12}
+img.show(lyr, channel=3, cmap='gray')
+```
+
+## Channel 4
+
+```{python individual_images_c4, fig.height=12, fig.width=12}
+img.show(lyr, channel=4, cmap='gray')
+```
+
+# Smoothing {.tabset}
+
+Smoothing is required to reduce noises before image masking. The current workflow uses 
+[Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) by calling 
+the `squidpy.im.process(..., method="smooth")`, which implements the `skimage.filters.gaussian` function 
+in the `scikit-image` package in python.
+
+```{python smoothing}
+
+# --------------------------------------------------------------------------------
+# This chunk runs Gaussian smoothing
+# --------------------------------------------------------------------------------
+
+# Run smoothing
+sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
+```
+
+`ImageContainer` updated:
+
+```{r smoothened_obj}
+py$img
+```
+
+Images are compared between the before (left) and the after (right) smoothing, as well as the original 
+(upper) and higher (lower) magnification, across the stainings.
+
+```{python function_processed}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to prepare visualizing smoothened images
+# ------------------------------------------------------------------------------
+
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = f"{lyr}_smooth"
+
+# Prep cropped images
+img_crp = img.crop_corner(x=crop_coord['width'],
+                          y=crop_coord['height'],
+                          size=crop_coord['size'],
+                          scale=crop_coord['scale'])
+
+# Create a function that prints images before and after Gaussian smoothing, with and without zoom-in
+def image_original_processed(l_one, l_two, image, image_cropped, channels, process):
+    # Design subplots
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    image.show(layer=l_one, ax=axes[0, 0], channel=channels[0], cmap='gray')
+    _ = axes[0, 0].set_title(f"Original before {process}")
+    image.show(layer=l_two, ax=axes[0, 1], channel=channels[1], cmap='gray')
+    _ = axes[0, 1].set_title(f"Original after {process}")
+    image_cropped.show(layer=l_one, ax=axes[1, 0], channel=channels[0], cmap='gray')
+    _ = axes[1, 0].set_title(f"Zoom-in before {process}")
+    image_cropped.show(layer=l_two, ax=axes[1, 1], channel=channels[1], cmap='gray')
+    _ = axes[1, 1].set_title(f"Zoom-in after {process}")
+
+```
+
+## Channel 0
+
+```{python smth_images_c0, fig.width=12, fig.height=12}
+i = 0
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 1
+
+```{python smth_images_c1, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 2
+
+```{python smth_images_c2, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 3
+
+```{python smth_images_c3, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 4
+
+```{python smth_images_c4, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         image_cropped=img_crp,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+```{python load_napari, eval=FALSE}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to explore images using the Napari image viewer. 
+# Manually reorder the dimension if necessary.
+# ------------------------------------------------------------------------------
+
+# Initialize napari viewer
+viewer = napari.Viewer()
+
+for l in seg_lyrs:
+    # Extract ndarray
+    arr = img.data[l].values
+    # Reorder dimensions
+    # NOTE: Ensure to have a compatible dimension with Napari (z, channel, y, z)
+    d_y, d_x, d_z, d_ch = arr.shape
+    arr_reshaped = arr.reshape(d_z, d_ch, d_y, d_x)
+    # Add layers of interest to napari viewer
+    viewer.add_image(arr_reshaped, name=l)
+
+# Explore loaded images
+napari.run()
+```
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```
