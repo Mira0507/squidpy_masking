@@ -8,7 +8,7 @@ bftools/
 scripts/image_conversion/
 */.ipynb_checkpoints/
 scripts/individual/image_*
-scripts/segmentation_*/
 *.snakemake/
 *Snakefile.log
 *logs/
+scripts/individual/segmentation*/
