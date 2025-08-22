@@ -353,7 +353,7 @@ image_original_processed(l_one=lyr,
                          process="segmentation")
 ```
 
-```{python load_napari}
+```{python load_napari, eval=FALSE}
 
 # Initialize napari viewer
 viewer = napari.Viewer()
