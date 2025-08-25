@@ -57,7 +57,7 @@ import os
 
 # Specify file paths to input and output files
 outdir = "segmentation_perm_1000_adaptive_eq"
-input_image = f"image_conversion_perm/converted_168.ome.tif"
+input_image = "image_conversion_perm/converted_168.ome.tif"
 output_obj = f"{outdir}/icontainer_168_1000.zarr"
 
 # Create the output directory 
@@ -100,7 +100,7 @@ thr_method = None
 # - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
 #           higher offset results in more stringent thresholding
 block_size = round(crop_coord['size'] / 2) + 1
-offset = -100
+offset = 0
 
 # Specify pseudocolors across the channels
 col_dic = {
