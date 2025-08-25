@@ -412,3 +412,27 @@ squidpy_masking
             ├── input_metadata.txt
             └── output_metadata.txt
 
+
+2025-08-25
+----------
+
+@Mira0507
+
+- Validate the effect of adaptive equalization
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_1000_adaptive_eq.Rmd``
+    - notes:
+        - ``offset`` adjusted to 0
+        - noise pixels that are not from IF staining are captured
+        - adaptive equalization will not be used in the current analysis
+
+- Validate the effect of erosion
+    - conda env: ``env``
+    - scripts: 
+        - ``scripts/individual/segmentation_perm_1000_adaptive.Rmd``
+        - ``scripts/individual/segmentation_perm_500_adaptive.Rmd``
+    - notes:
+        - the same channel merged with and without erosion across the channels
+        - this was performed to ensure that erosion does not end up losing
+          significant pixels
+
