@@ -57,8 +57,8 @@ import os
 
 # Specify file paths to input and output files
 outdir = "segmentation_perm_1000_adaptive"
-input_image = "image_conversion_perm/converted_168.ome.tif"
-output_obj = f"{outdir}/icontainer_168_1000.zarr"
+input_image = "../../images/converted/perm/converted.ome.tif"
+output_obj = f"{outdir}/icontainer_1000.zarr"
 
 # Create the output directory 
 os.makedirs(outdir, exist_ok=True)
