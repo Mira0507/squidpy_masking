@@ -559,6 +559,11 @@ outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 py$img
 ```
 
+Color code:
+
+- BEFORE erosion: *Lime*
+- AFTER erosion: *Salmon*
+
 ```{python prep_comparing_erosion}
 
 # --------------------------------------------------------------------------------
@@ -577,7 +582,7 @@ def compare_erosion(image, channel):
         if "erosion" in l:
             arr_dic[l] = {"array": np.squeeze(img[l].values), "color": "Salmon"}
         else:
-            arr_dic[l] = {"array": np.squeeze(img[l].values), "color": "GreenYellow"}
+            arr_dic[l] = {"array": np.squeeze(img[l].values), "color": "Lime"}
 
     for arr in arr_dic.values():
         plt.imshow(arr['array'],
