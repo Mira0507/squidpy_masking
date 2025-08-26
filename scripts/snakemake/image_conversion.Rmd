@@ -30,13 +30,15 @@ Refer to the following resources for detailed instructions:
 - [`showinf`](https://bio-formats.readthedocs.io/en/stable/users/comlinetools/display.html)
 
 ```{r params}
-
+############################# DELETE #############################
 params <- list(vsi = "../../images/input/Perm/Image_168.vsi",
                tif = "../../images/converted/perm/converted.ome.tif",
                input_meta_out = "../../images/converted/perm/input_metadata.txt",
                output_meta_out = "../../images/converted/perm/output_metadata.txt",
                ser = "None",
-               conda_env = "../../env", to_pyramidal = "Y")
+               conda_env = "../../env",
+               to_pyramidal = "Y")
+##################################################################
 ```
 
 ```{r rpackages}
@@ -62,7 +64,7 @@ vsi <- params[['vsi']]
 tif <- params[['tif']]
 input_meta_out <- params[['input_meta_out']]
 output_meta_out <- params[['output_meta_out']]
-to_pyramidal <- params[['pyramidal']]
+to_pyramidal <- params[['to_pyramidal']]
 ser <- params[['ser']]
 ```
 
