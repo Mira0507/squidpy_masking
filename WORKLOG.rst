@@ -436,3 +436,20 @@ squidpy_masking
         - this was performed to ensure that erosion does not end up losing
           significant pixels
 
+
+
+2025-08-26
+----------
+
+@Mira0507
+
+- Snakemake bugfix
+    - conda env: ``env``
+    - script: ``scripts/snakemake/image_conversion.Rmd``
+    - notes:
+        - variables ``ser`` and ``to_pyramidal`` set to ``None`` and ``True`` 
+          were not correctly read in the ``image_conversion.Rmd`` script
+        - ``to_variable`` changed from ``True``/``False`` to ``"Y"``/``"N"`` 
+        - ``set`` changed from ``None`` to ``"None"``
+        - test run succeeded for both perm and noperm samples
+
