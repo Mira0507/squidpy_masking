@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 import squidpy as sq
 from tifffile import imread
 from matplotlib.colors import ListedColormap
-from skimage.filters import threshold_local
+from skimage.filters import threshold_local, threshold_otsu
 from skimage.morphology import binary_erosion
 from skimage.exposure import equalize_adapthist
 import xarray as xr
@@ -404,6 +404,225 @@ image_original_processed(l_one=lyr,
                          process="segmentation")
 ```
 
+# Custom Otsu thresholding {.tabset}
+
+```{python prep_otsu_thresholding}
+
+# --------------------------------------------------------------------------------
+# This chunk prepares a function to run otsu thresholding
+# --------------------------------------------------------------------------------
+
+def otsu_thresh(channel, erosion=True):
+    # Extract smoothened array per channel
+    smth = img[lyr_smth].values[:, :, 0, channel]
+    
+    # Run local thresholding
+    otsu = threshold_otsu(smth)
+    mask = smth > otsu
+
+    prefix = "otsu"
+
+    # Run erosion of specified
+    if erosion:
+        mask = binary_erosion(mask)
+        prefix = f"{prefix}_erosion"
+
+    # Specify file path prefix
+    prefix = f"{prefix}_channel_{channel}"
+
+    # Add the binarized image to the `img` obj
+    img.add_img(mask.astype(np.uint8), layer=prefix)
+    
+    # print and save
+    plt.imshow(mask, cmap=ListedColormap(['black', 'white']))
+    plt.xticks([])
+    plt.yticks([])
+    plt.savefig(f"{outdir}/{prefix}.png", dpi=1000)
+    plt.show()
+```
+
+## Before erosion {.tabset}
+
+### DAPI
+
+```{python otsu_dapi, fig.height=12, fig.width=12}
+i = 0
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/ostu_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### IBA1
+
+```{python otsu_iba, fig.height=12, fig.width=12}
+i += 1
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/ostu_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### TDP43
+
+```{python otsu_tdp, fig.height=12, fig.width=12}
+i += 1
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/ostu_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### MAP2
+
+```{python otsu_map, fig.height=12, fig.width=12}
+i += 1
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/ostu_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### ALDH1L1
+
+```{python otsu_aldh, fig.height=12, fig.width=12}
+i += 1
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/ostu_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+## After erosion {.tabset}
+
+### DAPI
+
+```{python otsu_erosion_dapi, fig.height=12, fig.width=12}
+i = 0
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### IBA1
+
+```{python otsu_erosion_iba, fig.height=12, fig.width=12}
+i += 1
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### TDP43
+
+```{python otsu_erosion_tdp, fig.height=12, fig.width=12}
+i += 1
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### MAP2
+
+```{python otsu_erosion_map, fig.height=12, fig.width=12}
+i += 1
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### ALDH1L1
+
+```{python otsu_erosion_aldh, fig.height=12, fig.width=12}
+i += 1
+otsu_thresh(channel=i, erosion=False)
+outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+## Before & after erosion {.tabset}
+
+`ImageContainer` updated:
+
+```{r obj_after_otsu_thresh}
+py$img
+```
+
+Color code:
+
+- BEFORE erosion: *Lime*
+- AFTER erosion: *Salmon*
+
+```{python prep_comparing_erosion}
+
+# --------------------------------------------------------------------------------
+# This chunk prepares to explore the effect of erosion by merging images before
+# and after erosion 
+# --------------------------------------------------------------------------------
+
+# Create a function that merges IF signals before and after erosion
+def compare_erosion(image, channel, keyword):
+    # Filter layers before and after erosion for all channels
+    lyr_compared = [l for l in list(image) if keyword in l]
+    lyr_compared = [l for l in lyr_compared if str(channel) in l]
+
+    arr_dic = {}
+    for l in lyr_compared:
+        if "erosion" in l:
+            arr_dic[l] = {"array": np.squeeze(img[l].values), "color": "Salmon"}
+        else:
+            arr_dic[l] = {"array": np.squeeze(img[l].values), "color": "Lime"}
+
+    for arr in arr_dic.values():
+        plt.imshow(arr['array'],
+                   cmap=ListedColormap([(1, 1, 1, 0), arr['color']]), 
+                   alpha=0.5)
+    plt.yticks([])
+    plt.xticks([])
+    plt.show()
+
+```
+
+### DAPI
+
+```{python compare_dapi_otsu, fig.height=12, fig.width=12}
+i = 0
+compare_erosion(image=img, channel=i, keyword="otsu")
+```
+
+### IBA1
+
+```{python compare_iba_otsu, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i, keyword="otsu")
+```
+
+### TDP43
+
+```{python compare_tdp_otsu, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i, keyword="otsu")
+```
+
+### MAP2
+
+```{python compare_map_otsu, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i, keyword="otsu")
+```
+
+### ALDH1L1
+
+```{python compare_aldh_otsu, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i, keyword="otsu")
+```
+
 # Adaptive thresholding {.tabset}
 
 We rerun thresholding to address the uneven results produced by the Otsu method. [Adaptive thresholding (aka local thresholding)](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding) is applied to achieve more uniform thresholding results across the pixels,
@@ -551,113 +770,52 @@ outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
+## Before & after erosion {.tabset}
+
 `ImageContainer` updated:
 
 ```{r obj_after_adaptive_thresh}
 py$img
 ```
 
-# Merging masked images {.tabset}
+Color code:
 
-We are merging binarized signals across the antibodies of interest. Refer to the following pseudo-colors:
+- BEFORE erosion: *Lime*
+- AFTER erosion: *Salmon*
 
-```{python setup_merge}
+### DAPI
 
-# --------------------------------------------------------------------------------
-# This chunk prepares numpy arrays processed with the adaptive thresholding
-# --------------------------------------------------------------------------------
-
-# Extract all binarized array data
-adaptive_lyrs = [l for l in list(img) if merge_prefix in l]
-binary_arr = [np.squeeze(img[l].values) for l in adaptive_lyrs]
-
-# Specify a function to merge layers
-def display_merge(merge_name, method):
-
-    # Extract antibody and channel
-    ch_list = list(merge_name.split("_"))
-    ch_dic = {ab: i for i, ab in enumerate(col_dic.keys()) if ab in ch_list}
-
-    # Stack binary images
-    for ab, i in ch_dic.items():
-        plt.imshow(binary_arr[i],
-                   cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
-                   alpha=0.5)
-    plt.xticks([])
-    plt.yticks([])
-    plt.savefig(f"{outdir}/{method}_{merge_name}.png", dpi=1000)
-    plt.show()
-
-for ab, color in col_dic.items():
-    print(f"- {ab}: {color}")
-```
-
-Layers used to merge signals:
-
-```{r merge_layers}
-print(py$adaptive_lyrs)
-```
-
-## DAPI + TDP43
-
-```{python adaptive_merge0, fig.width=12, fig.height=12}
-method = "adaptive_erosion"
+```{python compare_dapi_adaptive, fig.height=12, fig.width=12}
 i = 0
-merge_name = merge_list[i]
-display_merge(merge_name=merge_name, method=method)
-outfile = f"{outdir}/{method}_{merge_name}.png"
+compare_erosion(image=img, channel=i, keyword="adaptive")
 ```
 
-- Download: [`r py$outfile`](`r py$outfile`)
+### IBA1
 
-## IBA1 + MAP2 + ALDH1L1
-
-```{python adaptive_merge1, fig.width=12, fig.height=12}
+```{python compare_iba_adaptive, fig.height=12, fig.width=12}
 i += 1
-merge_name = merge_list[i]
-display_merge(merge_name=merge_name, method=method)
-outfile = f"{outdir}/{method}_{merge_name}.png"
+compare_erosion(image=img, channel=i, keyword="adaptive")
 ```
 
-- Download: [`r py$outfile`](`r py$outfile`)
+### TDP43
 
-## TDP43 + MAP2
-
-```{python adaptive_merge2, fig.width=12, fig.height=12}
+```{python compare_tdp_adaptive, fig.height=12, fig.width=12}
 i += 1
-merge_name = merge_list[i]
-display_merge(merge_name=merge_name, method=method)
-outfile = f"{outdir}/{method}_{merge_name}.png"
+compare_erosion(image=img, channel=i, keyword="adaptive")
 ```
 
-- Download: [`r py$outfile`](`r py$outfile`)
+### MAP2
 
-```{python save_zarr}
-img.save(output_obj)
+```{python compare_map_adaptive, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i, keyword="adaptive")
 ```
 
-```{python load_napari, eval=FALSE}
+### ALDH1L1
 
-# ------------------------------------------------------------------------------
-# This chunk is used to explore images using the Napari image viewer. 
-# Manually reorder the dimension if necessary.
-# ------------------------------------------------------------------------------
-
-# Initialize napari viewer
-viewer = napari.Viewer()
-
-for l in seg_lyrs:
-    # Extract ndarray
-    arr = img.data[l].values
-    # Reorder dimensions
-    # NOTE: Ensure to have a compatible dimension with Napari (z, channel, y, z)
-    d_y, d_x, d_z, d_ch = arr.shape
-    arr_reshaped = arr.reshape(d_z, d_ch, d_y, d_x)
-    # Add layers of interest to napari viewer
-    viewer.add_image(arr_reshaped, name=l)
-
-# Explore loaded images
-napari.run()
+```{python compare_aldh_adaptive, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i, keyword="adaptive")
 ```
 
 ```{r session_info, collapse=FALSE}
