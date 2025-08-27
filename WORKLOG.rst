@@ -450,7 +450,7 @@ squidpy_masking
         - variables ``ser`` and ``to_pyramidal`` set to ``None`` and ``True`` 
           were not correctly read in the ``image_conversion.Rmd`` script
         - ``to_variable`` changed from ``True``/``False`` to ``"Y"``/``"N"`` 
-        - ``set`` changed from ``None`` to ``"None"``
+        - ``ser`` changed from ``None`` to ``"None"``
         - test run succeeded for both perm and noperm samples
 
 - rerun masking using snakemake-converted TIF images
