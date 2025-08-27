@@ -61,4 +61,4 @@ Specifying sample names and corresponding input image paths
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
 
-
+![Workflow](scripts/snakemake/config/dag.png)
