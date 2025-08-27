@@ -840,7 +840,7 @@ def display_merge(input_layers, merge_name, method):
 
     # Stack binary images
     for ab, i in ch_dic.items():
-        plt.imshow(input_array[i],
+        plt.imshow(binary_array[i],
                    cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
                    alpha=0.5)
     plt.xticks([])
