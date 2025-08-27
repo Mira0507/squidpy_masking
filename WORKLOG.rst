@@ -453,3 +453,10 @@ squidpy_masking
         - ``set`` changed from ``None`` to ``"None"``
         - test run succeeded for both perm and noperm samples
 
+- rerun masking using snakemake-generated TIF images
+    - conda env: ``env``
+    - scripts:
+        - ``scripts/individual/segmentation_perm_1000_adaptive.Rmd``
+        - ``scripts/individual/segmentation_perm_500_adaptive.Rmd``
+        - ``scripts/individual/segmentation_noperm_1000_adaptive.Rmd``
+        - ``scripts/individual/segmentation_noperm_500_adaptive.Rmd``
