@@ -56,9 +56,9 @@ import os
 # reticulate::repl_python()
 
 # Specify file paths to input and output files
-outdir = "segmentation_perm"
+outdir = "segmentation_perm_adaptive"
 input_image = "../../images/converted/perm/converted.ome.tif"
-output_obj = f"{outdir}/icontainer_1000.zarr"
+output_obj = f"{outdir}/icontainer.zarr"
 
 # Create the output directory 
 os.makedirs(outdir, exist_ok=True)
