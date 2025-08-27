@@ -112,9 +112,6 @@ col_dic = {
 
 # Specify merges
 merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
-
-# Specify the prefix of layers being merged
-merge_prefix = "erosion"
 ```
 
 # Loading input images {.tabset}
@@ -406,6 +403,9 @@ image_original_processed(l_one=lyr,
 
 # Custom Otsu thresholding {.tabset}
 
+Alternatively, we conduct Otsu thresholding using the `threshold_otsu` function from the `scikit-image`
+package.
+
 ```{python prep_otsu_thresholding}
 
 # --------------------------------------------------------------------------------
@@ -499,7 +499,7 @@ outfile = f"{outdir}/ostu_channel_{i}.png"
 
 ```{python otsu_erosion_dapi, fig.height=12, fig.width=12}
 i = 0
-otsu_thresh(channel=i, erosion=False)
+otsu_thresh(channel=i, erosion=True)
 outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 ```
 
@@ -509,7 +509,7 @@ outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 
 ```{python otsu_erosion_iba, fig.height=12, fig.width=12}
 i += 1
-otsu_thresh(channel=i, erosion=False)
+otsu_thresh(channel=i, erosion=True)
 outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 ```
 
@@ -519,7 +519,7 @@ outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 
 ```{python otsu_erosion_tdp, fig.height=12, fig.width=12}
 i += 1
-otsu_thresh(channel=i, erosion=False)
+otsu_thresh(channel=i, erosion=True)
 outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 ```
 
@@ -529,7 +529,7 @@ outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 
 ```{python otsu_erosion_map, fig.height=12, fig.width=12}
 i += 1
-otsu_thresh(channel=i, erosion=False)
+otsu_thresh(channel=i, erosion=True)
 outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 ```
 
@@ -539,7 +539,7 @@ outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 
 ```{python otsu_erosion_aldh, fig.height=12, fig.width=12}
 i += 1
-otsu_thresh(channel=i, erosion=False)
+otsu_thresh(channel=i, erosion=True)
 outfile = f"{outdir}/otsu_erosion_channel_{i}.png"
 ```
 
@@ -816,6 +816,139 @@ compare_erosion(image=img, channel=i, keyword="adaptive")
 ```{python compare_aldh_adaptive, fig.height=12, fig.width=12}
 i += 1
 compare_erosion(image=img, channel=i, keyword="adaptive")
+```
+
+# Merging masked images {.tabset}
+
+We are merging binarized signals across the antibodies of interest. Refer to the following pseudo-colors:
+
+```{python setup_merge_function}
+
+# --------------------------------------------------------------------------------
+# This chunk prepares numpy arrays processed with the adaptive thresholding
+# --------------------------------------------------------------------------------
+
+# Specify a function to merge layers
+def display_merge(input_layers, merge_name, method):
+
+    # Convert array dimension
+    binary_arr = [np.squeeze(img[l].values) for l in input_layers]
+
+    # Extract antibody and channel
+    ch_list = list(merge_name.split("_"))
+    ch_dic = {ab: i for i, ab in enumerate(col_dic.keys()) if ab in ch_list}
+
+    # Stack binary images
+    for ab, i in ch_dic.items():
+        plt.imshow(input_array[i],
+                   cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
+                   alpha=0.5)
+    plt.xticks([])
+    plt.yticks([])
+    plt.savefig(f"{outdir}/{method}_{merge_name}.png", dpi=1000)
+    plt.show()
+
+for ab, color in col_dic.items():
+    print(f"- {ab}: {color}")
+```
+
+## Custom Otsu thresholding {.tabset}
+
+Layers used to merge signals:
+
+```{python print_otsu_layers}
+# Prep layer names of interest
+input_lyrs = [l for l in list(img) if "otsu" in l and "erosion" not in l]
+print(input_lyrs)
+```
+
+### DAPI + TDP43
+
+```{python otsu_merge0, fig.width=12, fig.height=12}
+method = "otsu"
+i = 0
+merge_name = merge_list[i]
+display_merge(input_layers=input_lyrs, merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### IBA1 + MAP2 + ALDH1L1
+
+```{python otsu_merge1, fig.width=12, fig.height=12}
+i += 1
+merge_name = merge_list[i]
+display_merge(input_layers=input_lyrs, merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### TDP43 + MAP2
+
+```{python otsu_merge2, fig.width=12, fig.height=12}
+i += 1
+merge_name = merge_list[i]
+display_merge(input_layers=input_lyrs, merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+
+## Adaptive thresholding {.tabset}
+
+Layers used to merge signals:
+
+```{python print_adaptive_layers}
+# Prep layer names of interest
+input_lyrs = [l for l in list(img) if "adaptive" in l and "erosion" in l]
+print(input_lyrs)
+```
+
+### DAPI + TDP43
+
+```{python adaptive_merge0, fig.width=12, fig.height=12}
+
+method = "adaptive_erosion"
+i = 0
+merge_name = merge_list[i]
+display_merge(input_layers=input_lyrs, merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### IBA1 + MAP2 + ALDH1L1
+
+```{python adaptive_merge1, fig.width=12, fig.height=12}
+i += 1
+merge_name = merge_list[i]
+display_merge(input_layers=input_lyrs, merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+### TDP43 + MAP2
+
+```{python adaptive_merge2, fig.width=12, fig.height=12}
+i += 1
+merge_name = merge_list[i]
+display_merge(input_layers=input_lyrs, merge_name=merge_name, method=method)
+outfile = f"{outdir}/{method}_{merge_name}.png"
+```
+
+- Download: [`r py$outfile`](`r py$outfile`)
+
+# Saving the `ImageContainer` object
+
+Output images are saved as the following object:
+
+```{python save_zarr}
+img.save(output_obj)
+print(output_obj)
 ```
 
 ```{r session_info, collapse=FALSE}
