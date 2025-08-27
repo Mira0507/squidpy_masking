@@ -453,10 +453,46 @@ squidpy_masking
         - ``set`` changed from ``None`` to ``"None"``
         - test run succeeded for both perm and noperm samples
 
-- rerun masking using snakemake-generated TIF images
+- rerun masking using snakemake-converted TIF images
     - conda env: ``env``
     - scripts:
         - ``scripts/individual/segmentation_perm_1000_adaptive.Rmd``
         - ``scripts/individual/segmentation_perm_500_adaptive.Rmd``
         - ``scripts/individual/segmentation_noperm_1000_adaptive.Rmd``
         - ``scripts/individual/segmentation_noperm_500_adaptive.Rmd``
+
+
+2025-08-27
+----------
+
+@Mira0507
+
+- Snakemake DAG added
+    .. code-block:: bash
+
+        $ cd scripts/snakemake
+        $ snakemake --dag --profile none | dot -Tpng > dag.png
+        $ mv dag.png config/.
+
+- validate the effect of adaptive equalization
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_1000_adaptive_eq.Rmd``
+    - notes
+        - disabling watershed segmentation with ``sq.im.segment`` function did not
+          improve in removing noise nor making the binarization more uniform across
+          the pixels
+        - tried with the Otsu thresholding using ``scikit-image`` package. 
+          this global thresholding ended up masking the image less uniform 
+          compared to adaptive thresholding.
+        - merging masked signals 
+            - Otsu thresholding without erosion
+            - adaptive thresholding with erosion
+
+
+- run masking without cropping input images (in progress)
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm.Rmd``
+    - notes:
+        - 47% progress for 6 hours
+        - need to modularize and parallelize using Snakemake
+
