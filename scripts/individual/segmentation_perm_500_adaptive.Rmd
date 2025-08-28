@@ -57,8 +57,8 @@ import os
 
 # Specify file paths to input and output files
 outdir = "segmentation_perm_500_adaptive"
-input_image = "image_conversion_perm/converted_168.ome.tif"
-output_obj = f"{outdir}/icontainer_168_500.zarr"
+input_image = "../../images/converted/perm/converted.ome.tif"
+output_obj = f"{outdir}/icontainer_500.zarr"
 
 # Create the output directory 
 os.makedirs(outdir, exist_ok=True)
@@ -551,10 +551,82 @@ outfile = f"{outdir}/adaptive_erosion_channel_{i}.png"
 
 - Download: [`r py$outfile`](`r py$outfile`)
 
+## Before & after erosion {.tabset}
+
 `ImageContainer` updated:
 
 ```{r obj_after_adaptive_thresh}
 py$img
+```
+
+Color code:
+
+- BEFORE erosion: *Lime*
+- AFTER erosion: *Salmon*
+
+```{python prep_comparing_erosion}
+
+# --------------------------------------------------------------------------------
+# This chunk prepares to explore the effect of erosion by merging images before
+# and after erosion 
+# --------------------------------------------------------------------------------
+
+# Create a function that merges IF signals before and after erosion
+def compare_erosion(image, channel):
+    # Filter layers before and after erosion for all channels
+    lyr_compared = [l for l in list(image) if "adaptive" in l]
+    lyr_compared = [l for l in lyr_compared if str(channel) in l]
+
+    arr_dic = {}
+    for l in lyr_compared:
+        if "erosion" in l:
+            arr_dic[l] = {"array": np.squeeze(img[l].values), "color": "Salmon"}
+        else:
+            arr_dic[l] = {"array": np.squeeze(img[l].values), "color": "Lime"}
+
+    for arr in arr_dic.values():
+        plt.imshow(arr['array'],
+                   cmap=ListedColormap([(1, 1, 1, 0), arr['color']]), 
+                   alpha=0.5)
+    plt.yticks([])
+    plt.xticks([])
+    plt.show()
+
+```
+
+### DAPI
+
+```{python compare_dapi, fig.height=12, fig.width=12}
+i = 0
+compare_erosion(image=img, channel=i)
+```
+
+### IBA1
+
+```{python compare_iba, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i)
+```
+
+### TDP43
+
+```{python compare_tdp, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i)
+```
+
+### MAP2
+
+```{python compare_map, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i)
+```
+
+### ALDH1L1
+
+```{python compare_aldh, fig.height=12, fig.width=12}
+i += 1
+compare_erosion(image=img, channel=i)
 ```
 
 # Merging masked images {.tabset}

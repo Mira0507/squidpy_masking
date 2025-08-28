@@ -18,7 +18,7 @@ outdir: '../../images/converted'
 #   and multi-channel data
 ser: None
 
-# Set to `True` if you want to save as pyramidal output
+# "Y" or "N". Set to "Y" if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
-pyramidal: True
+pyramidal: Y
 

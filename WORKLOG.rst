@@ -412,3 +412,108 @@ squidpy_masking
             ├── input_metadata.txt
             └── output_metadata.txt
 
+
+2025-08-25
+----------
+
+@Mira0507
+
+- Validate the effect of adaptive equalization
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_1000_adaptive_eq.Rmd``
+    - notes:
+        - ``offset`` adjusted to 0
+        - noise pixels that are not from IF staining are captured
+        - adaptive equalization will not be used in the current analysis
+
+- Validate the effect of erosion
+    - conda env: ``env``
+    - scripts: 
+        - ``scripts/individual/segmentation_perm_1000_adaptive.Rmd``
+        - ``scripts/individual/segmentation_perm_500_adaptive.Rmd``
+    - notes:
+        - the same channel merged with and without erosion across the channels
+        - this was performed to ensure that erosion does not end up losing
+          significant pixels
+
+
+
+2025-08-26
+----------
+
+@Mira0507
+
+- Snakemake bugfix
+    - conda env: ``env``
+    - script: ``scripts/snakemake/image_conversion.Rmd``
+    - notes:
+        - variables ``ser`` and ``to_pyramidal`` set to ``None`` and ``True`` 
+          were not correctly read in the ``image_conversion.Rmd`` script
+        - ``to_variable`` changed from ``True``/``False`` to ``"Y"``/``"N"`` 
+        - ``ser`` changed from ``None`` to ``"None"``
+        - test run succeeded for both perm and noperm samples
+
+- rerun masking using snakemake-converted TIF images
+    - conda env: ``env``
+    - scripts:
+        - ``scripts/individual/segmentation_perm_1000_adaptive.Rmd``
+        - ``scripts/individual/segmentation_perm_500_adaptive.Rmd``
+        - ``scripts/individual/segmentation_noperm_1000_adaptive.Rmd``
+        - ``scripts/individual/segmentation_noperm_500_adaptive.Rmd``
+
+
+2025-08-27
+----------
+
+@Mira0507
+
+- Snakemake DAG added
+    .. code-block:: bash
+
+        $ cd scripts/snakemake
+        $ snakemake --dag --profile none | dot -Tpng > dag.png
+        $ mv dag.png config/.
+
+- validate the effect of adaptive equalization
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_1000_adaptive_eq.Rmd``
+    - notes
+        - disabling watershed segmentation with ``sq.im.segment`` function did not
+          improve in removing noise nor making the binarization more uniform across
+          the pixels
+        - tried with the Otsu thresholding using ``scikit-image`` package. 
+          this global thresholding ended up masking the image less uniform 
+          compared to adaptive thresholding.
+        - merging masked signals 
+            - Otsu thresholding without erosion
+            - adaptive thresholding with erosion
+
+
+- run masking without cropping input images (in progress)
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm.Rmd``
+    - notes:
+        - 47% progress for 6 hours
+        - need to modularize and parallelize using Snakemake
+
+
+
+2025-08-28
+----------
+
+@Mira0507
+
+- bugfix
+    - conda env: ``env``
+    - scripts: 
+        - ``scripts/individual/segmentation_perm_1000_adaptive_eq.Rmd``
+        - ``scripts/individual/segmentation_noperm_1000_adaptive_eq.Rmd``
+        - ``scripts/individual/segmentation_perm_500_adaptive_eq.Rmd``
+        - ``scripts/individual/segmentation_noperm_500_adaptive_eq.Rmd``
+    - notes:
+        - bugfix to the `display_merge` function
+        - binarized IF signal was less uniform across the pixels with
+          Otsu thresholding regardless of the utilization of scikit-image
+          package
+        - adaptive thresholding captured IF signal more uniformly across
+          the pixels

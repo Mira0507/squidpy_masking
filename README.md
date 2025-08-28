@@ -28,6 +28,7 @@ with `squidpy.im.process` to reduce noise.
    - [Adaptive thresholding](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding)
 
 4. (Optional) **Additional processing**:
+   - [Adaptive equalization](https://en.wikipedia.org/wiki/Adaptive_histogram_equalization)
    - [Erosion](https://en.wikipedia.org/wiki/Erosion_(morphology))
 
 5. **Visualization**: Compare pre/post-smoothing and pre/post-segmentation results.  
@@ -48,6 +49,8 @@ using Squidpy’s default segmentation workflow (Otsu thresholding and Watershed
 segmentation) with different cropping dimensions
 - `scripts/individual/segmentation_<sample>_dimension>_adaptive.Rmd`: masking `tif` fluorescence
 images using adaptive thresholding and erosion with different cropping dimensions
+- `scripts/individual/segmentation_<sample>_dimension>_adaptive_eq.Rmd`: input image 
+preprocessed with adaptive equalization before smoothing
 
 ### Snakemake converting `vsi` to `tif`
 
@@ -58,4 +61,4 @@ Specifying sample names and corresponding input image paths
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
 
-
+![Workflow](scripts/snakemake/config/dag.png)

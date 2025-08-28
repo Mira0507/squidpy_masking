@@ -42,7 +42,6 @@ import time
 import re
 ```
 
-
 ```{r import_params}
 
 # ------------------------------------------------------------------------------
@@ -53,7 +52,7 @@ vsi <- params[['vsi']]
 tif <- params[['tif']]
 input_meta_out <- params[['input_meta_out']]
 output_meta_out <- params[['output_meta_out']]
-to_pyramidal <- params[['pyramidal']]
+to_pyramidal <- params[['to_pyramidal']]
 ser <- params[['ser']]
 ```
 
@@ -78,7 +77,7 @@ output_meta_out = r.output_meta_out
 # NOTE: 
 # - Determine the series based on the input metadata. 
 # - Select one for multi-channel with a desired resolution
-# - If `None`, python specifies one series with the highest resolution
+# - If "None", python specifies one series with the highest resolution
 #   and multi-channel data
 ser = r.ser
 
@@ -105,7 +104,7 @@ ser = r.ser
 ##  Plane #2 <=> Z 0, C 2, T 0
 ##  Plane #4 <=> Z 0, C 4, T 0
 
-# Specify True if you want to save as pyramidal output
+# Specify "Y" if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
 to_pyramidal = r.to_pyramidal
 ```
@@ -139,7 +138,7 @@ If unspecified, Python scans the optimal series based on the resolution and chan
 
 ```{python scan_and_select_series}
 
-if ser == None:
+if ser == "None":
 
     print("Series not selected. Series scanned to select one with the highest resolution and multi-channel.")
 
@@ -202,6 +201,7 @@ if ser == None:
         raise ValueError("Values unmatched between max width and max height!")
 
 else:
+    ser = str(ser)
     print("User specified the following series:", ser)
 
 print("The following series is converted to TIF/TIFF:", ser)
@@ -229,7 +229,7 @@ conversion. Refer to the [recommended image sizes](https://cdn.10xgenomics.com/i
 # ------------------------------------------------------------------------------
 
 # Add additional parameters for pyramidal output if necessary
-if  to_pyramidal:
+if  to_pyramidal == "Y":
     print("Image saved as pyramidal format!")
     # Override parameters of bfconvert for pyramidal output
     # - `-pyramid-resolutions`: N pyramid levels
