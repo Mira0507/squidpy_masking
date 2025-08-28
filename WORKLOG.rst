@@ -496,3 +496,24 @@ squidpy_masking
         - 47% progress for 6 hours
         - need to modularize and parallelize using Snakemake
 
+
+
+2025-08-28
+----------
+
+@Mira0507
+
+- bugfix
+    - conda env: ``env``
+    - scripts: 
+        - ``scripts/individual/segmentation_perm_1000_adaptive_eq.Rmd``
+        - ``scripts/individual/segmentation_noperm_1000_adaptive_eq.Rmd``
+        - ``scripts/individual/segmentation_perm_500_adaptive_eq.Rmd``
+        - ``scripts/individual/segmentation_noperm_500_adaptive_eq.Rmd``
+    - notes:
+        - bugfix to the `display_merge` function
+        - binarized IF signal was less uniform across the pixels with
+          Otsu thresholding regardless of the utilization of scikit-image
+          package
+        - adaptive thresholding captured IF signal more uniformly across
+          the pixels
