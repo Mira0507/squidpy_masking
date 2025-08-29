@@ -1,0 +1,295 @@
+---
+title: "Segmentation using squidpy"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to demonstrate image segmentation for Visium analysis 
+using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
+Refer to the following resources for technical details:
+
+- [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Squidpy GitHub](https://github.com/scverse/squidpy)
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv('../../../env')
+```
+
+```{python ppackages}
+import numpy as np
+import matplotlib.pyplot as plt
+import squidpy as sq
+from tifffile import imread
+from matplotlib.colors import ListedColormap
+from skimage.filters import threshold_local
+from skimage.morphology import binary_erosion
+from skimage.exposure import equalize_adapthist
+from scipy.ndimage import rotate
+import xarray as xr
+import napari
+import os
+```
+
+```{python configs}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to specify variables for paths to input files/directories
+# and parameter settings
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Specify file paths to input and output files
+outdir = "segmentation_noperm_crop_adaptive"
+input_image = "../../../images/converted/noperm/converted.ome.tif"
+output_obj = f"{outdir}/icontainer.zarr"
+
+# Create the output directory 
+os.makedirs(outdir, exist_ok=True)
+
+# Specify the name of input image layer to be processed
+lyr = 'image'
+
+# Specify signal values to be tested for Gaussian smoothing
+# Sigma represents the variance for normal distribution
+gaussian_sigma = 1
+
+# Specify whether input images will be cropped
+crop_images = True
+
+# Specify coordinates to crop images
+crop_coord = {'height' : 2320, 'width' : 1107, 'size' : 1000, 'scale' : 1}
+
+# Specify the segmentation method
+seg_method = "watershed"
+
+# Specify the thresholding method. If `None`, the Otsu method is used.
+thr_method = None
+
+# Set parameters for adaptive thresholding
+# - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.
+# - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
+#           higher offset results in more stringent thresholding
+block_size = round(crop_coord['size'] / 2) + 1
+offset = -100
+
+# Specify pseudocolors across the channels
+col_dic = {
+    'dapi': 'dodgerblue',
+    'iba': 'rosybrown',
+    'tdp': 'orange',
+    'map': 'cyan',
+    'aldh': 'darkkhaki'}
+
+# Specify merges
+merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
+
+# Specify the prefix of layers being merged
+merge_prefix = "erosion"
+```
+
+# Loading input images {.tabset}
+
+We use `tif` image files converted from `vsi`. Refer to the [image_conversion.html](image_conversion.html) 
+for detailed processes on converting image formats. The following channels correspond to individual IFs.
+
+- **Channel 0**: DAPI
+- **Channel 1**: IBA1
+- **Channel 2**: TDP43
+- **Channel 3**: MAP2
+- **Channel 4**: ALDH1L1
+
+The following image object loaded:
+
+```{python load_image}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to load input image files
+# ------------------------------------------------------------------------------
+
+# Read image as numpy array
+img_array = imread(input_image)
+
+# Initialize ImageContainer
+img = sq.im.ImageContainer(img_array, layer=lyr)
+
+print("ImageContainer obj created using input image:", img)
+
+# Crop input images if specified
+if crop_images:
+    print("Image cropped. Refer to the following dimension:", crop_coord)
+    img = img.crop_corner(x=crop_coord['width'],
+                          y=crop_coord['height'],
+                          size=crop_coord['size'],
+                          scale=crop_coord['scale'])
+    print("ImageContainer obj updated:", img)
+
+# Run adaptive equalization
+eq_img = equalize_adapthist(img[lyr])
+# Convert to xarray
+eq_img = xr.DataArray(eq_img)
+# Replace the input array with equalized array
+eq_lyr = f"{lyr}_eq"
+img[eq_layer] = eq_img
+print("Adaptive equalization applied to the input image!")
+```
+
+`ImageContainer` obj created using input image:
+
+```{python print_status}
+print(input_image)
+print(img)
+```
+
+Two layers generated:
+
+- `r py$lyr`: raw input 
+- `r py$eq_lyr`: contrast-enhanced input
+
+Contrast enhancement is conducted using the `skimage.exposure.equalize_adapthist`
+function with default parameter settings.
+
+## Before equalization {.tabset}
+
+
+### Channel 0
+
+```{python before_eq_images_c0, fig.height=12, fig.width=12}
+active_lyr = lyr
+prefix = "input_before_equalization_channel_"
+
+i = 0
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+- Download: [`r py$save_path`](`r py$save_path`)
+
+### Channel 1
+
+```{python before_eq_images_c1, fig.height=12, fig.width=12}
+i += 1
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+
+- Download: [`r py$save_path`](`r py$save_path`)
+
+### Channel 2
+
+```{python before_eq_images_c2, fig.height=12, fig.width=12}
+i += 1
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+
+- Download: [`r py$save_path`](`r py$save_path`)
+
+### Channel 3
+
+```{python before_eq_images_c3, fig.height=12, fig.width=12}
+i += 1
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+
+- Download: [`r py$save_path`](`r py$save_path`)
+
+### Channel 4
+
+```{python before_eq_images_c4, fig.height=12, fig.width=12}
+i += 1
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+
+- Download: [`r py$save_path`](`r py$save_path`)
+
+
+## After equalization {.tabset}
+
+
+### Channel 0
+
+```{python after_eq_images_c0, fig.height=12, fig.width=12}
+active_lyr = eq_lyr
+prefix = "input_after_equalization_channel_"
+
+i = 0
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+- Download: [`r py$save_path`](`r py$save_path`)
+
+### Channel 1
+
+```{python after_eq_images_c1, fig.height=12, fig.width=12}
+i += 1
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+
+- Download: [`r py$save_path`](`r py$save_path`)
+
+### Channel 2
+
+```{python after_eq_images_c2, fig.height=12, fig.width=12}
+i += 1
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+
+- Download: [`r py$save_path`](`r py$save_path`)
+
+### Channel 3
+
+```{python after_eq_images_c3, fig.height=12, fig.width=12}
+i += 1
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+
+- Download: [`r py$save_path`](`r py$save_path`)
+
+### Channel 4
+
+```{python after_eq_images_c4, fig.height=12, fig.width=12}
+i += 1
+save_path = f"{outdir}/{prefix}_{i}.png"
+img.show(active_lyr, channel=i, cmap='gray')
+plt.savefig(save_path, dpi=1000)
+```
+
+- Download: [`r py$save_path`](`r py$save_path`)
+
+
+
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```
