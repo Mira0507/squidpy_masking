@@ -15,7 +15,8 @@ sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False
 
 rule all:
     input:
-        expand("{outputdir}/{name}/converted.ome.tif", outputdir=config['outdir'], name=list(sample.index))
+        expand("{out_converted}/{name}/converted.ome.tif", out_converted=config['out_converted'], name=list(sample.index)),
+        expand("{out_masked}/{name}/build_imagecontainer.zarr", out_masked=config['out_masked'], name=list(sample.index))
 
 rule convert:
     """
@@ -26,13 +27,13 @@ rule convert:
         vsi = lambda wildcards: sample.loc[wildcards.name, 'input_vsi'],
         rmd = "image_conversion.Rmd"
     output: 
-        tif = "{outputdir}/{name}/converted.ome.tif",
-        html = "{outputdir}/{name}/image_conversion.html"
+        tif = "{out_converted}/{name}/converted.ome.tif",
+        html = "{out_converted}/{name}/image_conversion.html"
     threads: 1
     resources:
-        mem_mb=1024 * 40,
-        disk_mb=1024 * 20,
-        runtime=60 * 6
+        mem_mb = 1024 * 40,
+        disk_mb = 1024 * 20,
+        runtime = 60 * 6
     params:
         series = config['ser'],
         pyramidal = config['pyramidal'],
@@ -42,14 +43,57 @@ rule convert:
         Rscript -e 'params = list(
             vsi = "{input.vsi}",
             tif = "{output.tif}",
-            input_meta_out = "{wildcards.outputdir}/{wildcards.name}/input_metadata.txt",
-            output_meta_out = "{wildcards.outputdir}/{wildcards.name}/output_metadata.txt",
+            input_meta_out = "{wildcards.out_converted}/{wildcards.name}/input_metadata.txt",
+            output_meta_out = "{wildcards.out_converted}/{wildcards.name}/output_metadata.txt",
             ser = "{params.series}",
             conda_env = "{params.conda_env}",
             to_pyramidal = "{params.pyramidal}");
         rmarkdown::render("{input.rmd}",
-            output_dir = "{wildcards.outputdir}/{wildcards.name}",
-            intermediates_dir = "{wildcards.outputdir}/{wildcards.name}",
+            output_dir = "{wildcards.out_converted}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_converted}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+        expand("{out_masked}/{name}/build_imagecontainer.zarr", out_masked=config['out_masked'], name=list(sample.index))
+rule build_imagecontainer:
+    """
+    This rule builds a Squidpy ImageContainer object
+    from an OME-TIFF image input
+    """
+    input:
+        tif = "{out_converted}/{name}/converted.ome.tif",
+        rmd = "build_imagecontainer.Rmd"
+    output:
+        zarr = "{out_masked}/{name}/build_imagecontainer.zarr",
+        html = "{out_masked}/{name}/build_imagecontainer.html"
+    threads: 8
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 8
+    params:
+        conda_env = config['conda_env'],
+        lyr = config['lyr'],
+        gaussian = config['gaussian_sigma'],
+        equalize = config['equalize'],
+        crop = config['crop_images'],
+        crop_coord = config['crop_coord']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_image = "{input.tif}",
+            output_obj = "{output.zarr}",
+            conda_env = "{params.conda_env}",
+            lyr = "{params.lyr}",
+            gaussian_sigma = "{params.gaussian}",
+            equalize = "{params.equalize}",
+            crop_images = "{params.crop}",
+            crop_coord = "{params.crop_coord}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
             params = params,
             output_file = "{output.html}")'
         """
