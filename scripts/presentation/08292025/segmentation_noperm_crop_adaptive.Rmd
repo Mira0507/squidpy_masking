@@ -75,7 +75,7 @@ gaussian_sigma = 1
 crop_images = True
 
 # Specify coordinates to crop images
-crop_coord = {'height' : 2320, 'width' : 1107, 'size' : 1000, 'scale' : 1}
+crop_coord = {'width' : 10078, 'height' : 21554, 'size' : 860, 'scale' : 1}
 
 # Specify the segmentation method
 seg_method = "watershed"
@@ -143,11 +143,15 @@ if crop_images:
 
 # Run adaptive equalization
 eq_img = equalize_adapthist(img[lyr])
+
 # Convert to xarray
 eq_img = xr.DataArray(eq_img)
-# Replace the input array with equalized array
+
+# Specify the name of equalized layer
 eq_lyr = f"{lyr}_eq"
-img[eq_layer] = eq_img
+
+# Add the equalized layer to the `ImageContainer` obj
+img.add_img(eq_img.astype(np.uint8), layer=eq_lyr)
 print("Adaptive equalization applied to the input image!")
 ```
 
@@ -158,7 +162,7 @@ print(input_image)
 print(img)
 ```
 
-Two layers generated:
+Two initial layers generated:
 
 - `r py$lyr`: raw input 
 - `r py$eq_lyr`: contrast-enhanced input
@@ -180,6 +184,7 @@ save_path = f"{outdir}/{prefix}_{i}.png"
 img.show(active_lyr, channel=i, cmap='gray')
 plt.savefig(save_path, dpi=1000)
 ```
+
 - Download: [`r py$save_path`](`r py$save_path`)
 
 ### Channel 1
@@ -241,6 +246,7 @@ save_path = f"{outdir}/{prefix}_{i}.png"
 img.show(active_lyr, channel=i, cmap='gray')
 plt.savefig(save_path, dpi=1000)
 ```
+
 - Download: [`r py$save_path`](`r py$save_path`)
 
 ### Channel 1
