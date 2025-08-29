@@ -7,8 +7,11 @@ conda_env: '../../env'
 # - input_vsi: path to a vsi file
 sampletable: 'config/sampletable.txt'
 
-# Output directory
-outdir: '../../images/converted'
+# Output directory for converted images
+out_converted: '../../images/converted'
+
+# Output directory for masking data
+out_masked: 'results'
 
 # Specify the series to be converted. 
 # NOTE: 
@@ -21,4 +24,28 @@ ser: None
 # "Y" or "N". Set to "Y" if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
 pyramidal: Y
+
+# Specify the name of default input image layer in the ImageContainer obj
+# Do not change this value unless you want to set a custom name by default
+lyr: 'image'
+
+# Specify signal values to be tested for Gaussian smoothing
+# Sigma represents the variance for normal distribution
+gaussian_sigma: 1
+
+# Specify whether to equalize contrasts
+# If set to "Y", your input image is preprocessed by running adaptive
+# equalization using scikit-image
+equalize: "N"
+
+# Specify whether input images will be cropped
+crop_images: "N"
+
+# Specify coordinates to crop images
+# This section is omitted if the `crop_images` is set to "N"
+crop_coord:
+    height: 0.5
+    width: 0.5
+    size: 1000
+    scale: 1
 
