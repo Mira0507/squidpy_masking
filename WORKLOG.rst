@@ -517,3 +517,32 @@ squidpy_masking
           package
         - adaptive thresholding captured IF signal more uniformly across
           the pixels
+
+
+2025-08-29
+----------
+
+@Mira0507
+
+- generate masking data for collaborator's poster
+    - conda env: ``env``
+    - script: ``scripts/presentation/08292025/segmentation_noperm_crop_adaptive.Rmd``
+    - notes
+        - the coordinates of collaborator's crop identified manually using QuPath 
+          based on the following conversion: N um in QuPath x 3.25 = M pixels 
+          in Squidpy
+        - images were processed as is and rotated (90 degrees, clockwise)
+          only for printing masked data so masked images are aligned with those in 
+          collaborator's poster
+
+
+- update Snakemake pipeline (in progress)
+    - conda env: ``env``
+    - scripts added
+        - ``scripts/snakemake/build_imagecontainer.Rmd``
+    - scripts updated
+        - ``scripts/snakemake/config/config.yaml``
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - rule ``convert`` completed
+        - rule ``build_imagecontainer`` in progress
