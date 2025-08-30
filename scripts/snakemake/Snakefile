@@ -55,7 +55,7 @@ rule convert:
             output_file = "{output.html}")'
         """
 
-        expand("{out_masked}/{name}/build_imagecontainer.zarr", out_masked=config['out_masked'], name=list(sample.index))
+# expand("{out_masked}/{name}/build_imagecontainer.zarr", out_masked=config['out_masked'], name=list(sample.index))
 rule build_imagecontainer:
     """
     This rule builds a Squidpy ImageContainer object
