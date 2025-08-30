@@ -103,16 +103,20 @@ offset = -100
 # Specify pseudocolors across the channels
 col_dic = {
     'dapi': 'dodgerblue',
-    'iba': 'rosybrown',
-    'tdp': 'orange',
-    'map': 'cyan',
-    'aldh': 'darkkhaki'}
+    'iba': 'orange',
+    'tdp': 'limegreen',
+    'map': 'violet',
+    'aldh': 'lightblue'}
 
 # Specify merges
 merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
 
 # Specify the prefix of layers being merged
 merge_prefix = "erosion"
+
+# Specify config for rotation if necessary
+rot = True
+rot_angle = -90
 ```
 
 # Loading input images {.tabset}
@@ -752,7 +756,11 @@ def display_merge(merge_name, method):
 
     # Stack binary images
     for ab, i in ch_dic.items():
-        plt.imshow(binary_arr[i],
+        ar = binary_arr[i]
+        # Rotate if necessary
+        if rot:
+            ar = rotate(binary_arr[i], angle=rot_angle)
+        plt.imshow(ar,
                    cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
                    alpha=0.5)
     plt.xticks([])
@@ -762,12 +770,18 @@ def display_merge(merge_name, method):
 
 for ab, color in col_dic.items():
     print(f"- {ab}: {color}")
+
 ```
 
 Layers used to merge signals:
 
 ```{r merge_layers}
 print(py$adaptive_lyrs)
+```
+
+```{python rotation_config}
+if rot:
+    print(f"Masking image rotated: {rot_angle} degrees")
 ```
 
 ## DAPI + TDP43
@@ -807,9 +821,6 @@ outfile = f"{outdir}/{method}_{merge_name}.png"
 ```{python save_zarr}
 img.save(output_obj)
 ```
-
-
-
 
 ```{r session_info, collapse=FALSE}
 sessionInfo()
