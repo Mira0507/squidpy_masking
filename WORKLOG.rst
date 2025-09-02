@@ -546,3 +546,17 @@ squidpy_masking
     - notes
         - rule ``convert`` completed
         - rule ``build_imagecontainer`` in progress
+
+
+2025-09-02
+----------
+
+@Mira0507
+
+- update Snakemake pipeline (in progress)
+    - conda env: ``env``
+    - scripts
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - rule ``build_imagecontainer`` added
+        - duplicated chunk names corrected in the ``scripts/snakemake/build_imagecontainer.Rmd``
