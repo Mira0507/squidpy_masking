@@ -10,8 +10,8 @@ sampletable: 'config/sampletable.txt'
 # Output directory for converted images
 out_converted: '../../images/converted'
 
-# Output directory for masking data
-out_masked: 'results'
+# Output directory for masked images
+out_masked: "results"
 
 # Specify the series to be converted. 
 # NOTE: 
