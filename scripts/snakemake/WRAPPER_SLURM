@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="image-conversion"
+#SBATCH --job-name="image-masking"
 #SBATCH --partition="norm"
 #SBATCH --time=8:00:00
 #SBATCH --gres=lscratch:5
