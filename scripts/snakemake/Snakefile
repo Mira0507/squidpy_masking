@@ -68,8 +68,8 @@ rule build_imagecontainer:
         html = "{out_masked}/{name}/build_imagecontainer.html",
     threads: 8
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
+        mem_mb = 1024 * 600,
+        disk_mb = 1024 * 300,
         runtime = 60 * 8
     params:
         conda_env = config['conda_env'],
