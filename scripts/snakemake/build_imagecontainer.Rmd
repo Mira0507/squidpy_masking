@@ -26,10 +26,11 @@ Refer to the following resources for technical details:
 - [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
+
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
-use_condaenv('../../env')
+use_condaenv(params[['conda_env']])
 ```
 
 ```{python ppackages}
@@ -83,14 +84,14 @@ crop_coord <- params[['crop_coord']]
 # This chunk converts variables from r to python
 # ------------------------------------------------------------------------------
 
-outdir <- r.outdir
-input_image <- r.input_image
-output_obj <- r.output_obj
-lyr <- r.lyr
-gaussian_sigma <- int(r.gaussian_sigma)
-equalize <- r.equalize
-crop_images <- r.crop_images
-crop_coord <- r.crop_coord
+outdir = r.outdir
+input_image = r.input_image
+output_obj = r.output_obj
+lyr = r.lyr
+gaussian_sigma = int(r.gaussian_sigma)
+equalize = r.equalize
+crop_images = r.crop_images
+crop_coord = r.crop_coord
 ```
 
 # Loading input images {.tabset}
@@ -219,7 +220,7 @@ plt.savefig(save_path, dpi=1000)
 
 ### Channel 0
 
-```{python individual_images_c0, fig.height=12, fig.width=12}
+```{python eq_individual_images_c0, fig.height=12, fig.width=12}
 active_lyr = eq_lyr
 prefix = "input_after_equalization_channel_"
 
@@ -232,7 +233,7 @@ plt.savefig(save_path, dpi=1000)
 
 ### Channel 1
 
-```{python individual_images_c1, fig.height=12, fig.width=12}
+```{python eq_individual_images_c1, fig.height=12, fig.width=12}
 i += 1
 save_path = f"{outdir}/{prefix}_{i}.png"
 img.show(active_lyr, channel=i, cmap='gray')
@@ -243,7 +244,7 @@ plt.savefig(save_path, dpi=1000)
 
 ### Channel 2
 
-```{python individual_images_c2, fig.height=12, fig.width=12}
+```{python eq_individual_images_c2, fig.height=12, fig.width=12}
 i += 1
 save_path = f"{outdir}/{prefix}_{i}.png"
 img.show(active_lyr, channel=i, cmap='gray')
@@ -254,7 +255,7 @@ plt.savefig(save_path, dpi=1000)
 
 ### Channel 3
 
-```{python individual_images_c3, fig.height=12, fig.width=12}
+```{python eq_individual_images_c3, fig.height=12, fig.width=12}
 i += 1
 save_path = f"{outdir}/{prefix}_{i}.png"
 img.show(active_lyr, channel=i, cmap='gray')
@@ -265,7 +266,7 @@ plt.savefig(save_path, dpi=1000)
 
 ### Channel 4
 
-```{python individual_images_c4, fig.height=12, fig.width=12}
+```{python eq_individual_images_c4, fig.height=12, fig.width=12}
 i += 1
 save_path = f"{outdir}/{prefix}_{i}.png"
 img.show(active_lyr, channel=i, cmap='gray')
