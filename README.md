@@ -60,5 +60,7 @@ preprocessed with adaptive equalization before smoothing
 Specifying sample names and corresponding input image paths
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
+- `scripts/snakemake/build_imagecontainer.Rmd`: 
+Wrapper script building an `ImageConainer` object of Squidpy from the `tif` image
 
 ![Workflow](scripts/snakemake/config/dag.png)
