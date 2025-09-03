@@ -114,6 +114,7 @@ if equalize == "Y":
     # Run adaptive equalization
     eq_img = equalize_adapthist(img[lyr])
     # Convert to xarray
+    # NOTE: This step requires large memory and long runtime!
     eq_img = xr.DataArray(eq_img)
     # Add the input array with equalized array
     eq_lyr = f"eq_{lyr}"
@@ -131,126 +132,47 @@ print(img)
 Contrast enhancement is conducted using the `skimage.exposure.equalize_adapthist`
 function with default parameter settings.
 
-## Before equalization {.tabset}
+```{r vis_input, results='asis'}
 
+# ------------------------------------------------------------------------------
+# This chunk iteratively visualizes images before and after smoothing
+# ------------------------------------------------------------------------------
 
-### Channel 0
+# Function to generate a fake python chunk running python commands
+subchunkify <- function(name, layer, channel, t_deparsed, width=12, height=12) {
 
-```{python individual_images_c0, fig.height=12, fig.width=12}
-active_lyr = lyr
-prefix = "input_before_equalization_channel_"
+    more <- paste0(", fig.width=", width, ", fig.height=", height)
+    sub_chunk <- paste0("```{python ", name, ", results='asis', echo=FALSE", more, "}",
+        "\n\n",
+        paste0(t_deparsed, collapse="\n"),
+        "\n\n```\n\n\n")
 
-i = 0
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
-- Download: [`r py$save_path`](`r py$save_path`)
+    cat(knitr::knit(text = sub_chunk, quiet=TRUE))
+}
 
-### Channel 1
+# Function to add a link to image
+link_output <- function(p) {
+    cat("\n\n- Link: [", p, "](", p, ")\n\n")
+}
 
-```{python individual_images_c1, fig.height=12, fig.width=12}
-i += 1
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
+# Visualize input images across the channels
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+    cat("## Channel", i, "{.tabset}\n\n")
+    # Command to show image
+    t_deparsed_1 <- paste0("img.show('", py$lyr, "', channel=", i, ", cmap='gray')")
+    # Command to save image
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/input_channel_", i,  ".png', dpi=1000)")
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    subchunkify(name=paste0("input_", i),
+                t_deparsed=t_deparsed,
+                layer=py$lyr,
+                channel=i)
 
-- Download: [`r py$save_path`](`r py$save_path`)
-
-### Channel 2
-
-```{python individual_images_c2, fig.height=12, fig.width=12}
-i += 1
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
-
-- Download: [`r py$save_path`](`r py$save_path`)
-
-### Channel 3
-
-```{python individual_images_c3, fig.height=12, fig.width=12}
-i += 1
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
+    save_path <- paste0(py$outdir, "/input_channel_", i, ".png")
+    link_output(save_path)
+}
 ```
 
-- Download: [`r py$save_path`](`r py$save_path`)
-
-### Channel 4
-
-```{python individual_images_c4, fig.height=12, fig.width=12}
-i += 1
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
-
-- Download: [`r py$save_path`](`r py$save_path`)
-
-
-## After equalization {.tabset}
-
-
-### Channel 0
-
-```{python eq_individual_images_c0, fig.height=12, fig.width=12}
-active_lyr = eq_lyr
-prefix = "input_after_equalization_channel_"
-
-i = 0
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
-- Download: [`r py$save_path`](`r py$save_path`)
-
-### Channel 1
-
-```{python eq_individual_images_c1, fig.height=12, fig.width=12}
-i += 1
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
-
-- Download: [`r py$save_path`](`r py$save_path`)
-
-### Channel 2
-
-```{python eq_individual_images_c2, fig.height=12, fig.width=12}
-i += 1
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
-
-- Download: [`r py$save_path`](`r py$save_path`)
-
-### Channel 3
-
-```{python eq_individual_images_c3, fig.height=12, fig.width=12}
-i += 1
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
-
-- Download: [`r py$save_path`](`r py$save_path`)
-
-### Channel 4
-
-```{python eq_individual_images_c4, fig.height=12, fig.width=12}
-i += 1
-save_path = f"{outdir}/{prefix}_{i}.png"
-img.show(active_lyr, channel=i, cmap='gray')
-plt.savefig(save_path, dpi=1000)
-```
-
-- Download: [`r py$save_path`](`r py$save_path`)
 
 # Saving the `ImageContainer` object
 
