@@ -1,0 +1,201 @@
+---
+title: "Smoothing"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to demonstrate image segmentation for Visium analysis 
+using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
+Refer to the following resources for technical details:
+
+- [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Squidpy GitHub](https://github.com/scverse/squidpy)
+
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv(params[['conda_env']])
+```
+
+```{python ppackages}
+import numpy as np
+import matplotlib.pyplot as plt
+import squidpy as sq
+from tifffile import imread
+from matplotlib.colors import ListedColormap
+from skimage.filters import threshold_local
+from skimage.morphology import binary_erosion
+from skimage.exposure import equalize_adapthist
+import xarray as xr
+import napari
+import os
+```
+
+```{python config}
+# ------------------------------------------------------------------------------
+# This chunk configures user-specified variables
+# ------------------------------------------------------------------------------
+
+# Import `params` into Python
+params = r.params
+
+# Paths to input and output obj
+input_obj = params['zarr_in']
+output_obj = params['zarr_out']
+
+# Specify signal values to be tested for Gaussian smoothing
+# Sigma represents the variance for normal distribution
+gaussian_sigma = params['gaussian_sigma']
+
+# Path to output directory
+outdir = params['outdir']
+```
+
+# Loading input image
+
+```{python loading_input}
+
+# ------------------------------------------------------------------------------
+# This chunk imports input image saved as zarr in the previous step
+# ------------------------------------------------------------------------------
+
+# Load the Zarr store into an ImageContainer
+# Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
+# You can also specify chunks for Dask if needed.
+img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks=None)
+
+print(f"The following file has been loaded: {input_obj}")
+print(img)
+```
+
+# Smoothing {.tabset}
+
+Smoothing is required to reduce noises before image masking. The current workflow uses 
+[Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) by calling 
+the `squidpy.im.process(..., method="smooth")`, which implements the `skimage.filters.gaussian` function 
+in the `scikit-image` package in python.
+
+```{python smoothing}
+
+# --------------------------------------------------------------------------------
+# This chunk runs Gaussian smoothing
+# --------------------------------------------------------------------------------
+
+# Run smoothing
+sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
+```
+`ImageContainer` updated:
+
+```{r smoothened_obj}
+py$img
+```
+
+Images are compared between the before (left) and the after (right) smoothing across the stainings.
+
+
+```{python function_processed}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to prepare visualizing smoothened images
+# ------------------------------------------------------------------------------
+
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = f"{lyr}_smooth"
+
+# Create a function that prints images before and after Gaussian smoothing
+def image_original_processed(l_one, l_two, image, channels, process):
+    # Design subplots
+    fig, axes = plt.subplots(nrows=1, ncols=2)
+    image.show(layer=l_one, channel=channels[0], cmap='gray', ax=axes[0])
+    _ = axes[0].set_title(f"Original before {process}")
+    image.show(layer=l_two, channel=channels[1], cmap='gray', ax=axes[1])
+    _ = axes[1].set_title(f"Original after {process}")
+    # Save
+    ch = "_".join([str(x) for x in channels])
+    plt.savefig(f"{outdir}/masked_channel_{ch}.png", dpi=1000)
+
+```
+
+## Channel 0
+
+```{python smth_images_c0, fig.width=12, fig.height=12}
+i = 0
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 1
+
+```{python smth_images_c1, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 2
+
+```{python smth_images_c2, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 3
+
+```{python smth_images_c3, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+## Channel 4
+
+```{python smth_images_c4, fig.width=12, fig.height=12}
+i += 1
+image_original_processed(l_one=lyr,
+                         l_two=lyr_smth,
+                         image=img,
+                         channels=[i, i],
+                         process="smoothing")
+```
+
+# Saving the `ImageContainer` object
+
+Output images are saved as the following object:
+
+```{python save_zarr}
+img.save(output_obj)
+print(output_obj)
+```
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```
