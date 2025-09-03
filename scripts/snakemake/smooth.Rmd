@@ -35,9 +35,11 @@ use_condaenv(params[['conda_env']])
 
 ```{python ppackages}
 import numpy as np
+import ast
 import matplotlib.pyplot as plt
 import squidpy as sq
-from tifffile import imread
+import dask.array as da
+from dask_image.imread import imread as dask_imread
 from matplotlib.colors import ListedColormap
 from skimage.filters import threshold_local
 from skimage.morphology import binary_erosion
@@ -52,7 +54,7 @@ import os
 # This chunk configures user-specified variables
 # ------------------------------------------------------------------------------
 
-# Import `params` into Python
+# Convert `params` from R to Python
 params = r.params
 
 # Paths to input and output obj
