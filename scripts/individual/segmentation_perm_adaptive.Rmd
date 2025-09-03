@@ -36,7 +36,8 @@ use_condaenv('../../env')
 import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
-from tifffile import imread
+import dask.array as da
+from dask_image.imread import imread as dask_imread
 from matplotlib.colors import ListedColormap
 from skimage.filters import threshold_local
 from skimage.morphology import binary_erosion
@@ -136,8 +137,8 @@ The following image object loaded:
 # This chunk is used to load input image files
 # ------------------------------------------------------------------------------
 
-# Read image as numpy array
-img_array = imread(input_image)
+# Read image lazily using dask
+img_array = dask_imread(input_image)
 
 # Initialize ImageContainer
 img = sq.im.ImageContainer(img_array, layer=lyr)
@@ -420,6 +421,10 @@ def adaptive_thresh(block_size, offset, channel, erosion=True):
     # Extract smoothened array per channel
     smth = img[lyr_smth].values[:, :, 0, channel]
     
+    # Override block_size if uncropped
+    if not crop_images:
+        block_size = round(max(img.shape) / 2)
+
     # Run local thresholding
     local_thresh = threshold_local(smth, block_size=block_size, offset=offset)
     mask = smth > local_thresh
