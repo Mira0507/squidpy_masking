@@ -58,7 +58,7 @@ import os
 
 # reticulate::repl_python()
 
-# Import `params` into Python
+# Convert `params` from R to Python
 params = r.params
 
 # Specify file paths to input and output files
