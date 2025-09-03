@@ -66,15 +66,14 @@ rule build_imagecontainer:
     output:
         zarr = "{out_masked}/{name}/build_imagecontainer.zarr",
         html = "{out_masked}/{name}/build_imagecontainer.html",
-    threads: 8
+    threads: 4
     resources:
-        mem_mb = 1024 * 600,
-        disk_mb = 1024 * 300,
-        runtime = 60 * 8
+        mem_mb = 1024 * 400,
+        disk_mb = 1024 * 200,
+        runtime = 60 * 6
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
-        gaussian = config['gaussian_sigma'],
         equalize = config['equalize'],
         crop = config['crop_images'],
         crop_coord = config['crop_coord']
@@ -86,7 +85,6 @@ rule build_imagecontainer:
             output_obj = "{output.zarr}",
             conda_env = "{params.conda_env}",
             lyr = "{params.lyr}",
-            gaussian_sigma = "{params.gaussian}",
             equalize = "{params.equalize}",
             crop_images = "{params.crop}",
             crop_coord = "{params.crop_coord}");
@@ -96,3 +94,36 @@ rule build_imagecontainer:
             params = params,
             output_file = "{output.html}")'
         """
+
+rule smooth:
+    """
+    This rule conducts gaussian smoothing
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/build_imagecontainer.zarr",
+        rmd = "smooth.Rmd"
+    output:
+        zarr_out = "{out_masked}/{name}/smooth.zarr",
+        html = "{out_masked}/{name}/smooth.html"
+    threads: 8
+    params:
+        conda_env = config['conda_env'],
+        gaussian = config['gaussian_sigma'],
+        lyr = config['lyr']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}",
+            lyr = "{params.lyr}",
+            gaussian_sigma = "{params.gaussian}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+
