@@ -1,5 +1,5 @@
 ---
-title: "Segmentation using squidpy"
+title: "Building ImageContainer object"
 author: "Mira Sohn"
 output:
     html_document:
@@ -35,9 +35,11 @@ use_condaenv(params[['conda_env']])
 
 ```{python ppackages}
 import numpy as np
+import ast
 import matplotlib.pyplot as plt
 import squidpy as sq
-from tifffile import imread
+import dask.array as da
+from dask_image.imread import imread as dask_imread
 from matplotlib.colors import ListedColormap
 from skimage.filters import threshold_local
 from skimage.morphology import binary_erosion
@@ -47,7 +49,7 @@ import napari
 import os
 ```
 
-```{r configs}
+```{python configs}
 
 # ------------------------------------------------------------------------------
 # This chunk is used to specify variables for paths to input files/directories
@@ -56,42 +58,27 @@ import os
 
 # reticulate::repl_python()
 
+# Import `params` into Python
+params = r.params
+
 # Specify file paths to input and output files
-outdir <- params[['outdir']]
-input_image <- params[['input_image']]
-output_obj <- params[['output_obj']]
+outdir = params['outdir']
+input_image = params['input_image']
+output_obj = params['output_obj']
 
 # Specify the name of input image layer to be processed
-lyr <- params[['lyr']]
-
-# Specify signal values to be tested for Gaussian smoothing
-# Sigma represents the variance for normal distribution
-gaussian_sigma <- params[['gaussian_sigma']]
+lyr = params['lyr']
 
 # Specify whether to equalize contrasts
-equalize <- params[['equalize']]
+equalize = params['equalize']
 
 # Specify whether input images will be cropped
-crop_images <- params[['crop_images']]
+crop_images = params['crop_images']
 
 # Specify coordinates to crop images
-crop_coord <- params[['crop_coord']]
-```
-
-```{python config}
-
-# ------------------------------------------------------------------------------
-# This chunk converts variables from r to python
-# ------------------------------------------------------------------------------
-
-outdir = r.outdir
-input_image = r.input_image
-output_obj = r.output_obj
-lyr = r.lyr
-gaussian_sigma = int(r.gaussian_sigma)
-equalize = r.equalize
-crop_images = r.crop_images
-crop_coord = r.crop_coord
+# NOTE: Dictionary stored in `params` was imported as a string and is required 
+#       to be converted back into dictionary.
+crop_coord = ast.literal_eval(params['crop_coord'])
 ```
 
 # Loading input images {.tabset}
@@ -112,13 +99,11 @@ The following image object loaded:
 # This chunk is used to load input image files
 # ------------------------------------------------------------------------------
 
-# Read image as numpy array
-img_array = imread(input_image)
+# Read image lazily using dask
+img_array = dask_imread(input_image)
 
 # Initialize ImageContainer
 img = sq.im.ImageContainer(img_array, layer=lyr)
-
-print("ImageContainer obj created using input image:", img)
 
 # Crop input images if specified
 if crop_images == "Y":
@@ -129,14 +114,16 @@ if crop_images == "Y":
                           scale=crop_coord['scale'])
     print("ImageContainer obj updated:", img)
 
-# Run adaptive equalization
-eq_img = equalize_adapthist(img[lyr])
-# Convert to xarray
-eq_img = xr.DataArray(eq_img)
-# Replace the input array with equalized array
-eq_lyr = f"{lyr}_eq"
-img[eq_layer] = eq_img
-print("Adaptive equalization applied to the input image!")
+# Equalize of specified
+if equalize == "Y":
+    # Run adaptive equalization
+    eq_img = equalize_adapthist(img[lyr])
+    # Convert to xarray
+    eq_img = xr.DataArray(eq_img)
+    # Add the input array with equalized array
+    eq_lyr = f"eq_{lyr}"
+    img[lyr] = eq_img
+    print("Adaptive equalization applied to the input image!")
 ```
 
 `ImageContainer` obj created using input image:
@@ -145,11 +132,6 @@ print("Adaptive equalization applied to the input image!")
 print(input_image)
 print(img)
 ```
-
-Two layers generated:
-
-- `r py$lyr`: raw input 
-- `r py$eq_lyr`: contrast-enhanced input
 
 Contrast enhancement is conducted using the `skimage.exposure.equalize_adapthist`
 function with default parameter settings.
@@ -275,6 +257,14 @@ plt.savefig(save_path, dpi=1000)
 
 - Download: [`r py$save_path`](`r py$save_path`)
 
+# Saving the `ImageContainer` object
+
+Output images are saved as the following object:
+
+```{python save_zarr}
+img.save(output_obj)
+print(output_obj)
+```
 
 ```{r session_info, collapse=FALSE}
 sessionInfo()
