@@ -559,4 +559,40 @@ squidpy_masking
         - ``scripts/snakemake/Snakefile``
     - notes
         - rule ``build_imagecontainer`` added
-        - duplicated chunk names corrected in the ``scripts/snakemake/build_imagecontainer.Rmd``
+        - duplicated chunk names corrected 
+          in the ``scripts/snakemake/build_imagecontainer.Rmd``
+
+
+
+2025-09-03
+----------
+
+@Mira0507
+
+- update Snakemake pipeline (in progress)
+    - conda env: ``env``
+    - scripts
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - ``resources`` directive update to the ``build_imagecontainer`` rule
+        - ``scripts/snakemake/build_imagecontainer.Rmd`` optimization in progress
+        - ``scripts/snakemake/smooth.Rmd`` added
+
+- test processing uncropped image without Snakefile
+    - conda env: ``env``
+    - script: ``script/individual/segmentation_perm_adaptive.Rmd``
+
+    .. code-block:: python
+
+        img = sq.im.ImageContainer('path/to/converted.ome.tif', layer=lyr)
+
+    - notes:
+        - method to load input image changed to use squidpy as-is
+        - added subchunkifying to simplify iterative visualization 
+        - improved smoothing speed by passing the following arguments into 
+          the `sq.im.process` function:
+            - `chunks="auto"`
+            - `lazy=True`
+
+
+- ``README.md`` updated
