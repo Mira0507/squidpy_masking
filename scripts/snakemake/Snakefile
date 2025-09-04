@@ -76,7 +76,10 @@ rule build_imagecontainer:
         lyr = config['lyr'],
         equalize = config['equalize'],
         crop = config['crop_images'],
-        crop_coord = config['crop_coord']
+        crop_height=config['crop_height'],
+        crop_width=config['crop_width'],
+        crop_size=config['crop_size'],
+        crop_scale=config['crop_scale']
     shell:
         """
         Rscript -e 'params = list(
@@ -87,7 +90,10 @@ rule build_imagecontainer:
             lyr = "{params.lyr}",
             equalize = "{params.equalize}",
             crop_images = "{params.crop}",
-            crop_coord = "{params.crop_coord}");
+            crop_height = "{params.crop_height}",
+            crop_width = "{params.crop_width}",
+            crop_size = "{params.crop_size}",
+            crop_scale = "{params.crop_scale}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
             intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
