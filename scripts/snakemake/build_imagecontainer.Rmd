@@ -26,7 +26,6 @@ Refer to the following resources for technical details:
 - [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
-
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
@@ -43,7 +42,6 @@ from skimage.filters import threshold_local
 from skimage.morphology import binary_erosion
 from skimage.exposure import equalize_adapthist
 import xarray as xr
-import napari
 import os
 ```
 
@@ -74,9 +72,10 @@ equalize = params['equalize']
 crop_images = params['crop_images']
 
 # Specify coordinates to crop images
-# NOTE: Dictionary stored in `params` was imported as a string and is required 
-#       to be converted back into dictionary.
-crop_coord = ast.literal_eval(params['crop_coord'])
+crop_height = params['crop_height']
+crop_width = params['crop_width']
+crop_size = params['crop_size']
+crop_scale = params['crop_scale']
 ```
 
 # Loading input images {.tabset}
@@ -103,10 +102,10 @@ img = sq.im.ImageContainer(input_image, layer=lyr)
 # Crop input images if specified
 if crop_images == "Y":
     print("Image cropped. Refer to the following dimension:", crop_coord)
-    img = img.crop_corner(x=crop_coord['width'],
-                          y=crop_coord['height'],
-                          size=crop_coord['size'],
-                          scale=crop_coord['scale'])
+    img = img.crop_corner(x=crop_width,
+                          y=crop_height,
+                          size=crop_size,
+                          scale=crop_scale)
     print("ImageContainer obj updated:", img)
 
 # Equalize of specified
