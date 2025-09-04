@@ -43,9 +43,8 @@ crop_images: "N"
 
 # Specify coordinates to crop images
 # This section is omitted if the `crop_images` is set to "N"
-crop_coord:
-    height: 0.5
-    width: 0.5
-    size: 1000
-    scale: 1
+crop_height: 0.5
+crop_width: 0.5
+crop_size: 1000
+crop_scale: 1
 
