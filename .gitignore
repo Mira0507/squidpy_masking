@@ -14,3 +14,4 @@ scripts/individual/image_*
 *logs/
 scripts/individual/segmentation*/
 scripts/presentation/08292025/segmentation_noperm_crop_adaptive/
+*results/
