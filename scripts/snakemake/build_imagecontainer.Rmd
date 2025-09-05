@@ -163,7 +163,8 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     # Command to show image
     t_deparsed_1 <- paste0("img.show('", py$lyr, "', channel=", i, ", cmap='gray')")
     t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/input_channel_", i,  ".png', dpi=1000)")
-    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    t_deparsed_3 <- "plt.close()"
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("input_", i),
                 t_deparsed=t_deparsed,
                 layer=py$lyr,
