@@ -596,3 +596,24 @@ squidpy_masking
 
 
 - ``README.md`` updated
+
+
+2025-09-04
+----------
+
+@Mira0507
+
+- Work on Snakemake
+    - updates to ``script/snakemake/build_imagecontainer.Rmd``
+        - strings specified by ``crop_height``, ``crop_width``,
+          ``crop_size``, ``crop_scale`` converted into *float*
+        - convert 1-indexing into 0-indexing when iteratively 
+          printing images
+        - ``ImageContainer`` obj updated to use Dask 
+          when loading input images
+
+        .. code-block:: python
+
+            img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks='auto')
+
+
