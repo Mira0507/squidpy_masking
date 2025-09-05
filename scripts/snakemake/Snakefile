@@ -64,9 +64,9 @@ rule build_imagecontainer:
         tif = config['out_converted'] + "/{name}/converted.ome.tif",
         rmd = "build_imagecontainer.Rmd"
     output:
-        zarr = "{out_masked}/{name}/build_imagecontainer.zarr",
+        zarr = directory("{out_masked}/{name}/build_imagecontainer.zarr"),
         html = "{out_masked}/{name}/build_imagecontainer.html",
-    threads: 12
+    threads: 8
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
@@ -106,12 +106,12 @@ rule smooth:
     This rule conducts gaussian smoothing
     """
     input:
-        zarr_in = "{out_masked}/{name}/build_imagecontainer.zarr",
+        zarr_in = directory("{out_masked}/{name}/build_imagecontainer.zarr"),
         rmd = "smooth.Rmd"
     output:
         zarr_out = "{out_masked}/{name}/smooth.zarr",
         html = "{out_masked}/{name}/smooth.html"
-    threads: 12
+    threads: 8
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
