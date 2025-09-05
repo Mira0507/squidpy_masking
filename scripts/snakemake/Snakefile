@@ -106,10 +106,10 @@ rule smooth:
     This rule conducts gaussian smoothing
     """
     input:
-        zarr_in = directory("{out_masked}/{name}/build_imagecontainer.zarr"),
+        zarr_in = "{out_masked}/{name}/build_imagecontainer.zarr",
         rmd = "smooth.Rmd"
     output:
-        zarr_out = "{out_masked}/{name}/smooth.zarr",
+        zarr_out = directory("{out_masked}/{name}/smooth.zarr"),
         html = "{out_masked}/{name}/smooth.html"
     threads: 8
     resources:
@@ -136,4 +136,38 @@ rule smooth:
             output_file = "{output.html}")'
         """
 
+rule suidpy_segmentation:
+    """
+    This rule runs Squidpy's default segmentation using Otsu 
+    thresholding and watershed segmentation
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/smooth.zarr",
+        rmd = "squidpy_segmentation.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/squidpy_segmentation.zarr"),
+        html = "{out_masked}/{name}/squipy_segmentation.html"
+    threads: 8
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        lyr = config['lyr']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}",
+            lyr = "{params.lyr}",
+            gaussian_sigma = "{params.gaussian}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
 
