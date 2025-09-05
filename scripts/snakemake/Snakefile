@@ -66,7 +66,7 @@ rule build_imagecontainer:
     output:
         zarr = "{out_masked}/{name}/build_imagecontainer.zarr",
         html = "{out_masked}/{name}/build_imagecontainer.html",
-    threads: 4
+    threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
@@ -111,7 +111,7 @@ rule smooth:
     output:
         zarr_out = "{out_masked}/{name}/smooth.zarr",
         html = "{out_masked}/{name}/smooth.html"
-    threads: 8
+    threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
