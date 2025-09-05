@@ -26,6 +26,7 @@ Refer to the following resources for technical details:
 - [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
+
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
@@ -72,10 +73,10 @@ equalize = params['equalize']
 crop_images = params['crop_images']
 
 # Specify coordinates to crop images
-crop_height = params['crop_height']
-crop_width = params['crop_width']
-crop_size = params['crop_size']
-crop_scale = params['crop_scale']
+crop_height = float(params['crop_height'])
+crop_width = float(params['crop_width'])
+crop_size = float(params['crop_size'])
+crop_scale = float(params['crop_scale'])
 ```
 
 # Loading input images {.tabset}
@@ -97,7 +98,7 @@ The following image object loaded:
 # ------------------------------------------------------------------------------
 
 # Initialize ImageContainer
-img = sq.im.ImageContainer(input_image, layer=lyr)
+img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks='auto')
 
 # Crop input images if specified
 if crop_images == "Y":
@@ -156,6 +157,8 @@ link_output <- function(p) {
 
 # Visualize input images across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+    # Convert into 0-indexing
+    i <- i - 1
     cat("## Channel", i, "{.tabset}\n\n")
     # Command to show image
     t_deparsed_1 <- paste0("img.show('", py$lyr, "', channel=", i, ", cmap='gray')")
