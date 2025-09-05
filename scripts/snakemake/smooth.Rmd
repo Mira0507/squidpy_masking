@@ -54,16 +54,21 @@ import os
 # This chunk configures user-specified variables
 # ------------------------------------------------------------------------------
 
+# reticulate::repl_python()
+
 # Convert `params` from R to Python
 params = r.params
 
 # Paths to input and output obj
-input_obj = params['zarr_in']
-output_obj = params['zarr_out']
+input_obj = params['input_obj']
+output_obj = params['output_obj']
 
 # Specify signal values to be tested for Gaussian smoothing
 # Sigma represents the variance for normal distribution
-gaussian_sigma = params['gaussian_sigma']
+gaussian_sigma = int(params['gaussian_sigma'])
+
+# Specify the name of input image layer to be processed
+lyr = params['lyr']
 
 # Path to output directory
 outdir = params['outdir']
@@ -80,7 +85,7 @@ outdir = params['outdir']
 # Load the Zarr store into an ImageContainer
 # Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
 # You can also specify chunks for Dask if needed.
-img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks=None)
+img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks='auto')
 
 print(f"The following file has been loaded: {input_obj}")
 print(img)
@@ -100,7 +105,15 @@ in the `scikit-image` package in python.
 # --------------------------------------------------------------------------------
 
 # Run smoothing
-sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
+sq.im.process(img,
+              layer=lyr,
+              method="smooth",
+              sigma=gaussian_sigma,
+              lazy=True,
+              chunks='auto')
+
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = f"{lyr}_smooth"
 ```
 `ImageContainer` updated:
 
@@ -111,82 +124,47 @@ py$img
 Images are compared between the before (left) and the after (right) smoothing across the stainings.
 
 
-```{python function_processed}
+```{python visualize_images}
 
 # ------------------------------------------------------------------------------
 # This chunk is used to prepare visualizing smoothened images
 # ------------------------------------------------------------------------------
 
-# Specify the name of layer containing Gaussian smoothing
-lyr_smth = f"{lyr}_smooth"
+# Function to generate a fake python chunk running python commands
+subchunkify <- function(name, layer, channel, t_deparsed, width=12, height=12) {
 
-# Create a function that prints images before and after Gaussian smoothing
-def image_original_processed(l_one, l_two, image, channels, process):
-    # Design subplots
-    fig, axes = plt.subplots(nrows=1, ncols=2)
-    image.show(layer=l_one, channel=channels[0], cmap='gray', ax=axes[0])
-    _ = axes[0].set_title(f"Original before {process}")
-    image.show(layer=l_two, channel=channels[1], cmap='gray', ax=axes[1])
-    _ = axes[1].set_title(f"Original after {process}")
-    # Save
-    ch = "_".join([str(x) for x in channels])
-    plt.savefig(f"{outdir}/masked_channel_{ch}.png", dpi=1000)
+    more <- paste0(", fig.width=", width, ", fig.height=", height)
+    sub_chunk <- paste0("```{python ", name, ", results='asis', echo=FALSE", more, "}",
+        "\n\n",
+        paste0(t_deparsed, collapse="\n"),
+        "\n\n```\n\n\n")
 
-```
+    cat(knitr::knit(text = sub_chunk, quiet=TRUE))
+}
 
-## Channel 0
+# Function to add a link to image
+link_output <- function(p) {
+    cat("\n\n- Link: [", p, "](", p, ")\n\n")
+}
 
-```{python smth_images_c0, fig.width=12, fig.height=12}
-i = 0
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
-```
+# Visualize input images across the channels
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+    # Convert into 0-indexing
+    i <- i - 1
+    cat("## Channel", i, "{.tabset}\n\n")
+    # Command to show image
+    t_deparsed_1 <- paste0("img.show('", py$lyr_smth, "', channel=", i, ", cmap='gray')")
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/smooth_channel_", i,  ".png', dpi=1000)")
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    subchunkify(name=paste0("smooth_", i),
+                t_deparsed=t_deparsed,
+                layer=py$lyr,
+                channel=i)
 
-## Channel 1
+    save_path <- paste0(py$outdir, "/smooth_channel_", i, ".png")
+    link_output(paste0("smooth_channel_", i, ".png"))
+}
 
-```{python smth_images_c1, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
-```
-
-## Channel 2
-
-```{python smth_images_c2, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
-```
-
-## Channel 3
-
-```{python smth_images_c3, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
-```
-
-## Channel 4
-
-```{python smth_images_c4, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
 ```
 
 # Saving the `ImageContainer` object
