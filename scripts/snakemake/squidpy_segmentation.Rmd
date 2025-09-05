@@ -1,0 +1,180 @@
+---
+title: "Squidpy Segmentation"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to demonstrate image segmentation for Visium analysis 
+using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
+Refer to the following resources for technical details:
+
+- [Squidpy documentation](https://squidpy.readthedocs.io/en/stable/index.html)
+- [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
+- [Squidpy GitHub](https://github.com/scverse/squidpy)
+
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv(params[['conda_env']])
+```
+
+```{python ppackages}
+import numpy as np
+import ast
+import matplotlib.pyplot as plt
+import squidpy as sq
+from matplotlib.colors import ListedColormap
+from skimage.morphology import binary_erosion
+import xarray as xr
+import os
+```
+
+```{python configs}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to specify variables for paths to input files/directories
+# and parameter settings
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Convert `params` from R to Python
+params = r.params
+
+# Specify file paths to input and output files
+outdir = params['outdir']
+input_image = params['input_image']
+output_obj = params['output_obj']
+
+# Specify the name of input image layer to be processed
+lyr = params['lyr']
+lyr_smth = f"{lyr}_smooth"
+
+
+```
+
+# Loading input image
+
+```{python loading_input}
+
+# ------------------------------------------------------------------------------
+# This chunk imports input image saved as zarr in the previous step
+# ------------------------------------------------------------------------------
+
+# Load the Zarr store into an ImageContainer
+# Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
+# You can also specify chunks for Dask if needed.
+img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks='auto')
+
+print(f"The following file has been loaded: {input_obj}")
+print(img)
+```
+
+# Segmentation {.tabset}
+
+Image segmentation is performed using [Otsu thresholding](https://en.wikipedia.org/wiki/Otsu's_method) and 
+[watershed](https://en.wikipedia.org/wiki/Watershed_(image_processing)) methods. In the Otsu method, 
+the algorithm calculates the optimal brightness level that best separates regions of varying intensity. 
+The watershed method is a region-based segmentation algorithm that divides an image into distinct adjacent
+regions based on topographic analysis of pixel intensities.
+
+```{python segmentation}
+
+# ------------------------------------------------------------------------------
+# This chunk carries out image segmentation using Otsu thresholding and watershed 
+# segmentation. Segmentation is performed for each channel individually.
+# ------------------------------------------------------------------------------
+
+for ch in img[lyr].shape[3]:
+    # Specify the channel to be processed
+    ch = value['ch']
+    # Specify the name of layer for the new processed image
+    new_layer = f"seg_channel_{ch}"
+    # Run segmentation
+    sq.im.segment(img=img,
+                  layer=lyr_smth,
+                  method=seg_method,
+                  thresh=thr_method,
+                  chunks='auto',
+                  lazy=True,
+                  layer_added=new_layer,
+                  channel=ch)
+
+# Prep a list consisting of channel corresponding to segmented images
+seg_lyrs = [c for c in list(img) if "seg" in c]
+
+print("ImageContainer updated:")
+print(img)
+```
+
+```{python visualize_images}
+stop()
+# ------------------------------------------------------------------------------
+# This chunk is used to prepare visualizing smoothened images
+# ------------------------------------------------------------------------------
+
+# Function to generate a fake python chunk running python commands
+subchunkify <- function(name, layer, channel, t_deparsed, width=12, height=12) {
+
+    more <- paste0(", fig.width=", width, ", fig.height=", height)
+    sub_chunk <- paste0("```{python ", name, ", results='asis', echo=FALSE", more, "}",
+        "\n\n",
+        paste0(t_deparsed, collapse="\n"),
+        "\n\n```\n\n\n")
+
+    cat(knitr::knit(text = sub_chunk, quiet=TRUE))
+}
+
+# Function to add a link to image
+link_output <- function(p) {
+    cat("\n\n- Link: [", p, "](", p, ")\n\n")
+}
+
+# Visualize input images across the channels
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+    # Convert into 0-indexing
+    i <- i - 1
+    cat("## Channel", i, "{.tabset}\n\n")
+    # Command to show image
+    t_deparsed_1 <- paste0("img.show('", py$lyr_smth, "', channel=", i, ", cmap='gray')")
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/smooth_channel_", i,  ".png', dpi=1000)")
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    subchunkify(name=paste0("smooth_", i),
+                t_deparsed=t_deparsed,
+                layer=py$lyr,
+                channel=i)
+
+    save_path <- paste0(py$outdir, "/smooth_channel_", i, ".png")
+    link_output(paste0("smooth_channel_", i, ".png"))
+}
+
+```
+
+
+# Saving the `ImageContainer` object
+
+Output images are saved as the following object:
+
+```{python save_zarr}
+img.save(output_obj)
+print(output_obj)
+```
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```
