@@ -171,7 +171,7 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
                 channel=i)
 
     save_path <- paste0(py$outdir, "/input_channel_", i, ".png")
-    link_output(save_path)
+    link_output(paste0("input_channel_", i, ".png"))
 }
 ```
 
