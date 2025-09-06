@@ -37,17 +37,12 @@ source('config/helpers.R')
 
 ```{python ppackages}
 import numpy as np
-import ast
 import matplotlib.pyplot as plt
 import squidpy as sq
 import dask.array as da
-from dask_image.imread import imread as dask_imread
 from matplotlib.colors import ListedColormap
 from skimage.filters import threshold_local
-from skimage.morphology import binary_erosion
-from skimage.exposure import equalize_adapthist
 import xarray as xr
-import napari
 import os
 ```
 

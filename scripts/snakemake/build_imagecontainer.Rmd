@@ -36,12 +36,9 @@ source('config/helpers.R')
 
 ```{python ppackages}
 import numpy as np
-import ast
 import matplotlib.pyplot as plt
 import squidpy as sq
 from matplotlib.colors import ListedColormap
-from skimage.filters import threshold_local
-from skimage.morphology import binary_erosion
 from skimage.exposure import equalize_adapthist
 import xarray as xr
 import os

@@ -44,7 +44,6 @@ source('config/helpers.R')
 
 ```{python ppackages}
 import numpy as np
-import ast
 import matplotlib.pyplot as plt
 import squidpy as sq
 from matplotlib.colors import ListedColormap
