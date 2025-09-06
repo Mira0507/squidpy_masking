@@ -631,7 +631,7 @@ squidpy_masking
       to be ``directory(<zarr>)``.
     - wrapper script for rule ``smooth`` update in progress
     - rule ``squidpy_segmentation`` added to ``Snakefile``, in progress
-    - ``scripts/snakemake/helpers.R`` added
+    - ``scripts/snakemake/config/helpers.R`` added
 
 - batch submission bug with Snakemake v8
 
@@ -725,4 +725,8 @@ squidpy_masking
         - this issue is not seen when running on an interactive node
         - it appears that this issue is related to Snakemake v8 or snakemake_profile_v8. 
           I'm reaching out to HPC.
-        - idea: reinstall older or newer Snakemake versions than the current one (v8.30.0)
+        - figured out that updating Snakemake to newer versions can resolve this 
+          issue. reinstalling Snakemake v8.8.0 resolved it.
+
+- conda env updates: ``requirements.txt`` and ``env.archived.yaml`` updated to fix
+  Snakemake version to v8.8.0
