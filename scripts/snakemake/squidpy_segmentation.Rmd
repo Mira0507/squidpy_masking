@@ -26,12 +26,20 @@ Refer to the following resources for technical details:
 - [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
+```{r test}
+params = list(
+            outdir = "results/noperm",
+            input_obj = "results/noperm/smooth.zarr",
+            output_obj = "results/noperm/squidpy_segmentation.zarr",
+            conda_env = "../../env",
+            lyr = "image")
+```
 
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
 use_condaenv(params[['conda_env']])
-source('helpers.R')
+source('config/helpers.R')
 ```
 
 ```{python ppackages}
@@ -59,12 +67,16 @@ params = r.params
 
 # Specify file paths to input and output files
 outdir = params['outdir']
-input_image = params['input_image']
+input_obj = params['input_obj']
 output_obj = params['output_obj']
 
 # Specify the name of input image layer to be processed
 lyr = params['lyr']
 lyr_smth = f"{lyr}_smooth"
+
+# Methods for segmentation and threholding
+seg_method = params['seg_method']
+thr_method = params['thr_method']
 ```
 
 # Loading input image
@@ -93,15 +105,13 @@ The watershed method is a region-based segmentation algorithm that divides an im
 regions based on topographic analysis of pixel intensities.
 
 ```{python segmentation}
-stop()
+
 # ------------------------------------------------------------------------------
 # This chunk carries out image segmentation using Otsu thresholding and watershed 
 # segmentation. Segmentation is performed for each channel individually.
 # ------------------------------------------------------------------------------
 
 for ch in img[lyr].shape[3]:
-    # Specify the channel to be processed
-    ch = value['ch']
     # Specify the name of layer for the new processed image
     new_layer = f"seg_channel_{ch}"
     # Run segmentation
