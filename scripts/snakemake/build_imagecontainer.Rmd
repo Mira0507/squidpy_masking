@@ -31,6 +31,7 @@ Refer to the following resources for technical details:
 library(reticulate)
 library(tidyverse)
 use_condaenv(params[['conda_env']])
+source('helpers.R')
 ```
 
 ```{python ppackages}
@@ -138,22 +139,7 @@ function with default parameter settings.
 # This chunk iteratively visualizes images before and after smoothing
 # ------------------------------------------------------------------------------
 
-# Function to generate a fake python chunk running python commands
-subchunkify <- function(name, layer, channel, t_deparsed, width=12, height=12) {
 
-    more <- paste0(", fig.width=", width, ", fig.height=", height)
-    sub_chunk <- paste0("```{python ", name, ", results='asis', echo=FALSE", more, "}",
-        "\n\n",
-        paste0(t_deparsed, collapse="\n"),
-        "\n\n```\n\n\n")
-
-    cat(knitr::knit(text = sub_chunk, quiet=TRUE))
-}
-
-# Function to add a link to image
-link_output <- function(p) {
-    cat("\n\n- Link: [", p, "](", p, ")\n\n")
-}
 
 # Visualize input images across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
@@ -165,10 +151,7 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/input_channel_", i,  ".png', dpi=1000)")
     t_deparsed_3 <- "plt.close()"
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
-    subchunkify(name=paste0("input_", i),
-                t_deparsed=t_deparsed,
-                layer=py$lyr,
-                channel=i)
+    subchunkify(name=paste0("input_", i), t_deparsed=t_deparsed)
 
     save_path <- paste0(py$outdir, "/input_channel_", i, ".png")
     link_output(paste0("input_channel_", i, ".png"))

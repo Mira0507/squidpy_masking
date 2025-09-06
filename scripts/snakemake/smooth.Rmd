@@ -27,10 +27,12 @@ Refer to the following resources for technical details:
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
 
+
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
 use_condaenv(params[['conda_env']])
+source('helpers.R')
 ```
 
 ```{python ppackages}
@@ -121,31 +123,11 @@ lyr_smth = f"{lyr}_smooth"
 py$img
 ```
 
-Images are compared between the before (left) and the after (right) smoothing across the stainings.
-
-
-```{python visualize_images}
+```{r visualize_images}
 
 # ------------------------------------------------------------------------------
 # This chunk is used to prepare visualizing smoothened images
 # ------------------------------------------------------------------------------
-
-# Function to generate a fake python chunk running python commands
-subchunkify <- function(name, layer, channel, t_deparsed, width=12, height=12) {
-
-    more <- paste0(", fig.width=", width, ", fig.height=", height)
-    sub_chunk <- paste0("```{python ", name, ", results='asis', echo=FALSE", more, "}",
-        "\n\n",
-        paste0(t_deparsed, collapse="\n"),
-        "\n\n```\n\n\n")
-
-    cat(knitr::knit(text = sub_chunk, quiet=TRUE))
-}
-
-# Function to add a link to image
-link_output <- function(p) {
-    cat("\n\n- Link: [", p, "](", p, ")\n\n")
-}
 
 # Visualize input images across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
@@ -155,16 +137,13 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     # Command to show image
     t_deparsed_1 <- paste0("img.show('", py$lyr_smth, "', channel=", i, ", cmap='gray')")
     t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/smooth_channel_", i,  ".png', dpi=1000)")
-    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
-    subchunkify(name=paste0("smooth_", i),
-                t_deparsed=t_deparsed,
-                layer=py$lyr,
-                channel=i)
-
+    t_deparsed_3 <- "plt.close()"
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
+    subchunkify(name=paste0("smooth_", i), t_deparsed=t_deparsed)
+    
     save_path <- paste0(py$outdir, "/smooth_channel_", i, ".png")
     link_output(paste0("smooth_channel_", i, ".png"))
 }
-
 ```
 
 # Saving the `ImageContainer` object
