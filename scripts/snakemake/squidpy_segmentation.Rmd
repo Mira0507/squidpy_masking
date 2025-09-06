@@ -31,6 +31,7 @@ Refer to the following resources for technical details:
 library(reticulate)
 library(tidyverse)
 use_condaenv(params[['conda_env']])
+source('helpers.R')
 ```
 
 ```{python ppackages}
@@ -64,8 +65,6 @@ output_obj = params['output_obj']
 # Specify the name of input image layer to be processed
 lyr = params['lyr']
 lyr_smth = f"{lyr}_smooth"
-
-
 ```
 
 # Loading input image
@@ -94,7 +93,7 @@ The watershed method is a region-based segmentation algorithm that divides an im
 regions based on topographic analysis of pixel intensities.
 
 ```{python segmentation}
-
+stop()
 # ------------------------------------------------------------------------------
 # This chunk carries out image segmentation using Otsu thresholding and watershed 
 # segmentation. Segmentation is performed for each channel individually.
@@ -128,22 +127,6 @@ stop()
 # This chunk is used to prepare visualizing smoothened images
 # ------------------------------------------------------------------------------
 
-# Function to generate a fake python chunk running python commands
-subchunkify <- function(name, layer, channel, t_deparsed, width=12, height=12) {
-
-    more <- paste0(", fig.width=", width, ", fig.height=", height)
-    sub_chunk <- paste0("```{python ", name, ", results='asis', echo=FALSE", more, "}",
-        "\n\n",
-        paste0(t_deparsed, collapse="\n"),
-        "\n\n```\n\n\n")
-
-    cat(knitr::knit(text = sub_chunk, quiet=TRUE))
-}
-
-# Function to add a link to image
-link_output <- function(p) {
-    cat("\n\n- Link: [", p, "](", p, ")\n\n")
-}
 
 # Visualize input images across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
