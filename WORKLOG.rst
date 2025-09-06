@@ -590,9 +590,9 @@ squidpy_masking
         - method to load input image changed to use squidpy as-is
         - added subchunkifying to simplify iterative visualization 
         - improved smoothing speed by passing the following arguments into 
-          the `sq.im.process` function:
-            - `chunks="auto"`
-            - `lazy=True`
+          the ``sq.im.process`` function:
+            - ``chunks="auto"``
+            - ``lazy=True``
 
 
 - ``README.md`` updated
@@ -603,7 +603,7 @@ squidpy_masking
 
 @Mira0507
 
-- Work on Snakemake
+- build Snakemake pipeline
     - updates to ``script/snakemake/build_imagecontainer.Rmd``
         - strings specified by ``crop_height``, ``crop_width``,
           ``crop_size``, ``crop_scale`` converted into *float*
@@ -617,3 +617,112 @@ squidpy_masking
             img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks='auto')
 
 
+
+
+2025-09-05
+----------
+
+@Mira0507
+
+- build Snakemake pipeline
+    - links to output image file paths corrected in 
+      ``script/snakemake/build_imagecontainer.Rmd``
+    - input/output paths to ``zarr`` file updated in ``Snakefile. This requires
+      to be ``directory(<zarr>)``.
+    - wrapper script for rule ``smooth`` update in progress
+    - rule ``squidpy_segmentation`` added to ``Snakefile``, in progress
+    - ``scripts/snakemake/helpers.R`` added
+
+- batch submission bug with Snakemake v8
+
+    - dry-run shows ``threads`` set to 6
+
+    .. code-block:: bash
+
+        $ snakemake -n --profile path/to/snakemake_profile_v8
+
+        host: cn2294
+        Building DAG of jobs...
+        Job stats:
+        job        count
+        -------  -------
+        all            1
+        convert        2
+        total          3
+
+
+        [Fri Sep  5 10:30:38 2025]
+        rule convert:
+            input: ../images/input/Perm/Image_168.vsi, image_conversion.Rmd
+            output: ../images/converted_test/perm/converted.ome.tif, ../images/converted_test/perm/image_conversion.html
+            jobid: 1
+            reason: Missing output files: ../images/converted_test/perm/converted.ome.tif
+            wildcards: outputdir=../images/converted_test, name=perm
+            threads: 6
+            resources: tmpdir=<TBD>, mem_mb=40960, mem_mib=39063, disk_mb=20480, disk_mib=19532, runtime=360
+
+
+        [Fri Sep  5 10:30:38 2025]
+        rule convert:
+            input: ../images/input/NoPerm/Image_169.vsi, image_conversion.Rmd
+            output: ../images/converted_test/noperm/converted.ome.tif, ../images/converted_test/noperm/image_conversion.html
+            jobid: 2
+            reason: Missing output files: ../images/converted_test/noperm/converted.ome.tif
+            wildcards: outputdir=../images/converted_test, name=noperm
+            threads: 6
+            resources: tmpdir=<TBD>, mem_mb=40960, mem_mib=39063, disk_mb=20480, disk_mib=19532, runtime=360
+
+
+        [Fri Sep  5 10:30:38 2025]
+        rule all:
+            input: ../images/converted_test/perm/converted.ome.tif, ../images/converted_test/noperm/converted.ome.tif
+            jobid: 0
+            reason: Input files updated by another job: ../images/converted_test/perm/converted.ome.tif, ../images/converted_test/noperm/converted.ome.tif
+            resources: tmpdir=<TBD>
+
+        Job stats:
+        job        count
+        -------  -------
+        all            1
+        convert        2
+        total          3
+
+        Reasons:
+            (check individual jobs above for details)
+            input files updated by another job:
+                all
+            output files have to be generated:
+                convert
+
+        This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+
+    - batch submissions allocate only 2 CPUs
+
+    .. code-block:: bash
+
+        User   JobId     JobName     Part         St  Reason  Runtime     Walltime     Nodes  CPUs   Memory  Dependency  Nodelist
+        ===========================================================================================================================
+        user  66730066  s.convert.  norm         R                 1:48      6:00:00      1      2   40 GB              cn0054
+        user  66730075  s.convert.  norm         R                 1:48      6:00:00      1      2   40 GB              cn4319
+
+    - notes
+        - snakemake versions
+
+        .. code-block:: bash
+
+            $ cat env.archived.yaml | grep snakemake
+              - snakemake=8.30.0=hdfd78af_0
+              - snakemake-executor-plugin-cluster-generic=1.0.9=pyhdfd78af_0
+              - snakemake-interface-common=1.21.0=pyhdfd78af_0
+              - snakemake-interface-executor-plugins=9.3.9=pyhdfd78af_0
+              - snakemake-interface-report-plugins=1.2.0=pyhdfd78af_0
+              - snakemake-interface-storage-plugins=3.5.0=pyhdfd78af_0
+              - snakemake-minimal=8.30.0=pyhdfd78af_0
+
+        - snakemake profile: https://github.com/NIH-HPC/snakemake_profile/tree/snakemake8
+        - this issue is not seen when running Snakemake v7.7.0 with the old snakemake 
+          profile (https://github.com/NIH-HPC/snakemake_profile/tree/main). 
+        - this issue is not seen when running on an interactive node
+        - it appears that this issue is related to Snakemake v8 or snakemake_profile_v8. 
+          I'm reaching out to HPC.
+        - idea: reinstall older or newer Snakemake versions than the current one (v8.30.0)
