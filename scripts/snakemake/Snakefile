@@ -154,7 +154,9 @@ rule suidpy_segmentation:
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
-        lyr = config['lyr']
+        lyr = config['lyr'],
+        seg_method = config['seg_method'],
+        thr_method = config['thr_method']
     shell:
         """
         Rscript -e 'params = list(
@@ -162,6 +164,8 @@ rule suidpy_segmentation:
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}",
+            seg_method = "{params.seg_method}",
+            thr_method = "{params.thr_method}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
