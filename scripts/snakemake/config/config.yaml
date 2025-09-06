@@ -25,6 +25,7 @@ ser: None
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
 pyramidal: Y
 
+
 # Specify the name of default input image layer in the ImageContainer obj
 # Do not change this value unless you want to set a custom name by default
 lyr: 'image'
@@ -48,3 +49,12 @@ crop_width: 0.5
 crop_size: 1000
 crop_scale: 1
 
+# Specify methods for segmentation and thresholding. The `seg_method` and 
+# `thr_method` will be passed into the `squidpy.im.process` function. 
+# Refer to the following documentations for more info:
+# - https://squidpy.readthedocs.io/en/stable/api/squidpy.im.process.html 
+# - https://squidpy.readthedocs.io/en/latest/notebooks/examples/image/compute_segment_fluo.html
+# Specify the `method` argument
+seg_method: "watershed"
+# Specify the `thresh` argument
+thr_method: None
