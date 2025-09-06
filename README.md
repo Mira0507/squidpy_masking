@@ -64,5 +64,11 @@ Wrapper script running `bftools` for image conversion
 Wrapper script building an `ImageConainer` object of Squidpy from the `tif` image
 with and without adaptive equalization
 - `scripts/snakemake/smooth.Rmd`: Wrapper script conducting Gaussian smoothing
+- `scripts/snakemake/squidpy_segmentation.Rmd`: Wrapper script conducting global 
+thresholding (Otsu) and watershed segmentation using the Squidpy's default 
+functionality
+- `scripts/snakemake/adaptive_thresholding.Rmd`: Wrapper script conducting 
+adaptive (local) thresholding using the `scikit-image` package
+
 
 ![Workflow](scripts/snakemake/config/dag.png)
