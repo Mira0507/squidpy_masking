@@ -123,7 +123,7 @@ lyr_smth = f"{lyr}_smooth"
 py$img
 ```
 
-```{r visualize_images}
+```{r visualize_images, results='asis'}
 
 # ------------------------------------------------------------------------------
 # This chunk is used to prepare visualizing smoothened images
