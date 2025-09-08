@@ -26,14 +26,6 @@ Refer to the following resources for technical details:
 - [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
-```{r test}
-params = list(
-            outdir = "results/noperm",
-            input_obj = "results/noperm/smooth.zarr",
-            output_obj = "results/noperm/squidpy_segmentation.zarr",
-            conda_env = "../../env",
-            lyr = "image")
-```
 
 ```{r rpackages}
 library(reticulate)
@@ -110,7 +102,7 @@ regions based on topographic analysis of pixel intensities.
 # segmentation. Segmentation is performed for each channel individually.
 # ------------------------------------------------------------------------------
 
-for ch in img[lyr].shape[3]:
+for ch in range(img[lyr].shape[3]):
     # Specify the name of layer for the new processed image
     new_layer = f"seg_channel_{ch}"
     # Run segmentation
@@ -130,12 +122,11 @@ print("ImageContainer updated:")
 print(img)
 ```
 
-```{python visualize_images}
-stop()
+```{r visualize_images}
+
 # ------------------------------------------------------------------------------
 # This chunk is used to prepare visualizing smoothened images
 # ------------------------------------------------------------------------------
-
 
 # Visualize input images across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
@@ -144,15 +135,13 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     cat("## Channel", i, "{.tabset}\n\n")
     # Command to show image
     t_deparsed_1 <- paste0("img.show('", py$lyr_smth, "', channel=", i, ", cmap='gray')")
-    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/smooth_channel_", i,  ".png', dpi=1000)")
-    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
-    subchunkify(name=paste0("smooth_", i),
-                t_deparsed=t_deparsed,
-                layer=py$lyr,
-                channel=i)
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/sqseg_channel_", i,  ".png', dpi=1000)")
+    t_deparsed_3 <- "plt.close()"
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
+    subchunkify(name=paste0("sqseg_", i), t_deparsed=t_deparsed)
 
-    save_path <- paste0(py$outdir, "/smooth_channel_", i, ".png")
-    link_output(paste0("smooth_channel_", i, ".png"))
+    save_path <- paste0(py$outdir, "/sqseg_channel_", i, ".png")
+    link_output(paste0("sqseg_channel_", i, ".png"))
 }
 
 ```
