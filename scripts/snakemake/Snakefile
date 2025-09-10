@@ -192,6 +192,8 @@ rule adaptive_thresholding:
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
+        block_size = config['block_size'],
+        offset = config['offset']
     shell:
         """
         Rscript -e 'params = list(
@@ -200,7 +202,8 @@ rule adaptive_thresholding:
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}", 
             lyr = "{params.lyr}",
-            );
+            offset = "{params.offset}",
+            block_size = "{params.block_size}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
             intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
