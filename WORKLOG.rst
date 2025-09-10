@@ -779,3 +779,26 @@ squidpy_masking
     - updates
         - output of rule ``adaptive_thresholding`` added to rule ``all``
         - ``scripts/snakemake/adaptive_thresholding.Rmd`` in progress
+
+
+2025-09-10
+----------
+
+@Mira0507
+
+- build Snakemake pipeline
+    - conda env: ``env``
+    - updates
+        - ``offset`` and ``block_size`` parameters added to rule ``adaptive_thresholding``
+        - bugfix to rule ``squidpy_segmentation`` in progress
+            - fluorescence intensities between adjacent chunks are discontinuous 
+            - seems to be related to using dask array
+
+- exploring the intensity distribution over squidpy-segmented arrays
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_500.Rmd``
+    - notes:
+        - A question raised: does squidpy's segmentation results in binarized images?
+        - TODOs
+            - plot intensities across the pixels and channels before segmentation
+            - plot intensities across the pixels and channels after segmentation
