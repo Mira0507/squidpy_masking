@@ -15,3 +15,4 @@ scripts/individual/image_*
 scripts/individual/segmentation*/
 scripts/presentation/08292025/segmentation_noperm_crop_adaptive/
 *results/
+*.sif
