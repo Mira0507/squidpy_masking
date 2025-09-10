@@ -64,6 +64,14 @@ output_obj = params['output_obj']
 # Specify the name of input image layer to be processed
 lyr = params['lyr']
 
+# Set parameters for adaptive thresholding
+# - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.
+# - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
+#           higher offset results in more stringent thresholding
+block_size = params['block_size']
+offset = params['offset']
+
+
 # Path to output directory
 outdir = params['outdir']
 ```
