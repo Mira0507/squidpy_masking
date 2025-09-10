@@ -30,6 +30,7 @@ Refer to the following resources for technical details:
 library(reticulate)
 library(tidyverse)
 use_condaenv('../../env')
+source('../snakemake/config/helpers.R')
 ```
 
 ```{python ppackages}
@@ -131,45 +132,63 @@ if crop_images:
     print("ImageContainer obj updated:", img)
 ```
 
-## Channel 0
+```{r vis_input_images, results='asis'}
 
-```{python individual_images_c0, fig.height=12, fig.width=12}
-i = 0
-img.show(lyr, channel=i, cmap='gray')
-plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) { 
+    # Convert into 0-indexing
+    i <- i - 1
+    cat('## Channel', i, '\n\n')
+    t_deparsed_1 <- paste0("img.show(lyr, channel=", i, ", cmap='gray')")
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/input_channel_", i, ".png', dpi=1000)")
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    subchunkify(name=paste0("input_images_channel_", i), t_deparsed=t_deparsed)
+
+    path <- paste0(py$outdir, "/input_channel_", i, ".png")
+    link_output(path)
+    cat('\n\n')
+}
 ```
 
-## Channel 1
+# Intensities of input images {.tabset}
 
-```{python individual_images_c1, fig.height=12, fig.width=12}
-i += 1
-img.show(lyr, channel=i, cmap='gray')
-plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
+We explore the intensity of input images across the channels.
+
+```{python prep_input_arrays}
+
+# --------------------------------------------------------------------------------
+# This chunk prepares input 2D arrays across the channels
+# --------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Prep 2D arrays from the `ImageContainer` obj
+input_arrays = [np.squeeze(img[lyr][:, :, :, i]) for i in range(img[lyr].shape[-1])]
+summed_rows = [a.sum(axis=1) for a in input_arrays]
 ```
 
-## Channel 2
+```{r vis_input_intensities, results='asis'}
 
-```{python individual_images_c2, fig.height=12, fig.width=12}
-i += 1
-img.show(lyr, channel=i, cmap='gray')
-plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
+# --------------------------------------------------------------------------------
+# This chunk visualizes the distribution of pixel-wise intensities using lineplots
+# --------------------------------------------------------------------------------
+# Plot the intensities
+
+for (i in seq_along(py$summed_rows)) { 
+    i <- i - 1
+    cat('## Channel', i, '\n\n')
+
+    t_deparsed_1 <- paste0("plt.plot(summed_rows[", i, "], linestyle='-')")
+    t_deparsed_2 <- "plt.xlabel('Row number')"
+    t_deparsed_3 <- "plt.ylabel('Summed row-wise intensity')"
+    t_deparsed_4 <- "plt.show()"
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3, t_deparsed_4)
+    subchunkify(name=paste0("input_intensities_", i),
+                t_deparsed=t_deparsed,
+                width=8,
+                height=6)
+}
 ```
 
-## Channel 3
-
-```{python individual_images_c3, fig.height=12, fig.width=12}
-i += 1
-img.show(lyr, channel=i, cmap='gray')
-plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
-```
-
-## Channel 4
-
-```{python individual_images_c4, fig.height=12, fig.width=12}
-i += 1
-img.show(lyr, channel=i, cmap='gray')
-plt.savefig(f"{outdir}/input_channel_{i}.png", dpi=1000)
-```
 
 # Smoothing {.tabset}
 
@@ -299,7 +318,7 @@ for key, value in channel_config.items():
         # Run segmentation
         sq.im.segment(img=img,
                       layer=lyr_smth,
-                      method=seg_method,
+                      # method=seg_method,
                       thresh=thr_method,
                       layer_added=new_layer,
                       channel=ch)
@@ -369,6 +388,35 @@ image_original_processed(l_one=lyr,
                          image=img,
                          channels=[i, None],
                          process="segmentation")
+```
+
+# Intensities after segmentation
+
+
+
+```{python test}
+
+# Extract all binarized array data
+binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
+
+# Calculate row-wise sums
+sum_arr = [a.sum(axis=1) for a in binary_arr]
+
+for i, a in enumerate(sum_arr):
+    print(f"Chennel {i}")
+    plt.plot(a, linestyle='-')
+    plt.show()
+
+# reticulate::repl_python()
+# Extract all binarized array data
+binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
+
+# Calculate row-wise sums
+sum_arr = [a.sum(axis=1) for a in binary_arr]
+
+toy_arr = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+print(toy_arr.sum(axis=0))
+print(toy_arr.sum(axis=1))
 ```
 
 # Merging masked images {.tabset}
