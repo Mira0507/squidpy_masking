@@ -16,8 +16,7 @@ sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False
 rule all:
     input:
         expand("{out_converted}/{name}/converted.ome.tif", out_converted=config['out_converted'], name=list(sample.index)),
-        expand("{out_masked}/{name}/squidpy_segmentation.zarr", out_masked=config['out_masked'], name=list(sample.index))
-            # expand("{out_masked}/{name}/adaptive_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
+        expand("{out_masked}/{name}/adaptive_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
 
 rule convert:
     """
