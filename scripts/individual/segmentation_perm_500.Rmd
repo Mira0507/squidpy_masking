@@ -251,9 +251,17 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     link_output(path)
     cat('\n\n')
 }
+
 ```
 
-# Comparison of intensities after each process
+# Comparison of intensities after each process {.tabset}
+
+Here, we compare the intensity of each row (from top to bottom) across the channels at each step.
+Refer to the following layers and corresponding image processing steps:
+
+- `image`: input
+- `image_smooth`: input + Gaussian smoothing
+- `image_sqseg`: input + Gaussian smoothing + Otsu thresholding + Watershed segmentation
 
 ```{python intensity_dic}
 
@@ -275,24 +283,25 @@ for l in all_lyrs:
 
 ```{r vis_intensities, results='asis'}
 
-for (i in seq_along(py$img[[py$lyr]][['shape']][[4]])) { 
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) { 
+    # Convert into 0-indexing
     i <- i - 1
     cat('\n\n## Channel', i, '{.tabset}\n\n')
     for (l in py$all_lyrs) {
         cat('\n\n### Layer:', l, '\n\n')
-        t_deparsed_1 <- paste0("plt.plot(idic[", l, "][", i, "], linestyle='-')")
+        sm_rows <- py$all_lyrs
+        t_deparsed_1 <- paste0("plt.plot(idic['", l, "'][", i, "], linestyle='-')")
         t_deparsed_2 <- "plt.xlabel('Row number')"
         t_deparsed_3 <- "plt.ylabel('Summed row-wise intensity')"
         t_deparsed_4 <- "plt.show()"
         t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3, t_deparsed_4)
-        subchunkify(name=paste0("input_intensities_", i),
+        subchunkify(name=paste0("input_intensities_", i, "_", l),
                     t_deparsed=t_deparsed,
                     width=8,
                     height=6)
     }
 }
 ```
-
 
 
 # Merging masked images {.tabset}
@@ -331,35 +340,19 @@ def display_merge(merge_name):
 
 ```
 
-## DAPI + TDP43
+```{r vis_merge, results='asis'}
+for (i in seq_along(py$merge_list)) {
+    # Retrieve merge name in R
+    merge_name <- py$merge_list[i]
+    # Convert into 0-indexing
+    i <- i - 1
+    cat('\n\n## Merge:', merge_name, '\n\n')
+    t_deparsed <- paste0("display_merge(merge_list[", i, "])\n\n")
+    subchunkify(name=paste0("merge_", i), t_deparsed=t_deparsed)
 
-```{python merge0, fig.width=12, fig.height=12}
-i = 0
-display_merge(merge_list[i])
-```
-
-- Download: [`r py$outdir`/`r py$merge_list[1]`.png](`r py$outdir`/`r py$merge_list[1]`.png)
-
-## IBA1 + MAP2 + ALDH1L1
-
-```{python merge1, fig.width=12, fig.height=12}
-i += 1
-display_merge(merge_list[i])
-```
-
-- Download: [`r py$outdir`/`r py$merge_list[2]`.png](`r py$outdir`/`r py$merge_list[2]`.png)
-
-## TDP43 + MAP2
-
-```{python merge2, fig.width=12, fig.height=12}
-i += 1
-display_merge(merge_list[i])
-```
-
-- Download: [`r py$outdir`/`r py$merge_list[3]`.png](`r py$outdir`/`r py$merge_list[3]`.png)
-
-```{python save_zarr}
-img.save(output_obj)
+    save_path <- paste0(py$outdir, "/", merge_name, ".png")
+    link_output(save_path)
+}
 ```
 
 ```{python load_napari, eval=FALSE}
