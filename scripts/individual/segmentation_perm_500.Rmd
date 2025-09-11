@@ -39,7 +39,8 @@ import matplotlib.pyplot as plt
 import squidpy as sq
 from tifffile import imread
 from matplotlib.colors import ListedColormap
-import napari
+import dask.array as da
+import xarray as xr
 import os
 ```
 
@@ -59,16 +60,6 @@ output_obj = f"{outdir}/icontainer_168_500.zarr"
 
 # Create the output directory 
 os.makedirs(outdir, exist_ok=True)
-
-# Specify argument setting for printing images
-channel_config = {
-    'Merged' : {'ch' : None, 'cm' : None},
-    'Channel 0' : {'ch' : 0, 'cm' : 'gray'},
-    'Channel 1' : {'ch' : 1, 'cm' : 'gray'},
-    'Channel 2' : {'ch' : 2, 'cm' : 'gray'},
-    'Channel 3' : {'ch' : 3, 'cm' : 'gray'},
-    'Channel 4' : {'ch' : 4, 'cm' : 'gray'}
-}
 
 # Specify the name of input image layer to be processed
 lyr = 'image'
@@ -99,6 +90,8 @@ col_dic = {
 
 # Specify merges
 merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
+
+
 ```
 
 # Loading input images {.tabset}
@@ -149,47 +142,6 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
 }
 ```
 
-# Intensities of input images {.tabset}
-
-We explore the intensity of input images across the channels.
-
-```{python prep_input_arrays}
-
-# --------------------------------------------------------------------------------
-# This chunk prepares input 2D arrays across the channels
-# --------------------------------------------------------------------------------
-
-# reticulate::repl_python()
-
-# Prep 2D arrays from the `ImageContainer` obj
-input_arrays = [np.squeeze(img[lyr][:, :, :, i]) for i in range(img[lyr].shape[-1])]
-summed_rows = [a.sum(axis=1) for a in input_arrays]
-```
-
-```{r vis_input_intensities, results='asis'}
-
-# --------------------------------------------------------------------------------
-# This chunk visualizes the distribution of pixel-wise intensities using lineplots
-# --------------------------------------------------------------------------------
-# Plot the intensities
-
-for (i in seq_along(py$summed_rows)) { 
-    i <- i - 1
-    cat('## Channel', i, '\n\n')
-
-    t_deparsed_1 <- paste0("plt.plot(summed_rows[", i, "], linestyle='-')")
-    t_deparsed_2 <- "plt.xlabel('Row number')"
-    t_deparsed_3 <- "plt.ylabel('Summed row-wise intensity')"
-    t_deparsed_4 <- "plt.show()"
-    t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3, t_deparsed_4)
-    subchunkify(name=paste0("input_intensities_", i),
-                t_deparsed=t_deparsed,
-                width=8,
-                height=6)
-}
-```
-
-
 # Smoothing {.tabset}
 
 Smoothing is required to reduce noises before image masking. The current workflow uses 
@@ -205,6 +157,10 @@ in the `scikit-image` package in python.
 
 # Run smoothing
 sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
+
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = f"{lyr}_smooth"
+
 ```
 `ImageContainer` updated:
 
@@ -212,85 +168,21 @@ sq.im.process(img, layer=lyr, method="smooth", sigma=gaussian_sigma)
 py$img
 ```
 
-Images are compared between the before (left) and the after (right) smoothing across the stainings.
+```{r vis_smooth, results='asis'}
 
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) { 
+    # Convert into 0-indexing
+    i <- i - 1
+    cat('## Channel', i, '\n\n')
+    t_deparsed_1 <- paste0("img.show(lyr_smth, channel=", i, ", cmap='gray')")
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/smth_channel_", i, ".png', dpi=1000)")
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    subchunkify(name=paste0("smth_images_channel_", i), t_deparsed=t_deparsed)
 
-```{python function_processed}
-
-# ------------------------------------------------------------------------------
-# This chunk is used to prepare visualizing smoothened images
-# ------------------------------------------------------------------------------
-
-# Specify the name of layer containing Gaussian smoothing
-lyr_smth = f"{lyr}_smooth"
-
-# Create a function that prints images before and after Gaussian smoothing
-def image_original_processed(l_one, l_two, image, channels, process):
-    # Design subplots
-    fig, axes = plt.subplots(nrows=1, ncols=2)
-    image.show(layer=l_one, channel=channels[0], cmap='gray', ax=axes[0])
-    _ = axes[0].set_title(f"Original before {process}")
-    image.show(layer=l_two, channel=channels[1], cmap='gray', ax=axes[1])
-    _ = axes[1].set_title(f"Original after {process}")
-    # Save
-    ch = "_".join([str(x) for x in channels])
-    plt.savefig(f"{outdir}/masked_channel_{ch}.png", dpi=1000)
-
-```
-
-## Channel 0
-
-```{python smth_images_c0, fig.width=12, fig.height=12}
-i = 0
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
-```
-
-## Channel 1
-
-```{python smth_images_c1, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
-```
-
-## Channel 2
-
-```{python smth_images_c2, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
-```
-
-## Channel 3
-
-```{python smth_images_c3, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
-```
-
-## Channel 4
-
-```{python smth_images_c4, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=lyr_smth,
-                         image=img,
-                         channels=[i, i],
-                         process="smoothing")
+    path <- paste0(py$outdir, "/smth_channel_", i, ".png")
+    link_output(path)
+    cat('\n\n')
+}
 ```
 
 # Segmentation {.tabset}
@@ -308,116 +200,100 @@ regions based on topographic analysis of pixel intensities.
 # segmentation. Segmentation is performed for each channel individually.
 # ------------------------------------------------------------------------------
 
-for key, value in channel_config.items():
-    # For any valid channel
-    if value['ch'] != None:
-        # Specify the channel to be processed
-        ch = value['ch']
-        # Specify the name of layer for the new processed image
-        new_layer = f"seg_channel_{ch}"
-        # Run segmentation
-        sq.im.segment(img=img,
-                      layer=lyr_smth,
-                      # method=seg_method,
-                      thresh=thr_method,
-                      layer_added=new_layer,
-                      channel=ch)
+# reticulate::repl_python()
+for ch in range(img[lyr].shape[-1]):
+    # Specify the name of layer for the new processed image
+    new_layer = f"seg_channel_{ch}"
+    # Run segmentation
+    sq.im.segment(img=img,
+                  layer=lyr_smth,
+                  method=seg_method,
+                  thresh=thr_method,
+                  layer_added=new_layer,
+                  channel=ch)
 
 # Prep a list consisting of channel corresponding to segmented images
 seg_lyrs = [c for c in list(img) if "seg" in c]
+seg_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
+
+# Stack the arrays along the last axis
+stacked_arr = np.dstack(seg_arr)
+stacked_arr = stacked_arr.reshape(img[lyr].shape)
+
+# Add the stacked array to the ImageContainer obj
+lyr_seg = f"{lyr}_sqseg"
+try:
+    img['image_sqseg'] = stacked_arr
+except:
+    ValueError("Wrong dimension!")
+
+# Delete unnecessary layers
+for l in seg_lyrs: 
+    del img[l]
+
+print("ImageContainer updated:")
+print(img)
+
 ```
 
-`ImageContainer` updated:
+```{r vis_seg, results='asis'}
 
-```{r seg_obj}
-py$img
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) { 
+    # Convert into 0-indexing
+    i <- i - 1
+    cat('## Channel', i, '\n\n')
+    t_deparsed_1 <- paste0("img.show(lyr_seg, channel=", i, ", cmap='gray')")
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/sqseg_channel_", i, ".png', dpi=1000)")
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    subchunkify(name=paste0("sqseg_images_channel_", i), t_deparsed=t_deparsed)
+
+    path <- paste0(py$outdir, "/sqseg_channel_", i, ".png")
+    link_output(path)
+    cat('\n\n')
+}
 ```
 
-Images are compared between the before (left) and the after (right) segmentation across the stainings.
+# Comparison of intensities after each process
 
-## Channel 0
+```{python intensity_dic}
 
-```{python seg_images_c0, fig.width=12, fig.height=12}
-i = 0
-image_original_processed(l_one=lyr,
-                         l_two=seg_lyrs[i],
-                         image=img,
-                         channels=[i, None],
-                         process="segmentation")
+# ------------------------------------------------------------------------------
+# This chunk computes row-wise intensities across the layers and channels
+# ------------------------------------------------------------------------------
+
+# Prep a dictionary storing summed row-wise intensities for each layer
+all_lyrs = list(img)
+idic = {}
+
+for l in all_lyrs:
+    input_arrays = [np.squeeze(img[l][:, :, :, i]) for i in range(img[l].shape[-1])]
+    summed_rows = [a.sum(axis=1) for a in input_arrays]
+    idic[l] = summed_rows
+
+
 ```
 
-## Channel 1
+```{r vis_intensities, results='asis'}
 
-```{python seg_images_c1, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=seg_lyrs[i],
-                         image=img,
-                         channels=[i, None],
-                         process="segmentation")
+for (i in seq_along(py$img[[py$lyr]][['shape']][[4]])) { 
+    i <- i - 1
+    cat('\n\n## Channel', i, '{.tabset}\n\n')
+    for (l in py$all_lyrs) {
+        cat('\n\n### Layer:', l, '\n\n')
+        t_deparsed_1 <- paste0("plt.plot(idic[", l, "][", i, "], linestyle='-')")
+        t_deparsed_2 <- "plt.xlabel('Row number')"
+        t_deparsed_3 <- "plt.ylabel('Summed row-wise intensity')"
+        t_deparsed_4 <- "plt.show()"
+        t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3, t_deparsed_4)
+        subchunkify(name=paste0("input_intensities_", i),
+                    t_deparsed=t_deparsed,
+                    width=8,
+                    height=6)
+    }
+}
 ```
 
-## Channel 2
 
-```{python seg_images_c2, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=seg_lyrs[i],
-                         image=img,
-                         channels=[i, None],
-                         process="segmentation")
-```
-
-## Channel 3
-
-```{python seg_images_c3, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=seg_lyrs[i],
-                         image=img,
-                         channels=[i, None],
-                         process="segmentation")
-```
-
-## Channel 4
-
-```{python seg_images_c4, fig.width=12, fig.height=12}
-i += 1
-image_original_processed(l_one=lyr,
-                         l_two=seg_lyrs[i],
-                         image=img,
-                         channels=[i, None],
-                         process="segmentation")
-```
-
-# Intensities after segmentation
-
-
-
-```{python test}
-
-# Extract all binarized array data
-binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
-
-# Calculate row-wise sums
-sum_arr = [a.sum(axis=1) for a in binary_arr]
-
-for i, a in enumerate(sum_arr):
-    print(f"Chennel {i}")
-    plt.plot(a, linestyle='-')
-    plt.show()
-
-# reticulate::repl_python()
-# Extract all binarized array data
-binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
-
-# Calculate row-wise sums
-sum_arr = [a.sum(axis=1) for a in binary_arr]
-
-toy_arr = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
-print(toy_arr.sum(axis=0))
-print(toy_arr.sum(axis=1))
-```
 
 # Merging masked images {.tabset}
 
@@ -435,7 +311,7 @@ print(py$col_dic)
 # ------------------------------------------------------------------------------
 
 # Extract all binarized array data
-binary_arr = [np.squeeze(img[l].values) for l in seg_lyrs]
+input_arr = [np.squeeze(img[lyr_seg][:, :, :, i]) for i in range(img[lyr_seg].shape[-1])]
 
 def display_merge(merge_name):
 
@@ -445,7 +321,7 @@ def display_merge(merge_name):
 
     # Stack binary images
     for ab, i in ch_dic.items():
-        plt.imshow(binary_arr[i],
+        plt.imshow(input_arr[i],
                    cmap=ListedColormap([(1, 1, 1, 0), col_dic[ab]]),
                    alpha=0.5)
     plt.xticks([])
