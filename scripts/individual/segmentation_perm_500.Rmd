@@ -254,7 +254,7 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
 
 ```
 
-# Comparison of intensities after each process {.tabset}
+# Comparison of row-wise intensities after each process {.tabset}
 
 Here, we compare the intensity of each row (from top to bottom) across the channels at each step.
 Refer to the following layers and corresponding image processing steps:
@@ -296,6 +296,45 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
         t_deparsed_4 <- "plt.show()"
         t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3, t_deparsed_4)
         subchunkify(name=paste0("input_intensities_", i, "_", l),
+                    t_deparsed=t_deparsed,
+                    width=8,
+                    height=6)
+    }
+}
+```
+
+# Comparison of pixel-wise intensities after each process {.tabset}
+
+```{python pixel_intensity}
+# reticulate::repl_python()
+
+# Prep a dictionary storing summed row-wise intensities for each layer
+all_lyrs = list(img)
+idic = {}
+
+for l in all_lyrs:
+    input_arrays = [np.squeeze(img[l][:, :, :, i]) for i in range(img[l].shape[-1])]
+    idic[l] = input_arrays
+```
+
+```{r vis_pixel_intensities, results='asis'}
+
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) { 
+    # Convert into 0-indexing
+    i <- i - 1
+    cat('\n\n## Channel', i, '{.tabset}\n\n')
+    for (l in py$all_lyrs) {
+        cat('\n\n### Layer:', l, '\n\n')
+        sm_rows <- py$all_lyrs
+        t_deparsed_1 <- paste0("plt.plot(idic['", l, "'][", i, "],
+                               marker='o',
+                               linestyle='None',
+                               color='blue')")
+        t_deparsed_2 <- "plt.xlabel('Pixel number')"
+        t_deparsed_3 <- "plt.ylabel('Pixel-wise intensity')"
+        t_deparsed_4 <- "plt.show()"
+        t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3, t_deparsed_4)
+        subchunkify(name=paste0("input_pixel_intensities_", i, "_", l),
                     t_deparsed=t_deparsed,
                     width=8,
                     height=6)
