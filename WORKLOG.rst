@@ -766,7 +766,7 @@ squidpy_masking
     - pushed to https://quay.io/repository/miradt/squidpy_masking
     - how to pull
 
-    .. code-block::
+    .. code-block:: bash
 
         # Load apptainer
         module load apptainer
@@ -802,3 +802,52 @@ squidpy_masking
         - TODOs
             - plot intensities across the pixels and channels before segmentation
             - plot intensities across the pixels and channels after segmentation
+
+
+2025-09-11
+----------
+
+@Mira0507
+
+- squidpy's segmentation validation
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_500.Rmd``
+    - notes:
+        - at every layer and channel, intensities dimmed over the upper half 
+          pixels after the Otsu thresholding and Watershed segmentation
+          conducted by the ``squidpy.im.process()`` function, as shown below:
+
+        .. code-block:: python
+
+            sq.im.segment(img=img,  # ImageContainer obj
+                  layer='image_smooth',
+                  method='watershed',
+                  thresh=None,  # `None` runs Otsu thresholding by default
+                  layer_added=<layer_name>,
+                  channel=<channel>)
+
+        - turned out that values stored in the segmentation array are not 
+          numeric values but (categorical) labels for individual masking objects.
+          therefore, it's pointless to plot values from segmentation arrays.
+
+
+2025-09-12
+----------
+
+@Mira0507
+
+- binarize segmented images 
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_500.Rmd``
+    - notes
+        - binary arrays added to the ``ImageContainer`` obj by filtering
+          the segmented arrays across the channels
+        - image masking rerun on the binary arrays
+
+- update the wrapper script for rule ``squidpy_segmentation``
+    - condda env: ``env``
+    - script: ``scripts/snakemake/squidpy_segmentation.Rmd``
+    - notes
+        - segmented arrays across the channels stacked to form a single dask array, 
+          resulting in the following dimension: (33872, 33870, 1, 5)
+        - addition of stacked binary array in progress
