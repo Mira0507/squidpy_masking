@@ -16,7 +16,7 @@ sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False
 rule all:
     input:
         expand("{out_converted}/{name}/converted.ome.tif", out_converted=config['out_converted'], name=list(sample.index)),
-        expand("{out_masked}/{name}/adaptive_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
+        expand("{out_masked}/{name}/otsu_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
 
 rule convert:
     """
@@ -147,7 +147,7 @@ rule suidpy_segmentation:
     output:
         zarr_out = directory("{out_masked}/{name}/squidpy_segmentation.zarr"),
         html = "{out_masked}/{name}/squipy_segmentation.html"
-    threads: 8
+    threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
@@ -166,6 +166,39 @@ rule suidpy_segmentation:
             conda_env = "{params.conda_env}",
             seg_method = "{params.seg_method}",
             thr_method = "{params.thr_method}",
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+rule otsu_thresholding:
+    """
+    This rule runs Otsu thresholding using scikit-image
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/squidpy_segmentation.zarr",
+        rmd = "otsu_thresholding.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/otsu_thresholding.zarr"),
+        html = "{out_masked}/{name}/otsu_thresholding.html"
+    threads: 12
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        lyr = config['lyr']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
