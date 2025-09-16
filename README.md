@@ -66,7 +66,9 @@ with and without adaptive equalization
 - `scripts/snakemake/smooth.Rmd`: Wrapper script conducting Gaussian smoothing
 - `scripts/snakemake/squidpy_segmentation.Rmd`: Wrapper script conducting global 
 thresholding (Otsu) and watershed segmentation using the Squidpy's default 
-functionality
+functionality, global thresholding conducted by chunk
+- `scripts/snakemake/otsu_thresholding.Rmd`: Wrapper script conducting global 
+thresholding (Otsu) based on thresholds calculated by a dask array
 - `scripts/snakemake/adaptive_thresholding.Rmd`: Wrapper script conducting 
 adaptive (local) thresholding using the `scikit-image` package
 
