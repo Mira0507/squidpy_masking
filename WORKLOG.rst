@@ -850,4 +850,42 @@ squidpy_masking
     - notes
         - segmented arrays across the channels stacked to form a single dask array, 
           resulting in the following dimension: (33872, 33870, 1, 5)
-        - addition of stacked binary array in progress
+        - addition of stacked binary array to the ``ImageContainer`` obj
+        - addition of binary arrays to the ``ImageContainer`` obj
+        - threshold values from the Otsu method are calculated by chunk. 
+          this results in mosaic-thresholding. I can think of two options:
+          not using chunks or calculating a threshold value per channel instead of
+          per chunk. However, it's hard to know how to pass a custom threshold
+          value to the ``squidpy.im.process`` function. Meanwhile, not using chunks would
+          take so long to run this process. I'd better run Otsu thresholding using 
+          native scikit-image functions in a separate rule.
+        - rule ``squidpy_segmentation`` ran error-free
+
+
+2025-09-16
+----------
+
+@Mira0507
+
+- update the wrapper script for rule ``otsu_thresholding``
+    - condda env: ``env``
+    - script: ``scripts/snakemake/otsu_thresholding.Rmd``
+    - notes:
+        - per-array threshold values calculated using the Otsu method
+
+        .. code-block:: python
+
+            for ch in range(img[lyr].shape[3]):
+                # Specify the name of layer for the new processed image
+                new_layer = f"bn_channel_{ch}"
+                # Retrieve an array corresponding to the channel
+                arr = img[lyr_smth].data[:, :, :, ch]
+                # Compute Otsu threshold
+                threshold_value = threshold_otsu(arr.compute())
+                # Binarize the array
+                binary = arr > threshold_value
+                # Add the binary array to the `ImageContainer` obj
+                img.add_img(binary, layer=new_layer)
+
+        - mosaic pattern disappeared from the output dask arrays
+
