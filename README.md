@@ -68,7 +68,7 @@ with and without adaptive equalization
 thresholding (Otsu) and watershed segmentation using the Squidpy's default 
 functionality, global thresholding conducted by chunk
 - `scripts/snakemake/otsu_thresholding.Rmd`: Wrapper script conducting global 
-thresholding (Otsu) based on thresholds calculated by a dask array
+thresholding (Otsu) based on thresholds calculated for each dask array
 - `scripts/snakemake/adaptive_thresholding.Rmd`: Wrapper script conducting 
 adaptive (local) thresholding using the `scikit-image` package
 
