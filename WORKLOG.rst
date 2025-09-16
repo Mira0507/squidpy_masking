@@ -889,3 +889,10 @@ squidpy_masking
 
         - mosaic pattern disappeared from the output dask arrays
 
+- Snakemake DAG updated
+
+    .. code-block:: bash
+
+        $ cd scripts/snakemake
+        $ snakemake --dag --profile none | dot -Tpng > dag.png
+        $ mv dag.png config/.
