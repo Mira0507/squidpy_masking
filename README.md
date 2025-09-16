@@ -60,5 +60,17 @@ preprocessed with adaptive equalization before smoothing
 Specifying sample names and corresponding input image paths
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
+- `scripts/snakemake/build_imagecontainer.Rmd`: 
+Wrapper script building an `ImageConainer` object of Squidpy from the `tif` image
+with and without adaptive equalization
+- `scripts/snakemake/smooth.Rmd`: Wrapper script conducting Gaussian smoothing
+- `scripts/snakemake/squidpy_segmentation.Rmd`: Wrapper script conducting global 
+thresholding (Otsu) and watershed segmentation using the Squidpy's default 
+functionality, global thresholding conducted by chunk
+- `scripts/snakemake/otsu_thresholding.Rmd`: Wrapper script conducting global 
+thresholding (Otsu) based on thresholds calculated for each dask array
+- `scripts/snakemake/adaptive_thresholding.Rmd`: Wrapper script conducting 
+adaptive (local) thresholding using the `scikit-image` package
+
 
 ![Workflow](scripts/snakemake/config/dag.png)

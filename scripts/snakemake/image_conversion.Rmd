@@ -42,20 +42,6 @@ import time
 import re
 ```
 
-```{r import_params}
-
-# ------------------------------------------------------------------------------
-# This chunk loads all params set within the rule
-# ------------------------------------------------------------------------------
-
-vsi <- params[['vsi']]
-tif <- params[['tif']]
-input_meta_out <- params[['input_meta_out']]
-output_meta_out <- params[['output_meta_out']]
-to_pyramidal <- params[['to_pyramidal']]
-ser <- params[['ser']]
-```
-
 ```{python configs}
 
 # ------------------------------------------------------------------------------
@@ -63,15 +49,18 @@ ser <- params[['ser']]
 # and parameter settings
 # ------------------------------------------------------------------------------
 
+# Convert `params` from R to Python
+params = r.params
+
 # Specify the path to input vsi image
-vsi = r.vsi
+vsi = params['vsi']
 
 # Specify the path to output tif file
-tif = r.tif
+tif = params['tif']
 
 # Specify the path to metadata
-input_meta_out = r.input_meta_out
-output_meta_out = r.output_meta_out
+input_meta_out = params['input_meta_out']
+output_meta_out = params['output_meta_out']
 
 # Specify the series to be converted. 
 # NOTE: 
@@ -79,7 +68,7 @@ output_meta_out = r.output_meta_out
 # - Select one for multi-channel with a desired resolution
 # - If "None", python specifies one series with the highest resolution
 #   and multi-channel data
-ser = r.ser
+ser = params['ser']
 
 ## Series #14 :
 ##  Image count = 5
@@ -106,7 +95,7 @@ ser = r.ser
 
 # Specify "Y" if you want to save as pyramidal output
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
-to_pyramidal = r.to_pyramidal
+to_pyramidal = params['to_pyramidal']
 ```
 
 # Input image metadata

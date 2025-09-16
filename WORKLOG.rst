@@ -517,3 +517,382 @@ squidpy_masking
           package
         - adaptive thresholding captured IF signal more uniformly across
           the pixels
+
+
+2025-08-29
+----------
+
+@Mira0507
+
+- generate masking data for collaborator's poster
+    - conda env: ``env``
+    - script: ``scripts/presentation/08292025/segmentation_noperm_crop_adaptive.Rmd``
+    - notes
+        - the coordinates of collaborator's crop identified manually using QuPath 
+          based on the following conversion: N um in QuPath x 3.25 = M pixels 
+          in Squidpy
+        - images were processed as is and rotated (90 degrees, clockwise)
+          only for printing masked data so masked images are aligned with those in 
+          collaborator's poster
+
+
+- update Snakemake pipeline (in progress)
+    - conda env: ``env``
+    - scripts added
+        - ``scripts/snakemake/build_imagecontainer.Rmd``
+    - scripts updated
+        - ``scripts/snakemake/config/config.yaml``
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - rule ``convert`` completed
+        - rule ``build_imagecontainer`` in progress
+
+
+2025-09-02
+----------
+
+@Mira0507
+
+- update Snakemake pipeline (in progress)
+    - conda env: ``env``
+    - scripts
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - rule ``build_imagecontainer`` added
+        - duplicated chunk names corrected 
+          in the ``scripts/snakemake/build_imagecontainer.Rmd``
+
+
+
+2025-09-03
+----------
+
+@Mira0507
+
+- update Snakemake pipeline (in progress)
+    - conda env: ``env``
+    - scripts
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - ``resources`` directive update to the ``build_imagecontainer`` rule
+        - ``scripts/snakemake/build_imagecontainer.Rmd`` optimization in progress
+        - ``scripts/snakemake/smooth.Rmd`` added
+
+- test processing uncropped image without Snakefile
+    - conda env: ``env``
+    - script: ``script/individual/segmentation_perm_adaptive.Rmd``
+
+    .. code-block:: python
+
+        img = sq.im.ImageContainer('path/to/converted.ome.tif', layer=lyr)
+
+    - notes:
+        - method to load input image changed to use squidpy as-is
+        - added subchunkifying to simplify iterative visualization 
+        - improved smoothing speed by passing the following arguments into 
+          the ``sq.im.process`` function:
+            - ``chunks="auto"``
+            - ``lazy=True``
+
+
+- ``README.md`` updated
+
+
+2025-09-04
+----------
+
+@Mira0507
+
+- build Snakemake pipeline
+    - updates to ``script/snakemake/build_imagecontainer.Rmd``
+        - strings specified by ``crop_height``, ``crop_width``,
+          ``crop_size``, ``crop_scale`` converted into *float*
+        - convert 1-indexing into 0-indexing when iteratively 
+          printing images
+        - ``ImageContainer`` obj updated to use Dask 
+          when loading input images
+
+        .. code-block:: python
+
+            img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks='auto')
+
+
+
+
+2025-09-05
+----------
+
+@Mira0507
+
+- build Snakemake pipeline
+    - links to output image file paths corrected in 
+      ``script/snakemake/build_imagecontainer.Rmd``
+    - input/output paths to ``zarr`` file updated in ``Snakefile. This requires
+      to be ``directory(<zarr>)``.
+    - wrapper script for rule ``smooth`` update in progress
+    - rule ``squidpy_segmentation`` added to ``Snakefile``, in progress
+    - ``scripts/snakemake/config/helpers.R`` added
+
+- batch submission bug with Snakemake v8
+
+    - dry-run shows ``threads`` set to 6
+
+    .. code-block:: bash
+
+        $ snakemake -n --profile path/to/snakemake_profile_v8
+
+        host: cn2294
+        Building DAG of jobs...
+        Job stats:
+        job        count
+        -------  -------
+        all            1
+        convert        2
+        total          3
+
+
+        [Fri Sep  5 10:30:38 2025]
+        rule convert:
+            input: ../images/input/Perm/Image_168.vsi, image_conversion.Rmd
+            output: ../images/converted_test/perm/converted.ome.tif, ../images/converted_test/perm/image_conversion.html
+            jobid: 1
+            reason: Missing output files: ../images/converted_test/perm/converted.ome.tif
+            wildcards: outputdir=../images/converted_test, name=perm
+            threads: 6
+            resources: tmpdir=<TBD>, mem_mb=40960, mem_mib=39063, disk_mb=20480, disk_mib=19532, runtime=360
+
+
+        [Fri Sep  5 10:30:38 2025]
+        rule convert:
+            input: ../images/input/NoPerm/Image_169.vsi, image_conversion.Rmd
+            output: ../images/converted_test/noperm/converted.ome.tif, ../images/converted_test/noperm/image_conversion.html
+            jobid: 2
+            reason: Missing output files: ../images/converted_test/noperm/converted.ome.tif
+            wildcards: outputdir=../images/converted_test, name=noperm
+            threads: 6
+            resources: tmpdir=<TBD>, mem_mb=40960, mem_mib=39063, disk_mb=20480, disk_mib=19532, runtime=360
+
+
+        [Fri Sep  5 10:30:38 2025]
+        rule all:
+            input: ../images/converted_test/perm/converted.ome.tif, ../images/converted_test/noperm/converted.ome.tif
+            jobid: 0
+            reason: Input files updated by another job: ../images/converted_test/perm/converted.ome.tif, ../images/converted_test/noperm/converted.ome.tif
+            resources: tmpdir=<TBD>
+
+        Job stats:
+        job        count
+        -------  -------
+        all            1
+        convert        2
+        total          3
+
+        Reasons:
+            (check individual jobs above for details)
+            input files updated by another job:
+                all
+            output files have to be generated:
+                convert
+
+        This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+
+    - batch submissions allocate only 2 CPUs
+
+    .. code-block:: bash
+
+        User   JobId     JobName     Part         St  Reason  Runtime     Walltime     Nodes  CPUs   Memory  Dependency  Nodelist
+        ===========================================================================================================================
+        user  66730066  s.convert.  norm         R                 1:48      6:00:00      1      2   40 GB              cn0054
+        user  66730075  s.convert.  norm         R                 1:48      6:00:00      1      2   40 GB              cn4319
+
+    - notes
+        - snakemake versions
+
+        .. code-block:: bash
+
+            $ cat env.archived.yaml | grep snakemake
+              - snakemake=8.30.0=hdfd78af_0
+              - snakemake-executor-plugin-cluster-generic=1.0.9=pyhdfd78af_0
+              - snakemake-interface-common=1.21.0=pyhdfd78af_0
+              - snakemake-interface-executor-plugins=9.3.9=pyhdfd78af_0
+              - snakemake-interface-report-plugins=1.2.0=pyhdfd78af_0
+              - snakemake-interface-storage-plugins=3.5.0=pyhdfd78af_0
+              - snakemake-minimal=8.30.0=pyhdfd78af_0
+
+        - snakemake profile: https://github.com/NIH-HPC/snakemake_profile/tree/snakemake8
+        - this issue is not seen when running Snakemake v7.7.0 with the old snakemake 
+          profile (https://github.com/NIH-HPC/snakemake_profile/tree/main). 
+        - this issue is not seen when running on an interactive node
+        - it appears that this issue is related to Snakemake v8 or snakemake_profile_v8. 
+          I'm reaching out to HPC.
+        - figured out that updating Snakemake to newer versions can resolve this 
+          issue. reinstalling Snakemake v8.8.0 resolved it.
+
+- conda env updates: ``requirements.txt`` and ``env.archived.yaml`` updated to fix
+  Snakemake version to v8.8.0
+
+
+2025-09-08
+----------
+
+@Mira0507
+
+- build Snakemake pipeline
+    - conda env: ``env``
+    - updates
+        - rule ``squidpy_segmentation`` completed
+        - ``scripts/snakemake/squidpy_segmentation`` bugfix
+            - ``"None"`` converted into ``None``
+            - dask arrays across the IF channels, generated by squidpy segmentation,
+              were stacked into a single layer labeled *"image_sqseg"*, instead of 
+              remaining as individual layers per channel
+        - rule ``adaptive_thresholding`` in progress 
+        - ``scripts/snakemake/adaptive_thresholding.Rmd`` draft added
+
+
+2025-09-09
+----------
+
+@Mira0507
+
+- build singularity container from conda env
+    - reference defs: 
+        - https://github.com/NIH-CARD/scMAVERICS/blob/162a0fe615589069051fa38a0081f90ecd4cbf33/envs/single_cell_cpu.def
+        - https://github.com/NIH-CARD/scVIRGILS/blob/main/single_cell_basic.def
+    - documentation: 
+      https://github.com/NIH-CARD/card-unified-workflow/blob/main/anaconda2singularity.md#use-sylabs-remotely-to-build-image
+    - definition file: ``squidpy_masking.def``
+    - image file: ``squidpy_masking.sif``
+    - pushed to https://quay.io/repository/miradt/squidpy_masking
+    - how to pull
+
+    .. code-block:: bash
+
+        # Load apptainer
+        module load apptainer
+
+        # Pull the container
+        apptainer pull oras://quay.io/miradt/squidpy_masking
+
+- build Snakemake pipeline
+    - conda env: ``env``
+    - updates
+        - output of rule ``adaptive_thresholding`` added to rule ``all``
+        - ``scripts/snakemake/adaptive_thresholding.Rmd`` in progress
+
+
+2025-09-10
+----------
+
+@Mira0507
+
+- build Snakemake pipeline
+    - conda env: ``env``
+    - updates
+        - ``offset`` and ``block_size`` parameters added to rule ``adaptive_thresholding``
+        - bugfix to rule ``squidpy_segmentation`` in progress
+            - fluorescence intensities between adjacent chunks are discontinuous 
+            - seems to be related to using dask array
+
+- exploring the intensity distribution over squidpy-segmented arrays
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_500.Rmd``
+    - notes:
+        - A question raised: does squidpy's segmentation results in binarized images?
+        - TODOs
+            - plot intensities across the pixels and channels before segmentation
+            - plot intensities across the pixels and channels after segmentation
+
+
+2025-09-11
+----------
+
+@Mira0507
+
+- squidpy's segmentation validation
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_500.Rmd``
+    - notes:
+        - at every layer and channel, intensities dimmed over the upper half 
+          pixels after the Otsu thresholding and Watershed segmentation
+          conducted by the ``squidpy.im.process()`` function, as shown below:
+
+        .. code-block:: python
+
+            sq.im.segment(img=img,  # ImageContainer obj
+                  layer='image_smooth',
+                  method='watershed',
+                  thresh=None,  # `None` runs Otsu thresholding by default
+                  layer_added=<layer_name>,
+                  channel=<channel>)
+
+        - turned out that values stored in the segmentation array are not 
+          numeric values but (categorical) labels for individual masking objects.
+          therefore, it's pointless to plot values from segmentation arrays.
+
+
+2025-09-12
+----------
+
+@Mira0507
+
+- binarize segmented images 
+    - conda env: ``env``
+    - script: ``scripts/individual/segmentation_perm_500.Rmd``
+    - notes
+        - binary arrays added to the ``ImageContainer`` obj by filtering
+          the segmented arrays across the channels
+        - image masking rerun on the binary arrays
+
+- update the wrapper script for rule ``squidpy_segmentation``
+    - condda env: ``env``
+    - script: ``scripts/snakemake/squidpy_segmentation.Rmd``
+    - notes
+        - segmented arrays across the channels stacked to form a single dask array, 
+          resulting in the following dimension: (33872, 33870, 1, 5)
+        - addition of stacked binary array to the ``ImageContainer`` obj
+        - addition of binary arrays to the ``ImageContainer`` obj
+        - threshold values from the Otsu method are calculated by chunk. 
+          this results in mosaic-thresholding. I can think of two options:
+          not using chunks or calculating a threshold value per channel instead of
+          per chunk. However, it's hard to know how to pass a custom threshold
+          value to the ``squidpy.im.process`` function. Meanwhile, not using chunks would
+          take so long to run this process. I'd better run Otsu thresholding using 
+          native scikit-image functions in a separate rule.
+        - rule ``squidpy_segmentation`` ran error-free
+
+
+2025-09-16
+----------
+
+@Mira0507
+
+- update the wrapper script for rule ``otsu_thresholding``
+    - condda env: ``env``
+    - script: ``scripts/snakemake/otsu_thresholding.Rmd``
+    - notes:
+        - per-array threshold values calculated using the Otsu method
+
+        .. code-block:: python
+
+            for ch in range(img[lyr].shape[3]):
+                # Specify the name of layer for the new processed image
+                new_layer = f"bn_channel_{ch}"
+                # Retrieve an array corresponding to the channel
+                arr = img[lyr_smth].data[:, :, :, ch]
+                # Compute Otsu threshold
+                threshold_value = threshold_otsu(arr.compute())
+                # Binarize the array
+                binary = arr > threshold_value
+                # Add the binary array to the `ImageContainer` obj
+                img.add_img(binary, layer=new_layer)
+
+        - mosaic pattern disappeared from the output dask arrays
+
+- Snakemake DAG updated
+
+    .. code-block:: bash
+
+        $ cd scripts/snakemake
+        $ snakemake --dag --profile none | dot -Tpng > dag.png
+        $ mv dag.png config/.

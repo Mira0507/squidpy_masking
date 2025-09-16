@@ -1,5 +1,5 @@
 ---
-title: "Segmentation using squidpy"
+title: "Building ImageContainer object"
 author: "Mira Sohn"
 output:
     html_document:
@@ -26,10 +26,12 @@ Refer to the following resources for technical details:
 - [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
+
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
-use_condaenv('../../env')
+use_condaenv(params[['conda_env']])
+source('config/helpers.R')
 ```
 
 ```{python ppackages}
@@ -37,11 +39,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
 from matplotlib.colors import ListedColormap
-from skimage.filters import threshold_local
-from skimage.morphology import binary_erosion
 from skimage.exposure import equalize_adapthist
 import xarray as xr
-import napari
 import os
 ```
 
@@ -54,62 +53,33 @@ import os
 
 # reticulate::repl_python()
 
-# Specify file paths to input and output files
-outdir = "segmentation_perm_adaptive"
-input_image = "../../images/converted/perm/converted.ome.tif"
-output_obj = f"{outdir}/icontainer.zarr"
+# Convert `params` from R to Python
+params = r.params
 
-# Create the output directory 
-os.makedirs(outdir, exist_ok=True)
+# Specify file paths to input and output files
+outdir = params['outdir']
+input_image = params['input_image']
+output_obj = params['output_obj']
 
 # Specify the name of input image layer to be processed
-lyr = 'image'
-
-# Specify signal values to be tested for Gaussian smoothing
-# Sigma represents the variance for normal distribution
-gaussian_sigma = 1
+lyr = params['lyr']
 
 # Specify whether to equalize contrasts
-equalize = False
+equalize = params['equalize']
 
 # Specify whether input images will be cropped
-crop_images = False
+crop_images = params['crop_images']
 
 # Specify coordinates to crop images
-crop_coord = {'height' : 0.5, 'width' : 0.5, 'size' : 1000, 'scale' : 1}
-
-# Specify the segmentation method
-seg_method = "watershed"
-
-# Specify the thresholding method. If `None`, the Otsu method is used.
-thr_method = None
-
-# Set parameters for adaptive thresholding
-# - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.
-# - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
-#           higher offset results in more stringent thresholding
-block_size = round(crop_coord['size'] / 2) + 1
-offset = -100
-
-# Specify pseudocolors across the channels
-col_dic = {
-    'dapi': 'dodgerblue',
-    'iba': 'rosybrown',
-    'tdp': 'orange',
-    'map': 'cyan',
-    'aldh': 'darkkhaki'}
-
-# Specify merges
-merge_list = ['dapi_tdp', 'iba_map_aldh', 'tdp_map']
-
-# Specify the prefix of layers being merged
-merge_prefix = "erosion"
+crop_height = float(params['crop_height'])
+crop_width = float(params['crop_width'])
+crop_size = float(params['crop_size'])
+crop_scale = float(params['crop_scale'])
 ```
 
 # Loading input images {.tabset}
 
-We use `tif` image files converted from `vsi`. Refer to the [image_conversion.html](image_conversion.html) 
-for detailed processes on converting image formats. The following channels correspond to individual IFs.
+We use `tif` image files converted from `vsi`. The following channels correspond to individual IFs.
 
 - **Channel 0**: DAPI
 - **Channel 1**: IBA1
@@ -126,30 +96,39 @@ The following image object loaded:
 # ------------------------------------------------------------------------------
 
 # Initialize ImageContainer
-img = sq.im.ImageContainer(input_image, layer=lyr)
-
-print("ImageContainer obj created using input image:", img)
+img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks='auto')
 
 # Crop input images if specified
-if crop_images:
+if crop_images == "Y":
     print("Image cropped. Refer to the following dimension:", crop_coord)
-    img = img.crop_corner(x=crop_coord['width'],
-                          y=crop_coord['height'],
-                          size=crop_coord['size'],
-                          scale=crop_coord['scale'])
+    img = img.crop_corner(x=crop_width,
+                          y=crop_height,
+                          size=crop_size,
+                          scale=crop_scale)
     print("ImageContainer obj updated:", img)
 
 # Equalize of specified
-if equalize:
+if equalize == "Y":
     # Run adaptive equalization
     eq_img = equalize_adapthist(img[lyr])
     # Convert to xarray
+    # NOTE: This step requires large memory and long runtime!
     eq_img = xr.DataArray(eq_img)
-    # Replace the input array with equalized array
+    # Add the input array with equalized array
+    eq_lyr = f"eq_{lyr}"
     img[lyr] = eq_img
     print("Adaptive equalization applied to the input image!")
-
 ```
+
+`ImageContainer` obj created using input image:
+
+```{python print_status}
+print(input_image)
+print(img)
+```
+
+Contrast enhancement is conducted using the `skimage.exposure.equalize_adapthist`
+function with default parameter settings.
 
 ```{r vis_input, results='asis'}
 
@@ -157,31 +136,33 @@ if equalize:
 # This chunk iteratively visualizes images before and after smoothing
 # ------------------------------------------------------------------------------
 
-# Function to generate a fake python chunk running python commands
-subchunkify <- function(name, layer, channel, t_deparsed, width=12, height=12) {
 
-    more <- paste0(", fig.width=", width, ", fig.height=", height)
-    sub_chunk <- paste0("```{python ", name, ", results='asis', echo=FALSE", more, "}",
-        "\n\n",
-        paste0(t_deparsed, collapse="\n"),
-        "\n\n```\n\n\n")
-
-    cat(knitr::knit(text = sub_chunk, quiet=TRUE))
-}
 
 # Visualize input images across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+    # Convert into 0-indexing
+    i <- i - 1
     cat("## Channel", i, "{.tabset}\n\n")
     # Command to show image
     t_deparsed_1 <- paste0("img.show('", py$lyr, "', channel=", i, ", cmap='gray')")
-    # Command to save image
     t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/input_channel_", i,  ".png', dpi=1000)")
-    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
-    subchunkify(name=paste0("input_", i),
-                t_deparsed=t_deparsed,
-                layer=py$lyr,
-                channel=i)
+    t_deparsed_3 <- "plt.close()"
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
+    subchunkify(name=paste0("input_", i), t_deparsed=t_deparsed)
+
+    save_path <- paste0(py$outdir, "/input_channel_", i, ".png")
+    link_output(paste0("input_channel_", i, ".png"))
 }
+```
+
+
+# Saving the `ImageContainer` object
+
+Output images are saved as the following object:
+
+```{python save_zarr}
+img.save(output_obj)
+print(output_obj)
 ```
 
 ```{r session_info, collapse=FALSE}

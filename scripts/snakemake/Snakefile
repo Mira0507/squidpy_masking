@@ -15,7 +15,8 @@ sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False
 
 rule all:
     input:
-        expand("{outputdir}/{name}/converted.ome.tif", outputdir=config['outdir'], name=list(sample.index))
+        expand("{out_converted}/{name}/converted.ome.tif", out_converted=config['out_converted'], name=list(sample.index)),
+        expand("{out_masked}/{name}/otsu_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
 
 rule convert:
     """
@@ -26,13 +27,13 @@ rule convert:
         vsi = lambda wildcards: sample.loc[wildcards.name, 'input_vsi'],
         rmd = "image_conversion.Rmd"
     output: 
-        tif = "{outputdir}/{name}/converted.ome.tif",
-        html = "{outputdir}/{name}/image_conversion.html"
+        tif = "{out_converted}/{name}/converted.ome.tif",
+        html = "{out_converted}/{name}/image_conversion.html"
     threads: 1
     resources:
-        mem_mb=1024 * 40,
-        disk_mb=1024 * 20,
-        runtime=60 * 6
+        mem_mb = 1024 * 40,
+        disk_mb = 1024 * 20,
+        runtime = 60 * 2
     params:
         series = config['ser'],
         pyramidal = config['pyramidal'],
@@ -42,14 +43,203 @@ rule convert:
         Rscript -e 'params = list(
             vsi = "{input.vsi}",
             tif = "{output.tif}",
-            input_meta_out = "{wildcards.outputdir}/{wildcards.name}/input_metadata.txt",
-            output_meta_out = "{wildcards.outputdir}/{wildcards.name}/output_metadata.txt",
+            input_meta_out = "{wildcards.out_converted}/{wildcards.name}/input_metadata.txt",
+            output_meta_out = "{wildcards.out_converted}/{wildcards.name}/output_metadata.txt",
             ser = "{params.series}",
             conda_env = "{params.conda_env}",
             to_pyramidal = "{params.pyramidal}");
         rmarkdown::render("{input.rmd}",
-            output_dir = "{wildcards.outputdir}/{wildcards.name}",
-            intermediates_dir = "{wildcards.outputdir}/{wildcards.name}",
+            output_dir = "{wildcards.out_converted}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_converted}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+rule build_imagecontainer:
+    """
+    This rule builds a Squidpy ImageContainer object
+    from an OME-TIFF image input
+    """
+    input:
+        tif = config['out_converted'] + "/{name}/converted.ome.tif",
+        rmd = "build_imagecontainer.Rmd"
+    output:
+        zarr = directory("{out_masked}/{name}/build_imagecontainer.zarr"),
+        html = "{out_masked}/{name}/build_imagecontainer.html",
+    threads: 8
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        lyr = config['lyr'],
+        equalize = config['equalize'],
+        crop = config['crop_images'],
+        crop_height=config['crop_height'],
+        crop_width=config['crop_width'],
+        crop_size=config['crop_size'],
+        crop_scale=config['crop_scale']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_image = "{input.tif}",
+            output_obj = "{output.zarr}",
+            conda_env = "{params.conda_env}",
+            lyr = "{params.lyr}",
+            equalize = "{params.equalize}",
+            crop_images = "{params.crop}",
+            crop_height = "{params.crop_height}",
+            crop_width = "{params.crop_width}",
+            crop_size = "{params.crop_size}",
+            crop_scale = "{params.crop_scale}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+rule smooth:
+    """
+    This rule conducts gaussian smoothing
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/build_imagecontainer.zarr",
+        rmd = "smooth.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/smooth.zarr"),
+        html = "{out_masked}/{name}/smooth.html"
+    threads: 8
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        gaussian = config['gaussian_sigma'],
+        lyr = config['lyr']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}",
+            lyr = "{params.lyr}",
+            gaussian_sigma = "{params.gaussian}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+rule suidpy_segmentation:
+    """
+    This rule runs Squidpy's default segmentation using Otsu 
+    thresholding and watershed segmentation
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/smooth.zarr",
+        rmd = "squidpy_segmentation.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/squidpy_segmentation.zarr"),
+        html = "{out_masked}/{name}/squipy_segmentation.html"
+    threads: 12
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        lyr = config['lyr'],
+        seg_method = config['seg_method'],
+        thr_method = config['thr_method']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}",
+            seg_method = "{params.seg_method}",
+            thr_method = "{params.thr_method}",
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+rule otsu_thresholding:
+    """
+    This rule runs Otsu thresholding using scikit-image
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/squidpy_segmentation.zarr",
+        rmd = "otsu_thresholding.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/otsu_thresholding.zarr"),
+        html = "{out_masked}/{name}/otsu_thresholding.html"
+    threads: 12
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        lyr = config['lyr']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}",
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+rule adaptive_thresholding:
+    """
+    This rule conducts adaptive thresholding
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/squidpy_segmentation.zarr",
+        rmd = "adaptive_thresholding.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/adaptive_thresholding.zarr"),
+        html = "{out_masked}/{name}/adaptive_thresholding.html"
+    threads: 8
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        lyr = config['lyr'],
+        block_size = config['block_size'],
+        offset = config['offset']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}", 
+            lyr = "{params.lyr}",
+            offset = "{params.offset}",
+            block_size = "{params.block_size}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
             params = params,
             output_file = "{output.html}")'
         """

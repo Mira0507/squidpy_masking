@@ -1,5 +1,5 @@
 python=3.11
-snakemake<9
+snakemake=8.8.0
 snakemake-executor-plugin-cluster-generic
 squidpy
 napari
