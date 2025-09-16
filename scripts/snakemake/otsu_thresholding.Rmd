@@ -27,6 +27,7 @@ Refer to the following resources for technical details:
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
 
+
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
@@ -93,10 +94,22 @@ regions of varying intensity.
 ```{python thresholding}
 
 # ------------------------------------------------------------------------------
-# This chunk carries out image segmentation using Otsu thresholding and watershed 
-# segmentation. Segmentation is performed for each channel individually.
+# This chunk carries out image masking using Otsu thresholding by channel
 # ------------------------------------------------------------------------------
 
+for ch in range(img[lyr].shape[3]):
+    # Specify the name of layer for the new processed image
+    new_layer = f"bn_channel_{ch}"
+    # Retrieve an array corresponding to the channel
+    arr = img[lyr_smth].data[:, :, :, ch]
+    # Compute Otsu threshold
+    threshold_value = threshold_otsu(arr.compute())
+    # Binarize the array
+    binary = arr > threshold_value
+    # Add the binary array to the `ImageContainer` obj
+    img.add_img(binary, layer=new_layer)
+
+# reticulate::repl_python()
 # Prep a list consisting of channel corresponding to otsu-threholded images
 bn_lyrs = [c for c in list(img) if "bn_channel" in c]
 
