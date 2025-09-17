@@ -867,7 +867,7 @@ squidpy_masking
 
 @Mira0507
 
-- update the wrapper script for rule ``otsu_thresholding``
+- add the wrapper script for rule ``otsu_thresholding``
     - condda env: ``env``
     - script: ``scripts/snakemake/otsu_thresholding.Rmd``
     - notes:
@@ -896,3 +896,36 @@ squidpy_masking
         $ cd scripts/snakemake
         $ snakemake --dag --profile none | dot -Tpng > dag.png
         $ mv dag.png config/.
+
+
+2025-09-17
+----------
+
+@Mira0507
+
+- wrapper script for rule ``adaptive_thresholding`` in progress
+    - conda env: ``env``
+    - script: ``scripts/snakemake/adaptive_thresholding.Rmd``
+    - notes:
+        - ``threshold_local`` function from ``dask_image.ndfilters`` ended up
+          generating mosaic-like thresholding
+
+        .. code-block:: python
+
+            from dask_image.ndfilters import threshold_local
+
+            for ch in range(img[lyr].shape[3]):
+                # Specify the name of layer for the new processed image
+                new_layer = f"adaptive_channel_{ch}"
+                # Retrieve an array corresponding to the channel
+                arr = img[lyr_smth].data[:, :, :, ch]
+                # Compute adaptive threshold
+                threshold_value = threshold_local(arr, block_size=arr.chunksize)
+
+                # Binarize the array
+                binary = arr > threshold_value
+                # Add the binary array to the `ImageContainer` obj
+                img.add_img(binary, layer=new_layer)
+
+        - ``threshold_local`` function from ``scikit-image`` ended up taking forever 
+        - optimization in progress
