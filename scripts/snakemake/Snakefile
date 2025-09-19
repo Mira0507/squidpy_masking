@@ -16,8 +16,9 @@ sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False
 rule all:
     input:
         expand("{out_converted}/{name}/converted.ome.tif", out_converted=config['out_converted'], name=list(sample.index)),
+        expand("{out_masked}/{name}/qc_normalization.zarr", out_masked=config['out_masked'], name=list(sample.index))
         # expand("{out_masked}/{name}/otsu_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
-        expand("{out_masked}/{name}/adaptive_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
+        # expand("{out_masked}/{name}/adaptive_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
 
 rule convert:
     """
@@ -67,7 +68,7 @@ rule build_imagecontainer:
     output:
         zarr = directory("{out_masked}/{name}/build_imagecontainer.zarr"),
         html = "{out_masked}/{name}/build_imagecontainer.html",
-    threads: 8
+    threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
@@ -75,7 +76,7 @@ rule build_imagecontainer:
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
-        equalize = config['equalize'],
+        chunksize = config['chunksize'],
         crop = config['crop_images'],
         crop_height=config['crop_height'],
         crop_width=config['crop_width'],
@@ -89,12 +90,47 @@ rule build_imagecontainer:
             output_obj = "{output.zarr}",
             conda_env = "{params.conda_env}",
             lyr = "{params.lyr}",
-            equalize = "{params.equalize}",
+            chunksize = "{params.chunksize}",
             crop_images = "{params.crop}",
             crop_height = "{params.crop_height}",
             crop_width = "{params.crop_width}",
             crop_size = "{params.crop_size}",
             crop_scale = "{params.crop_scale}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+rule qc_normalization:
+    """
+    This rule performs QC
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/build_imagecontainer.zarr", 
+        rmd = "qc_normalization.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/qc_normalization.zarr"),
+        html = "{out_masked}/{name}/qc.html"
+    threads: 12
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 4
+    params:
+        conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
+        lyr = config['lyr']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}",
+            chunksize = "{params.chunksize}",
+            lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
             intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
@@ -112,7 +148,7 @@ rule smooth:
     output:
         zarr_out = directory("{out_masked}/{name}/smooth.zarr"),
         html = "{out_masked}/{name}/smooth.html"
-    threads: 8
+    threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
@@ -120,6 +156,7 @@ rule smooth:
     params:
         conda_env = config['conda_env'],
         gaussian = config['gaussian_sigma'],
+        chunksize = config['chunksize'],
         lyr = config['lyr']
     shell:
         """
@@ -128,6 +165,7 @@ rule smooth:
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}",
+            chunksize = "{params.chunksize}",
             lyr = "{params.lyr}",
             gaussian_sigma = "{params.gaussian}");
         rmarkdown::render("{input.rmd}",
@@ -156,6 +194,7 @@ rule suidpy_segmentation:
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
+        chunksize = config['chunksize'],
         seg_method = config['seg_method'],
         thr_method = config['thr_method']
     shell:
@@ -165,6 +204,7 @@ rule suidpy_segmentation:
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}",
+            chunksize = "{params.chunksize}",
             seg_method = "{params.seg_method}",
             thr_method = "{params.thr_method}",
             lyr = "{params.lyr}");
@@ -192,6 +232,7 @@ rule otsu_thresholding:
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
         lyr = config['lyr']
     shell:
         """
@@ -199,6 +240,7 @@ rule otsu_thresholding:
             outdir = "{wildcards.out_masked}/{wildcards.name}",
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
+            chunksize = "{params.chunksize}",
             conda_env = "{params.conda_env}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
@@ -226,6 +268,7 @@ rule adaptive_thresholding:
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
+        chunksize = config['chunksize'],
         block_size = config['block_size'],
         offset = config['offset']
     shell:
@@ -235,6 +278,7 @@ rule adaptive_thresholding:
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}", 
+            chunksize = "{params.chunksize}",
             lyr = "{params.lyr}",
             offset = "{params.offset}",
             block_size = "{params.block_size}");
