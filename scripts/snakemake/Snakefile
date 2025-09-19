@@ -222,7 +222,7 @@ rule adaptive_thresholding:
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
-        runtime = 60 * 2
+        runtime = 60 * 12
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
