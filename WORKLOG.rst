@@ -929,3 +929,73 @@ squidpy_masking
 
         - ``threshold_local`` function from ``scikit-image`` ended up taking forever 
         - optimization in progress
+
+
+2025-09-18
+----------
+
+@Mira0507
+
+- wrapper script for rule ``adaptive_thresholding`` in progress
+    - conda env: ``env``
+    - script: ``scripts/snakemake/adaptive_thresholding.Rmd``
+    - notes
+        - tested dask's adaptive thresholding after rechunking input
+          dask arrays:
+
+        .. code-block:: python
+
+            from dask_image.ndfilters import threshold_local
+
+            for ch in range(img[lyr].shape[3]):
+                # Specify the name of layer for the new processed image
+                new_layer = f"adaptive_channel_{ch}"
+
+                # Retrieve an array corresponding to the channel
+                arr = img[lyr_smth].data[:, :, :, ch]
+
+                # Prep a dask array with updated chunksizes
+                arr_rechunked = arr.rechunk((block_size, block_size, 1))
+
+                # Compute adaptive threshold on the rechunked array
+                threshold_value = threshold_local(arr_rechunked,
+                                                  block_size=arr_rechunked.chunksize)
+
+                # Binarize the array
+                binary = arr_rechunked > threshold_value
+
+                # Reset the chunksize to the original ones
+                binary = binary.rechunk(arr.chunksize)
+                # Add the binary array to the `ImageContainer` obj
+                img.add_img(binary, layer=new_layer)
+
+        - adaptive thresholding ran error-free. however, printing a single image took 
+          so long.
+
+2025-09-19
+----------
+
+@Mira0507
+
+- rerun with chunksize after resetting to 5,000 to save runtime
+    - conda env: ``env``
+    - updated scripts
+        - ``scripts/snakemake/Snakefile``
+        - ``scripts/snakemake/build_imagecontainer.Rmd``
+        - ``scripts/snakemake/smooth.Rmd``
+        - ``scripts/snakemake/squidpy_segmentation.Rmd``
+        - ``scripts/snakemake/otsu_thresholding.Rmd``
+    - smaller chunk size ends up taking longer time to run
+      the same process
+
+- add rule ``qc_normalization`` (in progress)
+    - conda env: ``env``
+    - updated scripts
+        - ``scripts/snakemake/Snakefile``
+        - ``scripts/snakemake/qc_normalization.Rmd``
+    - notes
+        - fluorescence intensities are normalized using the 
+          ``skimage.exposure.equalize_adapthist`` function
+
+
+
