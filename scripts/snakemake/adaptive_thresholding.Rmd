@@ -63,6 +63,9 @@ output_obj = params['output_obj']
 lyr = params['lyr']
 lyr_smth = f"{lyr}_smooth"
 
+# Specify the size of chunks for height and width
+chunksize = int(params['chunksize'])
+
 # Set parameters for adaptive thresholding
 # - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.
 # - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
@@ -85,7 +88,7 @@ outdir = params['outdir']
 # Load the Zarr store into an ImageContainer
 # Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
 # You can also specify chunks for Dask if needed.
-img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks='auto')
+img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks=chunksize)
 
 print(f"The following file has been loaded: {input_obj}")
 print(img)
