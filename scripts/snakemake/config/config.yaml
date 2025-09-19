@@ -30,14 +30,12 @@ pyramidal: Y
 # Do not change this value unless you want to set a custom name by default
 lyr: 'image'
 
+# Specify the size of chunks that is applied to height and width
+chunksize: 5000
+
 # Specify signal values to be tested for Gaussian smoothing
 # Sigma represents the variance for normal distribution
 gaussian_sigma: 1
-
-# Specify whether to equalize contrasts
-# If set to "Y", your input image is preprocessed by running adaptive
-# equalization using scikit-image
-equalize: "N"
 
 # Specify whether input images will be cropped
 crop_images: "N"
