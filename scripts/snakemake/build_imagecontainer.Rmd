@@ -64,8 +64,8 @@ output_obj = params['output_obj']
 # Specify the name of input image layer to be processed
 lyr = params['lyr']
 
-# Specify whether to equalize contrasts
-equalize = params['equalize']
+# Specify the size of chunks for height and width
+chunksize = int(params['chunksize'])
 
 # Specify whether input images will be cropped
 crop_images = params['crop_images']
@@ -96,7 +96,7 @@ The following image object loaded:
 # ------------------------------------------------------------------------------
 
 # Initialize ImageContainer
-img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks='auto')
+img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks=chunksize)
 
 # Crop input images if specified
 if crop_images == "Y":
@@ -107,17 +107,6 @@ if crop_images == "Y":
                           scale=crop_scale)
     print("ImageContainer obj updated:", img)
 
-# Equalize of specified
-if equalize == "Y":
-    # Run adaptive equalization
-    eq_img = equalize_adapthist(img[lyr])
-    # Convert to xarray
-    # NOTE: This step requires large memory and long runtime!
-    eq_img = xr.DataArray(eq_img)
-    # Add the input array with equalized array
-    eq_lyr = f"eq_{lyr}"
-    img[lyr] = eq_img
-    print("Adaptive equalization applied to the input image!")
 ```
 
 `ImageContainer` obj created using input image:
@@ -127,16 +116,12 @@ print(input_image)
 print(img)
 ```
 
-Contrast enhancement is conducted using the `skimage.exposure.equalize_adapthist`
-function with default parameter settings.
 
 ```{r vis_input, results='asis'}
 
 # ------------------------------------------------------------------------------
 # This chunk iteratively visualizes images before and after smoothing
 # ------------------------------------------------------------------------------
-
-
 
 # Visualize input images across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
@@ -146,7 +131,6 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     # Command to show image
     t_deparsed_1 <- paste0("img.show('", py$lyr, "', channel=", i, ", cmap='gray')")
     t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/input_channel_", i,  ".png', dpi=1000)")
-    t_deparsed_3 <- "plt.close()"
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("input_", i), t_deparsed=t_deparsed)
 
