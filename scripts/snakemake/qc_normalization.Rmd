@@ -101,6 +101,51 @@ print(input_image)
 print(img)
 ```
 
+```{python input_intensity_histogram}
+
+# ------------------------------------------------------------------------------
+# This chunk sets up a function to create intensity histogram
+# ------------------------------------------------------------------------------
+
+def intensity_histogram(layer=lyr, channel=0):
+    # Retrieve a dask array
+    arr = img[layer].data[:, :, 0, channel]
+
+    # Define the bins for the histogram
+    bins = np.linspace(0, arr.max().compute(), 50)
+
+    # The `compute()` call triggers the parallel computation.
+    hist, bins = da.histogram(arr, bins=bins)
+    hist, bins = da.compute(hist, bins)
+
+    # Plot the histogram
+    plt.bar(bins[:-1], hist, width=np.diff(bins), edgecolor='black', alpha=0.7)
+    plt.title(f'Channel {channel}')
+    plt.xlabel('Intensity Value')
+    plt.ylabel('Frequency')
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.show()
+
+```
+
+```{r histogram_input, results='asis'}
+
+# ------------------------------------------------------------------------------
+# This chunk iteratively visualizes images before and after smoothing
+# ------------------------------------------------------------------------------
+
+# Visualize input intensities across the channels
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+    # Convert into 0-indexing
+    i <- i - 1
+    cat("\n\n## Channel", i, "{.tabset}\n\n")
+    # Command to show image
+    t_deparsed <- paste0("intensity_histogram(layer='", py$lyr, "', channel=", i, ")")
+    subchunkify(name=paste0("input_intensity_", i), t_deparsed=t_deparsed)
+
+}
+```
+
 # Normalizing intensities {.tabset}
 
 ```{python norm_intensities}
