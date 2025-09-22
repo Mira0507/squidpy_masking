@@ -112,12 +112,12 @@ rule qc_normalization:
         rmd = "qc_normalization.Rmd"
     output:
         zarr_out = directory("{out_masked}/{name}/qc_normalization.zarr"),
-        html = "{out_masked}/{name}/qc.html"
+        html = "{out_masked}/{name}/qc_normalization.html"
     threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
-        runtime = 60 * 4
+        runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
