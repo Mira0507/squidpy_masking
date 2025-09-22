@@ -58,7 +58,7 @@ params = r.params
 
 # Specify file paths to input and output files
 outdir = params['outdir']
-input_image = params['input_image']
+input_image = params['input_obj']
 output_obj = params['output_obj']
 
 # Specify the name of input image layer to be processed
@@ -67,14 +67,6 @@ lyr = params['lyr']
 # Specify the size of chunks for height and width
 chunksize = int(params['chunksize'])
 
-# Specify whether input images will be cropped
-crop_images = params['crop_images']
-
-# Specify coordinates to crop images
-crop_height = float(params['crop_height'])
-crop_width = float(params['crop_width'])
-crop_size = float(params['crop_size'])
-crop_scale = float(params['crop_scale'])
 ```
 
 # Loading input images {.tabset}
@@ -130,8 +122,8 @@ for ch in range(img[lyr].shape[3]):
     arr = img[lyr].data[:, :, :, ch]
     # Run normalization
     arr_norm = da.map_overlap(equalize_adapthist,
-                              original,
-                              depth=kernel_size//2,
+                              arr,
+                              depth=1,
                               boundary='reflect',
                               kernel_size=kernel_size,
                               clip_limit=clip_limit,
