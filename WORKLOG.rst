@@ -998,4 +998,18 @@ squidpy_masking
           ``skimage.exposure.equalize_adapthist`` function
 
 
+2025-09-22
+----------
 
+@Mira0507
+
+- add rule ``qc_normalization`` (in progress)
+    - conda env: ``env``
+    - updated scripts
+        - ``scripts/snakemake/qc_normalization.Rmd``
+    - notes
+        - adaptive equalization (CLAHE) ran error-free, but chunking ended up
+          generating mosaic-like effect in the output normalized images. re-trying 
+          with the ``depth`` parameter set to 50% of chunksize
+        - try log1p transformation as an alternative way to normalize values
+        - raw and normalized intensity distributions are plotted using histogram
