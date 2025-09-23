@@ -35,7 +35,7 @@ rule convert:
     resources:
         mem_mb = 1024 * 40,
         disk_mb = 1024 * 20,
-        runtime = 60 * 2
+        runtime = 60 * 6
     params:
         series = config['ser'],
         pyramidal = config['pyramidal'],
@@ -121,7 +121,9 @@ rule qc_normalization:
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
-        lyr = config['lyr']
+        lyr = config['lyr'],
+        upper_p = config['upper_p'],
+        lower_p = config['lower_p']
     shell:
         """
         Rscript -e 'params = list(
@@ -130,6 +132,8 @@ rule qc_normalization:
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}",
             chunksize = "{params.chunksize}",
+            lower_p = "{params.lower_p}",
+            upper_p = "{params.upper_p}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
