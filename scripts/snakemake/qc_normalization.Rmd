@@ -140,8 +140,13 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     i <- i - 1
     cat("\n\n## Channel", i, "{.tabset}\n\n")
     # Command to show image
-    t_deparsed <- paste0("intensity_histogram(layer='", py$lyr, "', channel=", i, ")")
-    subchunkify(name=paste0("input_intensity_", i), t_deparsed=t_deparsed)
+    t_deparsed_1 <- paste0("intensity_histogram(layer='", py$lyr, "', channel=", i, ")")
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/inputhist_channel_", i,  ".png')")
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    subchunkify(name=paste0("inputhist_", i), t_deparsed=t_deparsed)
+
+    save_path <- paste0(py$outdir, "/inputhistnorm_channel_", i, ".png")
+    link_output(paste0("inputhistnorm_channel_", i, ".png"))
 
 }
 ```
@@ -168,7 +173,7 @@ for ch in range(img[lyr].shape[3]):
     # Run normalization
     arr_norm = da.map_overlap(equalize_adapthist,
                               arr,
-                              depth=1,
+                              depth=round(chunksize / 2),
                               boundary='reflect',
                               kernel_size=kernel_size,
                               clip_limit=clip_limit,
