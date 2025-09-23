@@ -1005,11 +1005,57 @@ squidpy_masking
 
 - add rule ``qc_normalization`` (in progress)
     - conda env: ``env``
-    - updated scripts
-        - ``scripts/snakemake/qc_normalization.Rmd``
+    - updated script: ``scripts/snakemake/qc_normalization.Rmd``
     - notes
         - adaptive equalization (CLAHE) ran error-free, but chunking ended up
           generating mosaic-like effect in the output normalized images. re-trying 
           with the ``depth`` parameter set to 50% of chunksize
         - try log1p transformation as an alternative way to normalize values
         - raw and normalized intensity distributions are plotted using histogram
+
+2025-09-23
+----------
+
+@Mira0507
+
+- add rule ``qc_normalization`` (in progress)
+    - conda env: ``env``
+    - updated script: ``scripts/snakemake/qc_normalization.Rmd``
+    - notes
+        - CLAHE updated with the ``kernel_size`` argument set to chunksize. 
+          so far, this is the most aggressive parameter setting to minimize 
+          the mosaic pattern. however, the mosaic pattern isn't gone across
+          the chunks
+        - log1p normalization worked but is not as effective as CLAHE in enhancing
+          contrast
+        - percentile normalization added. it's a tweak from Dan's method because of 
+          difficulties in determining the ``intensity_scaling_param`` constants
+          that are heuristically specified within a dataset
+
+        .. code-block:: python
+
+            ############## Dan's method ##############
+            # Paramaters - same as ACIS standard
+            intensity_scaling_param = [1, 4]
+            # Normalize to normal distribution
+            m, s = norm.fit(nuc.flatten())
+            stretch_min = max(m - intensity_scaling_param[0] * s, nuc.min())
+            stretch_max = min(m + intensity_scaling_param[1] * s, nuc.max())
+            nuc = np.clip(nuc, stretch_min, stretch_max)
+            image_norm = (nuc - stretch_min) / (stretch_max - stretch_min)
+
+            ############## My modification ##############
+            # Specify the lower and upper percentiles
+            lower_percentile = 1
+            upper_percentile = 99
+
+            # Retrieve an array corresponding to the channel
+            arr = img[lyr].data[:, :, 0, 3]
+            # Normalize
+            arr_computed = arr.compute()
+            stretch_min = np.percentile(arr_computed, lower_percentile)
+            stretch_max = np.percentile(arr_computed, upper_percentile)
+
+            arr_clip = np.clip(arr_computed, stretch_min, stretch_max)
+            image_norm = (arr_clip - stretch_min) / (stretch_max - stretch_min)
+
