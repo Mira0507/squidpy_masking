@@ -66,6 +66,9 @@ gaussian_sigma = int(params['gaussian_sigma'])
 # Specify the name of input image layer to be processed
 lyr = params['lyr']
 
+# Specify normalization method that will be used for smoothing
+norm_method = params['norm_method']
+
 # Specify the size of chunks for height and width
 chunksize = int(params['chunksize'])
 
@@ -103,9 +106,15 @@ in the `scikit-image` package in python.
 # This chunk runs Gaussian smoothing
 # --------------------------------------------------------------------------------
 
+# Specify input layer for smoothing
+input_layer = lyr
+if norm_method != "raw":
+    input_layer = f"{lyr}_{norm_method}"
+
+
 # Run smoothing
 sq.im.process(img,
-              layer=lyr,
+              layer=input_layer,
               method="smooth",
               sigma=gaussian_sigma,
               lazy=True,
