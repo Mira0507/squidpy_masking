@@ -41,7 +41,7 @@ upper_p: 99
 
 # Specify normalization method after reviewing QC & normalization data
 # NOTE: Review the `qc_normalization.html` summary file. Leaving this option
-#       empty will pause after the `qc_normalization` rule.
+#       empty ("") will pause after the `qc_normalization` rule.
 # - "raw": unnormalized
 # - "clahe": CLAHE-mediated local contrast enhancement
 # - "lognorm": log1p normalization
