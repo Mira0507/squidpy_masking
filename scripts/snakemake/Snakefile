@@ -13,10 +13,35 @@ configfile: 'config/config.yaml'
 # Prep sampletable
 sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False)
 
+# Set up a function determining all input
+def all_input(wildcards):
+    input_list = []
+    # Add TIF converted from VSI if necessary
+    vsi = [image for image in list(sample['input_image']) if ".vsi" in image]
+    if len(vsi) > 0: 
+        input_list.extend(expand("{out_converted}/{name}/converted.ome.tif",
+                                 out_converted=config['out_converted'],
+                                 name=list(sample.index))
+                          )
+
+    # Add more files using normalized intensities
+    if config['norm_method'] != "":
+        input_list.extend(expand("{out_masked}/{name}/adaptive_thresholding.zarr",
+                                 out_masked=config['out_masked'],
+                                 name=list(sample.index))
+                          )
+    # Specify QC results
+    else:
+        input_list.extend(expand("{out_masked}/{name}/qc_normalization.zarr",
+                                 out_masked=config['out_masked'],
+                                 name=list(sample.index))
+                          )
+
+    return input_list
+
 rule all:
     input:
-        expand("{out_converted}/{name}/converted.ome.tif", out_converted=config['out_converted'], name=list(sample.index)),
-        expand("{out_masked}/{name}/otsu_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
+        all_input
 
 rule convert:
     """
@@ -24,7 +49,7 @@ rule convert:
     using the bftools package
     """
     input: 
-        vsi = lambda wildcards: sample.loc[wildcards.name, 'input_vsi'],
+        vsi = lambda wildcards: sample.loc[wildcards.name, 'input_image'],
         rmd = "image_conversion.Rmd"
     output: 
         tif = "{out_converted}/{name}/converted.ome.tif",
@@ -33,7 +58,7 @@ rule convert:
     resources:
         mem_mb = 1024 * 40,
         disk_mb = 1024 * 20,
-        runtime = 60 * 2
+        runtime = 60 * 6
     params:
         series = config['ser'],
         pyramidal = config['pyramidal'],
@@ -66,7 +91,7 @@ rule build_imagecontainer:
     output:
         zarr = directory("{out_masked}/{name}/build_imagecontainer.zarr"),
         html = "{out_masked}/{name}/build_imagecontainer.html",
-    threads: 8
+    threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
@@ -74,7 +99,7 @@ rule build_imagecontainer:
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
-        equalize = config['equalize'],
+        chunksize = config['chunksize'],
         crop = config['crop_images'],
         crop_height=config['crop_height'],
         crop_width=config['crop_width'],
@@ -88,7 +113,7 @@ rule build_imagecontainer:
             output_obj = "{output.zarr}",
             conda_env = "{params.conda_env}",
             lyr = "{params.lyr}",
-            equalize = "{params.equalize}",
+            chunksize = "{params.chunksize}",
             crop_images = "{params.crop}",
             crop_height = "{params.crop_height}",
             crop_width = "{params.crop_width}",
@@ -101,24 +126,65 @@ rule build_imagecontainer:
             output_file = "{output.html}")'
         """
 
+rule qc_normalization:
+    """
+    This rule performs QC
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/build_imagecontainer.zarr", 
+        rmd = "qc_normalization.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/qc_normalization.zarr"),
+        html = "{out_masked}/{name}/qc_normalization.html"
+    threads: 12
+    resources:
+        mem_mb = 1024 * 400,
+        disk_mb = 1024 * 200,
+        runtime = 60 * 4
+    params:
+        conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
+        lyr = config['lyr'],
+        upper_p = config['upper_p'],
+        lower_p = config['lower_p']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            conda_env = "{params.conda_env}",
+            chunksize = "{params.chunksize}",
+            lower_p = "{params.lower_p}",
+            upper_p = "{params.upper_p}",
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
 rule smooth:
     """
     This rule conducts gaussian smoothing
     """
     input:
-        zarr_in = "{out_masked}/{name}/build_imagecontainer.zarr",
+        zarr_in = "{out_masked}/{name}/qc_normalization.zarr",
         rmd = "smooth.Rmd"
     output:
         zarr_out = directory("{out_masked}/{name}/smooth.zarr"),
         html = "{out_masked}/{name}/smooth.html"
-    threads: 8
+    threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
+        norm_method = config['norm_method'],
         gaussian = config['gaussian_sigma'],
+        chunksize = config['chunksize'],
         lyr = config['lyr']
     shell:
         """
@@ -127,6 +193,8 @@ rule smooth:
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}",
+            norm_method = "{params.norm_method}",
+            chunksize = "{params.chunksize}",
             lyr = "{params.lyr}",
             gaussian_sigma = "{params.gaussian}");
         rmarkdown::render("{input.rmd}",
@@ -155,6 +223,7 @@ rule suidpy_segmentation:
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
+        chunksize = config['chunksize'],
         seg_method = config['seg_method'],
         thr_method = config['thr_method']
     shell:
@@ -164,6 +233,7 @@ rule suidpy_segmentation:
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}",
+            chunksize = "{params.chunksize}",
             seg_method = "{params.seg_method}",
             thr_method = "{params.thr_method}",
             lyr = "{params.lyr}");
@@ -191,6 +261,7 @@ rule otsu_thresholding:
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
         lyr = config['lyr']
     shell:
         """
@@ -198,6 +269,7 @@ rule otsu_thresholding:
             outdir = "{wildcards.out_masked}/{wildcards.name}",
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
+            chunksize = "{params.chunksize}",
             conda_env = "{params.conda_env}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
@@ -209,22 +281,23 @@ rule otsu_thresholding:
 
 rule adaptive_thresholding:
     """
-    This rule conducts adaptive thresholding
+    This rule conducts adaptive thresholding using dask-image
     """
     input:
-        zarr_in = "{out_masked}/{name}/squidpy_segmentation.zarr",
+        zarr_in = "{out_masked}/{name}/otsu_thresholding.zarr",
         rmd = "adaptive_thresholding.Rmd"
     output:
         zarr_out = directory("{out_masked}/{name}/adaptive_thresholding.zarr"),
         html = "{out_masked}/{name}/adaptive_thresholding.html"
-    threads: 8
+    threads: 12
     resources:
         mem_mb = 1024 * 200,
         disk_mb = 1024 * 100,
-        runtime = 60 * 2
+        runtime = 60 * 12
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
+        chunksize = config['chunksize'],
         block_size = config['block_size'],
         offset = config['offset']
     shell:
@@ -234,6 +307,7 @@ rule adaptive_thresholding:
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}", 
+            chunksize = "{params.chunksize}",
             lyr = "{params.lyr}",
             offset = "{params.offset}",
             block_size = "{params.block_size}");

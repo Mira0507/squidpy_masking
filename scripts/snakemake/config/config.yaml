@@ -30,14 +30,27 @@ pyramidal: Y
 # Do not change this value unless you want to set a custom name by default
 lyr: 'image'
 
+# Specify the size of chunks that is applied to height and width
+chunksize: 5000
+
+# Lower and upper percentage of intensities for image normalization
+# For very clean data, you could use 0 and 100.
+# For very noisy data, you might use 2 and 98, or even 5 and 95.
+lower_p: 1
+upper_p: 99
+
+# Specify normalization method after reviewing QC & normalization data
+# NOTE: Review the `qc_normalization.html` summary file. Leaving this option
+#       empty ("") will pause after the `qc_normalization` rule.
+# - "raw": unnormalized
+# - "clahe": CLAHE-mediated local contrast enhancement
+# - "lognorm": log1p normalization
+# - "percnorm": percentile rescaling
+norm_method: "percnorm"
+
 # Specify signal values to be tested for Gaussian smoothing
 # Sigma represents the variance for normal distribution
 gaussian_sigma: 1
-
-# Specify whether to equalize contrasts
-# If set to "Y", your input image is preprocessed by running adaptive
-# equalization using scikit-image
-equalize: "N"
 
 # Specify whether input images will be cropped
 crop_images: "N"
@@ -58,6 +71,8 @@ crop_scale: 1
 seg_method: "watershed"
 # Specify the `thresh` argument
 thr_method: None
+
+
 
 # Set parameters for adaptive thresholding
 # - block_size: neighborhood size, ~5–15% of the image dimension, odd integer.

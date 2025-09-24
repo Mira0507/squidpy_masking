@@ -67,6 +67,9 @@ output_obj = params['output_obj']
 lyr = params['lyr']
 lyr_smth = f"{lyr}_smooth"
 
+# Specify the size of chunks for height and width
+chunksize = int(params['chunksize'])
+
 # Methods for segmentation and threholding
 seg_method = params['seg_method']
 thr_method = params['thr_method']
@@ -85,7 +88,7 @@ if thr_method == "None":
 # Load the Zarr store into an ImageContainer
 # Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
 # You can also specify chunks for Dask if needed.
-img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks='auto')
+img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks=chunksize)
 
 print(f"The following file has been loaded: {input_obj}")
 print(img)
@@ -114,7 +117,7 @@ for ch in range(img[lyr].shape[3]):
                   layer=lyr_smth,
                   method=seg_method,
                   thresh=thr_method,
-                  chunks='auto',
+                  chunks=chunksize,
                   lazy=True,
                   layer_added=new_layer,
                   channel=ch)

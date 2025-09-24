@@ -63,6 +63,10 @@ Wrapper script running `bftools` for image conversion
 - `scripts/snakemake/build_imagecontainer.Rmd`: 
 Wrapper script building an `ImageConainer` object of Squidpy from the `tif` image
 with and without adaptive equalization
+- `scripts/snakemake/qc_normalization.Rmd`: Wrapper script normalizing input image
+intensities. Currently three normalization methods are applied in parallel: 
+Contrast Limited Adaptive Histogram Equalization (CLAHE), log1p transformation,
+and percentile rescaling.
 - `scripts/snakemake/smooth.Rmd`: Wrapper script conducting Gaussian smoothing
 - `scripts/snakemake/squidpy_segmentation.Rmd`: Wrapper script conducting global 
 thresholding (Otsu) and watershed segmentation using the Squidpy's default 
@@ -73,4 +77,5 @@ thresholding (Otsu) based on thresholds calculated for each dask array
 adaptive (local) thresholding using the `scikit-image` package
 
 
-![Workflow](scripts/snakemake/config/dag.png)
+![Workflow1](scripts/snakemake/config/dag_qc.png)
+![Workflow2](scripts/snakemake/config/dag.png)

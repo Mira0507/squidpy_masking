@@ -40,7 +40,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import squidpy as sq
 import dask.array as da
-from matplotlib.colors import ListedColormap
 from skimage.filters import threshold_local
 import xarray as xr
 import os
@@ -67,6 +66,12 @@ gaussian_sigma = int(params['gaussian_sigma'])
 # Specify the name of input image layer to be processed
 lyr = params['lyr']
 
+# Specify normalization method that will be used for smoothing
+norm_method = params['norm_method']
+
+# Specify the size of chunks for height and width
+chunksize = int(params['chunksize'])
+
 # Path to output directory
 outdir = params['outdir']
 ```
@@ -82,7 +87,7 @@ outdir = params['outdir']
 # Load the Zarr store into an ImageContainer
 # Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
 # You can also specify chunks for Dask if needed.
-img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks='auto')
+img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks=chunksize)
 
 print(f"The following file has been loaded: {input_obj}")
 print(img)
@@ -101,13 +106,19 @@ in the `scikit-image` package in python.
 # This chunk runs Gaussian smoothing
 # --------------------------------------------------------------------------------
 
+# Specify input layer for smoothing
+input_layer = lyr
+if norm_method != "raw":
+    input_layer = f"{lyr}_{norm_method}"
+
+
 # Run smoothing
 sq.im.process(img,
-              layer=lyr,
+              layer=input_layer,
               method="smooth",
               sigma=gaussian_sigma,
               lazy=True,
-              chunks='auto')
+              chunks=chunksize)
 
 # Specify the name of layer containing Gaussian smoothing
 lyr_smth = f"{lyr}_smooth"

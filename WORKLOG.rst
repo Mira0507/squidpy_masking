@@ -867,7 +867,7 @@ squidpy_masking
 
 @Mira0507
 
-- update the wrapper script for rule ``otsu_thresholding``
+- add the wrapper script for rule ``otsu_thresholding``
     - condda env: ``env``
     - script: ``scripts/snakemake/otsu_thresholding.Rmd``
     - notes:
@@ -896,3 +896,195 @@ squidpy_masking
         $ cd scripts/snakemake
         $ snakemake --dag --profile none | dot -Tpng > dag.png
         $ mv dag.png config/.
+
+
+2025-09-17
+----------
+
+@Mira0507
+
+- wrapper script for rule ``adaptive_thresholding`` in progress
+    - conda env: ``env``
+    - script: ``scripts/snakemake/adaptive_thresholding.Rmd``
+    - notes:
+        - ``threshold_local`` function from ``dask_image.ndfilters`` ended up
+          generating mosaic-like thresholding
+
+        .. code-block:: python
+
+            from dask_image.ndfilters import threshold_local
+
+            for ch in range(img[lyr].shape[3]):
+                # Specify the name of layer for the new processed image
+                new_layer = f"adaptive_channel_{ch}"
+                # Retrieve an array corresponding to the channel
+                arr = img[lyr_smth].data[:, :, :, ch]
+                # Compute adaptive threshold
+                threshold_value = threshold_local(arr, block_size=arr.chunksize)
+
+                # Binarize the array
+                binary = arr > threshold_value
+                # Add the binary array to the `ImageContainer` obj
+                img.add_img(binary, layer=new_layer)
+
+        - ``threshold_local`` function from ``scikit-image`` ended up taking forever 
+        - optimization in progress
+
+
+2025-09-18
+----------
+
+@Mira0507
+
+- wrapper script for rule ``adaptive_thresholding`` in progress
+    - conda env: ``env``
+    - script: ``scripts/snakemake/adaptive_thresholding.Rmd``
+    - notes
+        - tested dask's adaptive thresholding after rechunking input
+          dask arrays:
+
+        .. code-block:: python
+
+            from dask_image.ndfilters import threshold_local
+
+            for ch in range(img[lyr].shape[3]):
+                # Specify the name of layer for the new processed image
+                new_layer = f"adaptive_channel_{ch}"
+
+                # Retrieve an array corresponding to the channel
+                arr = img[lyr_smth].data[:, :, :, ch]
+
+                # Prep a dask array with updated chunksizes
+                arr_rechunked = arr.rechunk((block_size, block_size, 1))
+
+                # Compute adaptive threshold on the rechunked array
+                threshold_value = threshold_local(arr_rechunked,
+                                                  block_size=arr_rechunked.chunksize)
+
+                # Binarize the array
+                binary = arr_rechunked > threshold_value
+
+                # Reset the chunksize to the original ones
+                binary = binary.rechunk(arr.chunksize)
+                # Add the binary array to the `ImageContainer` obj
+                img.add_img(binary, layer=new_layer)
+
+        - adaptive thresholding ran error-free. however, printing a single image took 
+          so long.
+
+2025-09-19
+----------
+
+@Mira0507
+
+- rerun with chunksize after resetting to 5,000 to save runtime
+    - conda env: ``env``
+    - updated scripts
+        - ``scripts/snakemake/Snakefile``
+        - ``scripts/snakemake/build_imagecontainer.Rmd``
+        - ``scripts/snakemake/smooth.Rmd``
+        - ``scripts/snakemake/squidpy_segmentation.Rmd``
+        - ``scripts/snakemake/otsu_thresholding.Rmd``
+    - smaller chunk size ends up taking longer time to run
+      the same process
+
+- add rule ``qc_normalization`` (in progress)
+    - conda env: ``env``
+    - updated scripts
+        - ``scripts/snakemake/Snakefile``
+        - ``scripts/snakemake/qc_normalization.Rmd``
+    - notes
+        - fluorescence intensities are normalized using the 
+          ``skimage.exposure.equalize_adapthist`` function
+
+
+2025-09-22
+----------
+
+@Mira0507
+
+- add rule ``qc_normalization`` (in progress)
+    - conda env: ``env``
+    - updated script: ``scripts/snakemake/qc_normalization.Rmd``
+    - notes
+        - adaptive equalization (CLAHE) ran error-free, but chunking ended up
+          generating mosaic-like effect in the output normalized images. re-trying 
+          with the ``depth`` parameter set to 50% of chunksize
+        - try log1p transformation as an alternative way to normalize values
+        - raw and normalized intensity distributions are plotted using histogram
+
+2025-09-23
+----------
+
+@Mira0507
+
+- add rule ``qc_normalization`` (in progress)
+    - conda env: ``env``
+    - updated script: ``scripts/snakemake/qc_normalization.Rmd``
+    - notes
+        - CLAHE updated with the ``kernel_size`` argument set to chunksize. 
+          so far, this is the most aggressive parameter setting to minimize 
+          the mosaic pattern. however, the mosaic pattern isn't gone across
+          the chunks
+        - log1p normalization worked but is not as effective as CLAHE in enhancing
+          contrast
+        - percentile normalization added. it's a tweak from Dan's method because of 
+          difficulties in determining the ``intensity_scaling_param`` constants
+          that are heuristically specified within a dataset
+
+        .. code-block:: python
+
+            ############## Dan's method ##############
+            # Paramaters - same as ACIS standard
+            intensity_scaling_param = [1, 4]
+            # Normalize to normal distribution
+            m, s = norm.fit(nuc.flatten())
+            stretch_min = max(m - intensity_scaling_param[0] * s, nuc.min())
+            stretch_max = min(m + intensity_scaling_param[1] * s, nuc.max())
+            nuc = np.clip(nuc, stretch_min, stretch_max)
+            image_norm = (nuc - stretch_min) / (stretch_max - stretch_min)
+
+            ############## My modification ##############
+            # Specify the lower and upper percentiles
+            lower_percentile = 1
+            upper_percentile = 99
+
+            # Retrieve an array corresponding to the channel
+            arr = img[lyr].data[:, :, 0, 3]
+            # Normalize
+            arr_computed = arr.compute()
+            stretch_min = np.percentile(arr_computed, lower_percentile)
+            stretch_max = np.percentile(arr_computed, upper_percentile)
+
+            arr_clip = np.clip(arr_computed, stretch_min, stretch_max)
+            image_norm = (arr_clip - stretch_min) / (stretch_max - stretch_min)
+
+        - rule ``qc_normalization`` exceeded allocated 200G memory. try with
+          400G.
+
+        - bugfix: ``plt.figsave()`` moved before the ``plt.show()`` function
+
+- update ``scripts/snakemake/Snakefile``
+    - specify output files using a function
+    - pause at the ``qc_normalization`` rule if the ``config['norm_method']`` 
+      is unset
+
+- update configurations
+    - ``scripts/snakemake/config/config.yaml``
+
+    .. code-block:: yaml
+
+        # Specify normalization method after reviewing QC & normalization data
+        # NOTE: Review the `qc_normalization.html` summary file. Leaving this option
+        #       empty ("") will pause after the `qc_normalization` rule.
+        # - "raw": unnormalized
+        # - "clahe": CLAHE-mediated local contrast enhancement
+        # - "lognorm": log1p normalization
+        # - "percnorm": percentile rescaling
+        norm_method: "percnorm"
+
+    - ``scripts/snakemake/config/sampletable.txt``
+
+- update more wrapper script: ``scripts/snakemake/smooth.Rmd`` can use a normalized layer
+  specified in the configuration file
+
