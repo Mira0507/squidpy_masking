@@ -128,8 +128,8 @@ def intensity_histogram(layer=lyr, channel=0):
     plt.xlabel('Intensity Value')
     plt.ylabel('Frequency')
     plt.grid(True, linestyle='--', alpha=0.6)
-    plt.show()
     plt.savefig(f"{outdir}/histogram_{layer}_channel_{channel}.png")
+    plt.show()
 
 # Create a function cleaning the `ImageContainer` obj with normalized layers
 def clean_normalized_obj(img=img, in_keyword='clahe_channel', out_keyword='clahe'):
