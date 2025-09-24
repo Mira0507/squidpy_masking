@@ -13,12 +13,35 @@ configfile: 'config/config.yaml'
 # Prep sampletable
 sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False)
 
+# Set up a function determining all input
+def all_input(wildcards):
+    input_list = []
+    # Add TIF converted from VSI if necessary
+    vsi = [image for image in list(sample['input_image']) if ".vsi" in image]
+    if len(vsi) > 0: 
+        input_list.extend(expand("{out_converted}/{name}/converted.ome.tif",
+                                 out_converted=config['out_converted'],
+                                 name=list(sample.index))
+                          )
+
+    # Add more files using normalized intensities
+    if config['norm_method'] != "":
+        input_list.extend(expand("{out_masked}/{name}/adaptive_thresholding.zarr",
+                                 out_masked=config['out_masked'],
+                                 name=list(sample.index))
+                          )
+    # Specify QC results
+    else:
+        input_list.extend(expand("{out_masked}/{name}/qc_normalization.zarr",
+                                 out_masked=config['out_masked'],
+                                 name=list(sample.index))
+                          )
+
+    return input_list
+
 rule all:
     input:
-        expand("{out_converted}/{name}/converted.ome.tif", out_converted=config['out_converted'], name=list(sample.index)),
-        expand("{out_masked}/{name}/qc_normalization.zarr", out_masked=config['out_masked'], name=list(sample.index))
-        # expand("{out_masked}/{name}/otsu_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
-        # expand("{out_masked}/{name}/adaptive_thresholding.zarr", out_masked=config['out_masked'], name=list(sample.index))
+        all_input
 
 rule convert:
     """
@@ -26,7 +49,7 @@ rule convert:
     using the bftools package
     """
     input: 
-        vsi = lambda wildcards: sample.loc[wildcards.name, 'input_vsi'],
+        vsi = lambda wildcards: sample.loc[wildcards.name, 'input_image'],
         rmd = "image_conversion.Rmd"
     output: 
         tif = "{out_converted}/{name}/converted.ome.tif",
@@ -147,7 +170,7 @@ rule smooth:
     This rule conducts gaussian smoothing
     """
     input:
-        zarr_in = "{out_masked}/{name}/build_imagecontainer.zarr",
+        zarr_in = "{out_masked}/{name}/qc_normalization.zarr",
         rmd = "smooth.Rmd"
     output:
         zarr_out = directory("{out_masked}/{name}/smooth.zarr"),
@@ -159,6 +182,7 @@ rule smooth:
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
+        norm_method = config['norm_method'],
         gaussian = config['gaussian_sigma'],
         chunksize = config['chunksize'],
         lyr = config['lyr']
@@ -169,6 +193,7 @@ rule smooth:
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
             conda_env = "{params.conda_env}",
+            norm_method = "{params.norm_method}",
             chunksize = "{params.chunksize}",
             lyr = "{params.lyr}",
             gaussian_sigma = "{params.gaussian}");
