@@ -115,9 +115,9 @@ rule qc_normalization:
         html = "{out_masked}/{name}/qc_normalization.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
-        runtime = 60 * 2
+        mem_mb = 1024 * 400,
+        disk_mb = 1024 * 200,
+        runtime = 60 * 4
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
