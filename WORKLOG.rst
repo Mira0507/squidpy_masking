@@ -1059,3 +1059,32 @@ squidpy_masking
             arr_clip = np.clip(arr_computed, stretch_min, stretch_max)
             image_norm = (arr_clip - stretch_min) / (stretch_max - stretch_min)
 
+        - rule ``qc_normalization`` exceeded allocated 200G memory. try with
+          400G.
+
+        - bugfix: ``plt.figsave()`` moved before the ``plt.show()`` function
+
+- update ``scripts/snakemake/Snakefile``
+    - specify output files using a function
+    - pause at the ``qc_normalization`` rule if the ``config['norm_method']`` 
+      is unset
+
+- update configurations
+    - ``scripts/snakemake/config/config.yaml``
+
+    .. code-block:: yaml
+
+        # Specify normalization method after reviewing QC & normalization data
+        # NOTE: Review the `qc_normalization.html` summary file. Leaving this option
+        #       empty ("") will pause after the `qc_normalization` rule.
+        # - "raw": unnormalized
+        # - "clahe": CLAHE-mediated local contrast enhancement
+        # - "lognorm": log1p normalization
+        # - "percnorm": percentile rescaling
+        norm_method: "percnorm"
+
+    - ``scripts/snakemake/config/sampletable.txt``
+
+- update more wrapper script: ``scripts/snakemake/smooth.Rmd`` can use a normalized layer
+  specified in the configuration file
+
