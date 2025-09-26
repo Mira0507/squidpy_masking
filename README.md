@@ -52,7 +52,7 @@ images using adaptive thresholding and erosion with different cropping dimension
 - `scripts/individual/segmentation_<sample>_dimension>_adaptive_eq.Rmd`: input image 
 preprocessed with adaptive equalization before smoothing
 
-### Snakemake converting `vsi` to `tif`
+### Snakemake wrappers
 
 - `scripts/snakemake/Snakefile`: Running Snakemake pipeline to convert `vsi` to `tif`
 - `scripts/snakemake/config/config.yaml`: Configuring Snakemake
