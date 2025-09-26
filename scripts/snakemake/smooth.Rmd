@@ -27,7 +27,6 @@ Refer to the following resources for technical details:
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
 
-
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
@@ -111,17 +110,23 @@ input_layer = lyr
 if norm_method != "raw":
     input_layer = f"{lyr}_{norm_method}"
 
+# Specify the name of layer containing Gaussian smoothing
+lyr_smth = f"{lyr}_smooth"
 
 # Run smoothing
 sq.im.process(img,
               layer=input_layer,
               method="smooth",
+              layer_added=lyr_smth,
               sigma=gaussian_sigma,
               lazy=True,
               chunks=chunksize)
 
-# Specify the name of layer containing Gaussian smoothing
-lyr_smth = f"{lyr}_smooth"
+# Clean unnecessary layers
+layers_del = [f"{lyr}_{l}" for l in ['clahe', 'lognorm', 'percnorm'] if l != norm_method]
+for l in layers_del:
+    if l in list(img):
+        del img[l]
 ```
 `ImageContainer` updated:
 
