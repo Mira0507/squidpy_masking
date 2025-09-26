@@ -177,8 +177,8 @@ rule smooth:
         html = "{out_masked}/{name}/smooth.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
+        mem_mb = 1024 * 400,
+        disk_mb = 1024 * 200,
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
@@ -217,9 +217,9 @@ rule suidpy_segmentation:
         html = "{out_masked}/{name}/squipy_segmentation.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
-        runtime = 60 * 2
+        mem_mb = 1024 * 600,
+        disk_mb = 1024 * 300,
+        runtime = 60 * 4
     params:
         conda_env = config['conda_env'],
         lyr = config['lyr'],
@@ -256,9 +256,9 @@ rule otsu_thresholding:
         html = "{out_masked}/{name}/otsu_thresholding.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
-        runtime = 60 * 2
+        mem_mb = 1024 * 600,
+        disk_mb = 1024 * 300,
+        runtime = 60 * 4
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
