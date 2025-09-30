@@ -46,7 +46,7 @@ upper_p: 99
 # - "clahe": CLAHE-mediated local contrast enhancement
 # - "lognorm": log1p normalization
 # - "percnorm": percentile rescaling
-norm_method: "percnorm"
+norm_method: "raw"
 
 # Specify signal values to be tested for Gaussian smoothing
 # Sigma represents the variance for normal distribution
