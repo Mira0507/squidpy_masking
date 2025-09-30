@@ -1088,3 +1088,29 @@ squidpy_masking
 - update more wrapper script: ``scripts/snakemake/smooth.Rmd`` can use a normalized layer
   specified in the configuration file
 
+
+2025-09-25
+----------
+
+@Mira0507
+
+- run rest of the rules with ``percnorm`` normalization set 
+  in the ``scripts/snakemake/config/config.yaml`` file
+
+
+
+2025-09-26
+----------
+
+@Mira0507
+
+- review output images from the ``otsu_thresholding`` and ``squidpy_segmentation``
+  rules
+    - still mosaic thresholding generated in the ``suidpy_segmentation`` rule
+    - mosaic disappeared in the ``otsu_thresholding`` but the fluorescence intensities
+      for channel 4 & 5 were too saturated.
+
+- rerun the pipeline without normalization while keeping the current results 
+  with the ``percnorm`` option backed up (``results`` folder renamed to ``results_percnorm``)
+
+
