@@ -1114,3 +1114,18 @@ squidpy_masking
   with the ``percnorm`` option backed up (``results`` folder renamed to ``results_percnorm``)
 
 
+
+2025-10-06
+----------
+
+@Mira0507
+
+- work on rule ``adaptive_threshold``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/adaptive_thresholding.Rmd``
+    - notes
+        - ran using ``dask_image.ndfilters.threshold_local``
+        - ``offset`` set to 0 (default)
+        - ``block_size`` set to 5000 pixels (same as chunksize)
+        - still chunk-wise mosaic effect observed
+
