@@ -26,16 +26,6 @@ Refer to the following resources for technical details:
 - [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
-```{r params}
-params = list(
-            outdir = "results/noperm",
-            input_obj = "results/noperm/otsu_thresholding.zarr",
-            output_obj = "results/noperm/adaptive_thresholding.zarr",
-            conda_env = "../../env",
-            chunksize = "5000",
-            lyr = "image",
-            block_size = "None")
-```
 
 ```{r rpackages}
 library(reticulate)
@@ -49,7 +39,6 @@ import numpy as np
 import dask.array as da
 import matplotlib.pyplot as plt
 import squidpy as sq
-# from skimage.filters import threshold_local
 from dask_image.ndfilters import threshold_local
 import xarray as xr
 import os
@@ -81,7 +70,7 @@ chunksize = int(params['chunksize'])
 # - offset: a constant added to (or subtracted from) the computed threshold (set to 0 by default)
 #           higher offset results in more stringent thresholding
 block_size = params['block_size']
-# offset = int(params['offset'])
+offset = params['offset']
 
 # Path to output directory
 outdir = params['outdir']
@@ -120,8 +109,19 @@ calculated as the weighted mean of the local neighborhood minus an offset value.
 
 # If the `block_size` is None, set it to a half of the height. Ensure to have it being an add number. 
 if block_size == "None":
-    # block_size = round(img[lyr].shape[0] / 2 + 1)
     block_size = chunksize - 1
+else:
+    block_size = int(block_size)
+
+# If the `offset` parameter is None, set it to zero
+if offset == "None":
+    offset = 0
+else:
+    offset = int(offset)
+
+print("Thresholding will use the following parameters:")
+print("- Block size:", block_size)
+print("- Offset:", offset)
 
 for ch in range(img[lyr].shape[3]):
     # Specify the name of layer for the new processed image
@@ -135,6 +135,7 @@ for ch in range(img[lyr].shape[3]):
 
     # Compute adaptive threshold on the rechunked array
     threshold_value = threshold_local(arr_rechunked, 
+                                      offset=offset,
                                       block_size=block_size)
 
     # Binarize the array
@@ -154,8 +155,6 @@ bn_arrays = [img[l].data for l in bn_lyrs]
 # Stack the arrays along the last axis
 stacked_array = np.dstack(bn_arrays)
 stacked_array = stacked_array.reshape(img[lyr].shape)
-# stacked_array = da.stack(bn_arrays, axis=-1)
-# stacked_array = stacked_array.reshape(img[lyr].shape)
 
 # Add the stacked array to the ImageContainer obj
 lyr_bn = f"{lyr}_adaptive"
