@@ -1129,3 +1129,34 @@ squidpy_masking
         - ``block_size`` set to 5000 pixels (same as chunksize)
         - still chunk-wise mosaic effect observed
 
+
+2025-10-07
+----------
+
+@Mira0507
+
+- run Snakemake including the ``adaptive_threshold`` rule
+    - conda env: ``env``
+    - Snakefile: ``scripts/snakemake/Snakefile``
+    - notes
+        - it took so long to save the ``ImageContainer`` object
+          as a zarr file (~ 8hrs)
+        - if saving the object takes longer than computation, 
+          there's no point to run Otsu thresholding and adaptive
+          thresholding in separate rules, which ends up saving 
+          the object twice.
+        - it might be better to combine both native thresholding methods
+          in a single rule.
+
+
+2025-10-08
+----------
+
+@Mira0507
+
+- convert rules ``otsu_thresholding`` and ``adaptive_thresholding`` into 
+  ``native_thresholding`` 
+    - conda env: ``env``
+    - scripts:
+        - ``scripts/snakemake/Snakefile``
+        - ``scripts/snakemake/native_thresholding.Rmd``
