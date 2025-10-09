@@ -71,10 +71,9 @@ and percentile rescaling.
 - `scripts/snakemake/squidpy_segmentation.Rmd`: Wrapper script conducting global 
 thresholding (Otsu) and watershed segmentation using the Squidpy's default 
 functionality, global thresholding conducted by chunk
-- `scripts/snakemake/otsu_thresholding.Rmd`: Wrapper script conducting global 
-thresholding (Otsu) based on thresholds calculated for each dask array
-- `scripts/snakemake/adaptive_thresholding.Rmd`: Wrapper script conducting 
-adaptive (local) thresholding using the `scikit-image` package
+- `scripts/snakemake/native_thresholding.Rmd`: Wrapper script conducting global
+ (Otsu) thresholding and adaptive (local) thresholding, using native functions
+ from the `scikit-image` and `dask_image` packages
 
 
 ![Workflow1](scripts/snakemake/config/dag_qc.png)
