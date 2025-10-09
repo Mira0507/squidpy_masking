@@ -26,7 +26,7 @@ def all_input(wildcards):
 
     # Add more files using normalized intensities
     if config['norm_method'] != "":
-        input_list.extend(expand("{out_masked}/{name}/adaptive_thresholding.zarr",
+        input_list.extend(expand("{out_masked}/{name}/native_thresholding.zarr",
                                  out_masked=config['out_masked'],
                                  name=list(sample.index))
                           )
@@ -177,8 +177,8 @@ rule smooth:
         html = "{out_masked}/{name}/smooth.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
+        mem_mb = 1024 * 400,
+        disk_mb = 1024 * 200,
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
@@ -217,8 +217,8 @@ rule suidpy_segmentation:
         html = "{out_masked}/{name}/squipy_segmentation.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
+        mem_mb = 1024 * 400,
+        disk_mb = 1024 * 200,
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
@@ -244,60 +244,26 @@ rule suidpy_segmentation:
             output_file = "{output.html}")'
         """
 
-rule otsu_thresholding:
+rule native_thresholding:
     """
-    This rule runs Otsu thresholding using scikit-image
+    This rule runs Otsu thresholding and adaptive thresholding
+    using scikit-image and dask_image
     """
     input:
         zarr_in = "{out_masked}/{name}/squidpy_segmentation.zarr",
-        rmd = "otsu_thresholding.Rmd"
+        rmd = "native_thresholding.Rmd"
     output:
-        zarr_out = directory("{out_masked}/{name}/otsu_thresholding.zarr"),
-        html = "{out_masked}/{name}/otsu_thresholding.html"
+        zarr_out = directory("{out_masked}/{name}/native_thresholding.zarr"),
+        html = "{out_masked}/{name}/native_thresholding.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
-        runtime = 60 * 2
+        mem_mb = 1024 * 400,
+        disk_mb = 1024 * 200,
+        runtime = 60 * 24
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
-        lyr = config['lyr']
-    shell:
-        """
-        Rscript -e 'params = list(
-            outdir = "{wildcards.out_masked}/{wildcards.name}",
-            input_obj = "{input.zarr_in}",
-            output_obj = "{output.zarr_out}",
-            chunksize = "{params.chunksize}",
-            conda_env = "{params.conda_env}",
-            lyr = "{params.lyr}");
-        rmarkdown::render("{input.rmd}",
-            output_dir = "{wildcards.out_masked}/{wildcards.name}",
-            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
-            params = params,
-            output_file = "{output.html}")'
-        """
-
-rule adaptive_thresholding:
-    """
-    This rule conducts adaptive thresholding using dask-image
-    """
-    input:
-        zarr_in = "{out_masked}/{name}/otsu_thresholding.zarr",
-        rmd = "adaptive_thresholding.Rmd"
-    output:
-        zarr_out = directory("{out_masked}/{name}/adaptive_thresholding.zarr"),
-        html = "{out_masked}/{name}/adaptive_thresholding.html"
-    threads: 12
-    resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
-        runtime = 60 * 12
-    params:
-        conda_env = config['conda_env'],
         lyr = config['lyr'],
-        chunksize = config['chunksize'],
         block_size = config['block_size'],
         offset = config['offset']
     shell:
@@ -306,14 +272,16 @@ rule adaptive_thresholding:
             outdir = "{wildcards.out_masked}/{wildcards.name}",
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
-            conda_env = "{params.conda_env}", 
             chunksize = "{params.chunksize}",
-            lyr = "{params.lyr}",
+            conda_env = "{params.conda_env}",
             offset = "{params.offset}",
-            block_size = "{params.block_size}");
+            block_size = "{params.block_size}",
+            lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
             intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
             params = params,
             output_file = "{output.html}")'
         """
+
+

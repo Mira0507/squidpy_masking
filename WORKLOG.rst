@@ -1088,3 +1088,84 @@ squidpy_masking
 - update more wrapper script: ``scripts/snakemake/smooth.Rmd`` can use a normalized layer
   specified in the configuration file
 
+
+2025-09-25
+----------
+
+@Mira0507
+
+- run rest of the rules with ``percnorm`` normalization set 
+  in the ``scripts/snakemake/config/config.yaml`` file
+
+
+
+2025-09-26
+----------
+
+@Mira0507
+
+- review output images from the ``otsu_thresholding`` and ``squidpy_segmentation``
+  rules
+    - still mosaic thresholding generated in the ``suidpy_segmentation`` rule
+    - mosaic disappeared in the ``otsu_thresholding`` but the fluorescence intensities
+      for channel 4 & 5 were too saturated.
+
+- rerun the pipeline without normalization while keeping the current results 
+  with the ``percnorm`` option backed up (``results`` folder renamed to ``results_percnorm``)
+
+
+
+2025-10-06
+----------
+
+@Mira0507
+
+- work on rule ``adaptive_threshold``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/adaptive_thresholding.Rmd``
+    - notes
+        - ran using ``dask_image.ndfilters.threshold_local``
+        - ``offset`` set to 0 (default)
+        - ``block_size`` set to 5000 pixels (same as chunksize)
+        - still chunk-wise mosaic effect observed
+
+
+2025-10-07
+----------
+
+@Mira0507
+
+- run Snakemake including the ``adaptive_threshold`` rule
+    - conda env: ``env``
+    - Snakefile: ``scripts/snakemake/Snakefile``
+    - notes
+        - it took so long to save the ``ImageContainer`` object
+          as a zarr file (~ 8hrs)
+        - if saving the object takes longer than computation, 
+          there's no point to run Otsu thresholding and adaptive
+          thresholding in separate rules, which ends up saving 
+          the object twice.
+        - it might be better to combine both native thresholding methods
+          in a single rule.
+
+
+2025-10-08
+----------
+
+@Mira0507
+
+- convert rules ``otsu_thresholding`` and ``adaptive_thresholding`` into 
+  ``native_thresholding`` 
+    - conda env: ``env``
+    - scripts:
+        - ``scripts/snakemake/Snakefile``
+        - ``scripts/snakemake/native_thresholding.Rmd``
+
+
+2025-10-09
+----------
+
+@Mira0507
+
+- DAG is updated with the ``native_thresholding`` rule:
+  ``scripts/snakemake/config/dag.png``
