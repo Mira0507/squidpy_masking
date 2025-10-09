@@ -1160,3 +1160,12 @@ squidpy_masking
     - scripts:
         - ``scripts/snakemake/Snakefile``
         - ``scripts/snakemake/native_thresholding.Rmd``
+
+
+2025-10-09
+----------
+
+@Mira0507
+
+- DAG is updated with the ``native_thresholding`` rule:
+  ``scripts/snakemake/config/dag.png``
