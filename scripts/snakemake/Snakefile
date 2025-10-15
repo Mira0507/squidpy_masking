@@ -284,4 +284,43 @@ rule native_thresholding:
             output_file = "{output.html}")'
         """
 
+rule post_processing:
+    """
+    This rule runs erosion and dilation to clean small noisy speckles
+    using the dask_image package
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/native_thresholding.zarr",
+        rmd = "post_processing.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/post_processing.zarr"),
+        html = "{out_masked}/{name}/post_processing.html"
+    threads: 12
+    resources:
+        mem_mb = 1024 * 400,
+        disk_mb = 1024 * 200,
+        runtime = 60 * 24
+    params:
+        conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
+        lyr = config['lyr'],
+        thresholding = config['thresholding']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            chunksize = "{params.chunksize}",
+            conda_env = "{params.conda_env}",
+            thresholding = "{params.thresholding}"
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
+
+
 

@@ -1,5 +1,5 @@
 ---
-title: "Adaptive thresholding"
+title: "Native thresholding"
 author: "Mira Sohn"
 output:
     html_document:
