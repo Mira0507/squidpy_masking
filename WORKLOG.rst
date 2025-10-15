@@ -1169,3 +1169,21 @@ squidpy_masking
 
 - DAG is updated with the ``native_thresholding`` rule:
   ``scripts/snakemake/config/dag.png``
+
+
+2025-10-15
+----------
+
+@Mira0507
+
+- rerun the pipeline with the updated ``native_thresholding`` rule
+    - conda env: ``env``
+    - script: ``scripts/snakemake/Snakefile``
+
+- add rule ``post_processing`` to ``scripts/snakemake/Snakefile`` 
+    - scripts
+        - ``scripts/snakemake/Snakefile``
+        - ``scripts/snakemake/post_processing.Rmd``
+        - ``scripts/config/config.yaml``
+
+
