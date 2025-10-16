@@ -1187,3 +1187,15 @@ squidpy_masking
         - ``scripts/config/config.yaml``
 
 
+2025-10-16
+----------
+
+@Mira0507
+
+- work on python script running erosion and dilation using ``dask_image``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes:
+        - both erosion and dilation are applied as postprocessing steps
+        - default parameters were used for both the ``binary_erosion``
+          and ``binary_dilation`` functions
