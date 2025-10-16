@@ -26,10 +26,17 @@ def all_input(wildcards):
 
     # Add more files using normalized intensities
     if config['norm_method'] != "":
-        input_list.extend(expand("{out_masked}/{name}/native_thresholding.zarr",
-                                 out_masked=config['out_masked'],
-                                 name=list(sample.index))
-                          )
+        if config['thresholding'] == "":
+            input_list.extend(expand("{out_masked}/{name}/native_thresholding.zarr",
+                                     out_masked=config['out_masked'],
+                                     name=list(sample.index))
+                              )
+
+        else: 
+            input_list.extend(expand("{out_masked}/{name}/post_processing.zarr",
+                                     out_masked=config['out_masked'],
+                                     name=list(sample.index))
+                              )
     # Specify QC results
     else:
         input_list.extend(expand("{out_masked}/{name}/qc_normalization.zarr",
