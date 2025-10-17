@@ -1,5 +1,5 @@
 ---
-title: "Post processing"
+title: "Post processing using erosion and dilation"
 author: "Mira Sohn"
 output:
     html_document:
@@ -26,18 +26,6 @@ Refer to the following resources for technical details:
 - [Tutorial: Analyze Visium fluorescence data](https://squidpy.readthedocs.io/en/stable/notebooks/tutorials/tutorial_visium_fluo.html)
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
-```{r params}
-params = list(
-    outdir="results/perm",
-    input_obj="results/perm/native_thresholding.zarr",
-    output_obj="results/perm/post_processing.zarr",
-    conda_env="../../env",
-    chunksize="5000",
-    lyr="image",
-    thresholding="adaptive"
-)
-
-```
 
 ```{r rpackages}
 library(reticulate)
@@ -110,7 +98,9 @@ print(img)
 [Erosion](https://en.wikipedia.org/wiki/Erosion_%28morphology%29) removes pixels on object boundaries.
 After erosion, remaining lines appear thinner and shapes appear smaller.
 
-We perform erosion to remove small noisy speckles.
+We perform erosion to remove small noisy speckles using the 
+[`binary_erosion`](https://image.dask.org/en/latest/dask_image.ndmorph.html#dask_image.ndmorph.binary_erosion) 
+function from the `dask_image` package.
 
 ```{python erosion}
 
@@ -118,7 +108,12 @@ We perform erosion to remove small noisy speckles.
 # This chunk runs erosion using the dask_image package
 # ------------------------------------------------------------------------------
 
-# Prep 2D structure for connectivity 2 (face, edge, and corner neighbors)
+# Prep 2D structure for connectivity 2
+# NOTE: 
+# - rank (int): number of dimensions of the structuring element
+# - connectivity (int): from 1 (no diagonal elements are neighbors) to rank 
+#                       (all elements are neighbors). Greater connectivity 
+#                       results in more pixels removed or added.
 structure_2d = generate_binary_structure(rank=2, connectivity=2)
 
 for ch in range(img[lyr].shape[3]):
@@ -185,7 +180,9 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
 [Dilation](https://en.wikipedia.org/wiki/Dilation_(morphology)) adds pixels to the boundaries 
 of objects in an image. After dilation, lines appear thicker, and filled shapes appear larger.
 
-We apply dilation after erosion to recover the area of the original foreground objects.
+We apply dilation after erosion to recover the area of the original foreground objects using the
+[`binary_dilation`](https://image.dask.org/en/latest/dask_image.ndmorph.html#dask_image.ndmorph.binary_dilation)
+function from the `dask_image` package.
 
 ```{python dilation}
 
@@ -197,7 +194,7 @@ for ch in range(img[lyr].shape[3]):
     # Specify the name of layer for the new processed image
     new_layer = f"dilation_channel_{ch}"
     # Retrieve an array corresponding to the channel
-    arr = img[lyr_thr].data[:, :, 0, ch]
+    arr = img[lyr_processed].data[:, :, 0, ch]
     # Run erosion
     arr_dil = binary_dilation(arr, structure=structure_2d)
     # Add the processed array to the `ImageContainer` obj
@@ -272,15 +269,19 @@ layers_del)
 for l in layers_del:
     del img[l]
 
-print("ImageContainer updated:")
-print(img)
+```
+
+`ImageContainer` updated:
+
+```{r final_img}
+print(py$img)
 ```
 
 # Saving the `ImageContainer` object
 
 Output images are saved as the following object:
 
-```{python save_zarr, eval=FALSE}
+```{python save_zarr}
 img.save(output_obj)
 print(output_obj)
 ```
