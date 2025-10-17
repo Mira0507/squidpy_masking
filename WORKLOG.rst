@@ -1197,5 +1197,8 @@ squidpy_masking
     - script: ``scripts/snakemake/post_processing.Rmd``
     - notes:
         - both erosion and dilation are applied as postprocessing steps
-        - default parameters were used for both the ``binary_erosion``
-          and ``binary_dilation`` functions
+        - default parameters  for the ``binary_erosion`` and ``binary_dilation`` 
+          functions did not improve in removing noisy speckles. 
+          need to test with ``iterations=2`` for ``binary_erosion`` and 
+          with default argument settings for ``binary_dilation``.
+
