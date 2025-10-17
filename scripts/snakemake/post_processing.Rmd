@@ -52,6 +52,7 @@ import dask.array as da
 import matplotlib.pyplot as plt
 import squidpy as sq
 from dask_image.ndmorph import binary_erosion, binary_dilation
+from scipy.ndimage import generate_binary_structure
 import xarray as xr
 import os
 ```
@@ -117,13 +118,16 @@ We perform erosion to remove small noisy speckles.
 # This chunk runs erosion using the dask_image package
 # ------------------------------------------------------------------------------
 
+# Prep 2D structure for connectivity 2 (face, edge, and corner neighbors)
+structure_2d = generate_binary_structure(rank=2, connectivity=2)
+
 for ch in range(img[lyr].shape[3]):
     # Specify the name of layer for the new processed image
     new_layer = f"erosion_channel_{ch}"
     # Retrieve an array corresponding to the channel
     arr = img[lyr_thr].data[:, :, 0, ch]
     # Run erosion
-    arr_er = binary_erosion(arr, iterations=2)
+    arr_er = binary_erosion(arr, structure=structure_2d)
     # Add the processed array to the `ImageContainer` obj
     img.add_img(arr_er, layer=new_layer)
 
@@ -195,7 +199,7 @@ for ch in range(img[lyr].shape[3]):
     # Retrieve an array corresponding to the channel
     arr = img[lyr_thr].data[:, :, 0, ch]
     # Run erosion
-    arr_dil = binary_dilation(arr)
+    arr_dil = binary_dilation(arr, structure=structure_2d)
     # Add the processed array to the `ImageContainer` obj
     img.add_img(arr_dil, layer=new_layer)
 
@@ -248,7 +252,7 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
 
 ```
 
-```{python clean_layers, eval=FALSE}
+```{python clean_layers}
 
 # ------------------------------------------------------------------------------
 # This chunk is used to delete unwanted layers
