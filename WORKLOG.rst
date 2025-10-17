@@ -1225,3 +1225,6 @@ squidpy_masking
 - run Snakemake including the updated rule ``post_processing``
     - conda env: ``env``
     - script: ``scripts/snakemake/Snakefile``
+    - notes
+        - ran error-free
+        - ``scripts/snakemake/config/dag.png`` updated
