@@ -1196,9 +1196,32 @@ squidpy_masking
     - conda env: ``env``
     - script: ``scripts/snakemake/post_processing.Rmd``
     - notes:
+        - images from native adaptive thresholding are being tested for the current
+          post-processing procedure
         - both erosion and dilation are applied as postprocessing steps
         - default parameters  for the ``binary_erosion`` and ``binary_dilation`` 
           functions did not improve in removing noisy speckles. 
           need to test with ``iterations=2`` for ``binary_erosion`` and 
           with default argument settings for ``binary_dilation``.
 
+
+2025-10-17
+----------
+
+@Mira0507
+
+- work on python script running erosion and dilation using ``dask_image``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes:
+        - adding ``structurs=generate_binary_structure(rank=2, connectivity=2)``
+          was very effective in both erosion and dilation when passed into each function.
+          result images were visually compared with and without each argument.
+          the ``generate_binary_structure`` function is from the ``scipy.ndimage``
+          module.
+        - found a bug that dilation uses images from thresholding instead of erosion.
+          now it's fixed!
+
+- run Snakemake including the updated rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/Snakefile``
