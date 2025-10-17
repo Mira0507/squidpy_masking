@@ -86,4 +86,4 @@ offset: None
 # - "otsu": Otsu (global) thresholding generated native functions from scikit-image/dask_image
 # - "adaptive": Adaptive (local) thresholding generated native functions from scikit-image/dask_image
 # - "": No selection. This will pause running the pipeline before the `post_processing` rule.
-thresholding: ""
+thresholding: "adaptive"
