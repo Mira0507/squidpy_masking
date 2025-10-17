@@ -111,7 +111,7 @@ After erosion, remaining lines appear thinner and shapes appear smaller.
 
 We perform erosion to remove small noisy speckles.
 
-```{python erosion, results='asis'}
+```{python erosion}
 
 # ------------------------------------------------------------------------------
 # This chunk runs erosion using the dask_image package
@@ -123,7 +123,7 @@ for ch in range(img[lyr].shape[3]):
     # Retrieve an array corresponding to the channel
     arr = img[lyr_thr].data[:, :, 0, ch]
     # Run erosion
-    arr_er = binary_erosion(arr)
+    arr_er = binary_erosion(arr, iterations=2)
     # Add the processed array to the `ImageContainer` obj
     img.add_img(arr_er, layer=new_layer)
 
@@ -183,7 +183,7 @@ of objects in an image. After dilation, lines appear thicker, and filled shapes 
 
 We apply dilation after erosion to recover the area of the original foreground objects.
 
-```{python dilation, results='asis'}
+```{python dilation}
 
 # ------------------------------------------------------------------------------
 # This chunk runs erosion using the dask_image package
@@ -246,6 +246,30 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     link_output(paste0("dilation_channel_", i, ".png"))
 }
 
+```
+
+```{python clean_layers, eval=FALSE}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to delete unwanted layers
+# ------------------------------------------------------------------------------
+
+# Delete unnecessary layers
+layers_del = [
+    'image_adaptive',
+    'image_otsu',
+    'image_sqbn',
+    'image_erosion',
+    'image_smooth']
+layers_del = [l for l in layers_del if l != lyr_thr]
+
+print("The following layers are deleted: ",
+layers_del)
+for l in layers_del:
+    del img[l]
+
+print("ImageContainer updated:")
+print(img)
 ```
 
 # Saving the `ImageContainer` object
