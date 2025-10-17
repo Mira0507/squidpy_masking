@@ -304,9 +304,9 @@ rule post_processing:
         html = "{out_masked}/{name}/post_processing.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 400,
-        disk_mb = 1024 * 200,
-        runtime = 60 * 24
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
@@ -320,7 +320,7 @@ rule post_processing:
             output_obj = "{output.zarr_out}",
             chunksize = "{params.chunksize}",
             conda_env = "{params.conda_env}",
-            thresholding = "{params.thresholding}"
+            thresholding = "{params.thresholding}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
