@@ -260,9 +260,8 @@ layers_del = [
     'image_adaptive',
     'image_otsu',
     'image_sqbn',
-    'image_erosion',
     'image_smooth']
-layers_del = [l for l in layers_del if l != lyr_thr]
+layers_del = [l for l in layers_del if l not in ['image_erosion', 'image_dilation']]
 
 print("The following layers are deleted: ",
 layers_del)
