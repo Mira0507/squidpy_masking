@@ -1228,3 +1228,16 @@ squidpy_masking
     - notes
         - ran error-free
         - ``scripts/snakemake/config/dag.png`` updated
+
+
+2025-10-18
+----------
+
+@Mira0507
+
+- update wrapper script for rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes:
+        - retain the ``"image_erosion"`` layer
+
