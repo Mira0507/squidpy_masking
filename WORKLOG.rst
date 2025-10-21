@@ -1241,3 +1241,17 @@ squidpy_masking
     - notes:
         - retain the ``"image_erosion"`` layer
 
+
+2025-10-20
+----------
+
+@Mira0507
+
+- update the wrapper script for rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes
+        - retain the thresholding layer in use in addition to
+          the erosion layer
+        - rerun snakemake after this update
+
