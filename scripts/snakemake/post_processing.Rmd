@@ -249,6 +249,8 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
 
 ```
 
+# Cleaning layers in the `ImageContainer` object
+
 ```{python clean_layers}
 
 # ------------------------------------------------------------------------------
@@ -261,10 +263,9 @@ layers_del = [
     'image_otsu',
     'image_sqbn',
     'image_smooth']
-layers_del = [l for l in layers_del if l not in ['image_erosion', 'image_dilation']]
+layers_del = [l for l in layers_del if l not in ['image_erosion', 'image_dilation', lyr_thr]]
 
-print("The following layers are deleted: ",
-layers_del)
+print("The following layers are deleted: ", layers_del)
 for l in layers_del:
     del img[l]
 
