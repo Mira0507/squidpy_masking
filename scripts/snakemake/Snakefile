@@ -311,7 +311,8 @@ rule post_processing:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
         lyr = config['lyr'],
-        thresholding = config['thresholding']
+        thresholding = config['thresholding'],
+        minsize = config['minsize']
     shell:
         """
         Rscript -e 'params = list(
@@ -320,6 +321,7 @@ rule post_processing:
             output_obj = "{output.zarr_out}",
             chunksize = "{params.chunksize}",
             conda_env = "{params.conda_env}",
+            minsize = "{params.minsize}",
             thresholding = "{params.thresholding}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
