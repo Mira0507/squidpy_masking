@@ -87,3 +87,6 @@ offset: None
 # - "adaptive": Adaptive (local) thresholding generated native functions from scikit-image/dask_image
 # - "": No selection. This will pause running the pipeline before the `post_processing` rule.
 thresholding: "adaptive"
+
+# Specify the minimum size of foreground objects to be filtered
+minsize: 10
