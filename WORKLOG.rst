@@ -1255,3 +1255,24 @@ squidpy_masking
           the erosion layer
         - rerun snakemake after this update
 
+
+2025-10-22
+----------
+
+@Mira0507
+
+- update the wrapper script for rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes
+        - further remove small foreground objects using 
+          the ``remove_small_objects`` function from ``skimage.morphology``.
+          the output images were added to the ``ImageContainer`` object
+          as the ``image_removal`` layer.
+        - this change was effective to remove small speckles. however,
+          it's hard to ensure that all removed objects are non-cell noise.
+          therefore, I decided to keep both the ``image_removal`` and
+          ``image_dilation`` layers.
+        - the minimum pixel of object is set to 20 based on empirical determination
+          after applying 2, 4, and 10 pixels.
+
