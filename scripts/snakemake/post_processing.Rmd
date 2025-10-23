@@ -27,19 +27,6 @@ Refer to the following resources for technical details:
 - [Squidpy GitHub](https://github.com/scverse/squidpy)
 
 
-```{r params}
-
-params <- list(
-            outdir = "results/noperm",
-            input_obj = "results/noperm/native_thresholding.zarr",
-            output_obj = "results/noperm/post_processing.zarr",
-            chunksize = "5000",
-            conda_env = "../../env",
-            thresholding = "adaptive",
-            minsize = "20",
-            lyr = "image")
-```
-
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
@@ -268,7 +255,7 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
 
 ```
 
-# Removing small foreground objects below the cutoff
+# Removal of remaining small foreground objects {.tabset}
 
 Currently, the threshold is set to `r py$min_size`, so any foreground 
 objects with a pixel count below this threshold are removed.
@@ -374,7 +361,7 @@ print(py$img)
 
 Output images are saved as the following object:
 
-```{python save_zarr, eval=FALSE}
+```{python save_zarr}
 img.save(output_obj)
 print(output_obj)
 ```
