@@ -1276,3 +1276,14 @@ squidpy_masking
         - the minimum pixel of object is set to 20 based on empirical determination
           after applying 2, 4, and 10 pixels.
 
+
+2025-10-28
+----------
+
+@Mira0507
+
+- update the wrapper script for rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes
+        - binarization added after the removal of small objects
