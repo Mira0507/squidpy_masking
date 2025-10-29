@@ -289,19 +289,23 @@ rm_arrays = [img[l].data for l in rm_lyrs]
 stacked_array = np.dstack(rm_arrays)
 stacked_array = stacked_array.reshape(img[lyr].shape)
 
-# Add the stacked array to the ImageContainer obj
-lyr_processed = f"{lyr}_removal"
+# Prep a binary array storing masking information
+binary_array = stacked_array > 0
+
+# Add the binary array to the ImageConatiner obj
+lyr_bn = f"{lyr}_removal"
+
 try:
-    img[lyr_processed] = stacked_array
+    img[lyr_bn] = binary_array
 except:
-    ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
+    ValueError("Can't add the binary array to ImageContainer. Wrong dimension!")
+
+    print("ImageContainer updated:")
+print(img)
 
 # Delete unnecessary layers
 for l in rm_lyrs:
     del img[l]
-
-print("ImageContainer updated:")
-print(img)
 ```
 
 ```{r visualize_removal, results='asis'}
