@@ -1287,3 +1287,40 @@ squidpy_masking
     - script: ``scripts/snakemake/post_processing.Rmd``
     - notes
         - binarization added after the removal of small objects
+        - this modification ended up adding the following new
+          layers: 
+            - ``image_dilation``: the output of dilation
+            - ``image_removal``: the output of removing small 
+              foreground objects
+
+2025-10-29
+----------
+
+@Mira0507
+
+- bugfixes to rule ``post_processing``
+    - conda env: ``env``
+    - scripts:
+        - ``scripts/snakemake/post_processing.Rmd``
+        - ``scripts/snakemake/config/config.yaml``
+    - notes
+        - min size of foreground objects to be removed corrected 
+          from 10 to 20 by changing the ``minsize`` key in the 
+          ``scripts/snakemake/config/config.yaml``
+        - layer name for binarized images corrected
+
+
+2025-10-30
+----------
+
+@Mira0507
+
+- rule ``watershed_segmentation`` in progress
+    - conda env: ``env``
+    - scripts:
+        - ``scripts/snakemake/watershed_segmentation.Rmd``
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - decided to call ``squidpy.im.segment(.., method="watershed")``
+          rather than native functions from the ``scikit-image`` package
+        - specified the ``image_removal`` as input of watershed segmentation
