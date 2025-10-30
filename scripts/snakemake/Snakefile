@@ -33,7 +33,7 @@ def all_input(wildcards):
                               )
 
         else: 
-            input_list.extend(expand("{out_masked}/{name}/post_processing.zarr",
+            input_list.extend(expand("{out_masked}/{name}/watershed_segmentation.zarr",
                                      out_masked=config['out_masked'],
                                      name=list(sample.index))
                               )
@@ -332,4 +332,39 @@ rule post_processing:
         """
 
 
+rule watershed_segmentation:
+    """
+    This rule runs watershed segmentation on masked images using native 
+    functions from the scikit-image and dask image packages.
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/post_processing.zarr",
+        rmd = "watershed_segmentation.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/watershed_segmentation.zarr"),
+        html = "{out_masked}/{name}/watershed_segmentation.html"
+    threads: 12
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
+        lyr = config['lyr']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            chunksize = "{params.chunksize}",
+            conda_env = "{params.conda_env}",
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
 
