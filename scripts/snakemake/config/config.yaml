@@ -89,4 +89,4 @@ offset: None
 thresholding: "adaptive"
 
 # Specify the minimum size of foreground objects to be filtered
-minsize: 10
+minsize: 20
