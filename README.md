@@ -74,9 +74,12 @@ functionality, global thresholding conducted by chunk
 - `scripts/snakemake/native_thresholding.Rmd`: Wrapper script conducting global
  (Otsu) thresholding and adaptive (local) thresholding, using native functions
  from the `scikit-image` and `dask_image` packages
-- `scripts/snakemake/post_processing.Rmd`: Wrapper script conducting erosion
-and dilation to remove noisy speckles using native functions from ``dask_image``.
-
+- `scripts/snakemake/post_processing.Rmd`: Wrapper script performing erosion,
+dilation, and removal of small foreground objects to clean noisy non-cell
+speckles, using native functions from ``dask_image`` and ``scikit-image``.
+- `scripts/snakemake/watershed_segmentation.Rmd`: Wrapper script for labeling
+foreground objects using the Wathershed segmentation by relying on the 
+wrapper function from Squidpy.
 
 ![Workflow1](scripts/snakemake/config/dag_qc.png)
 ![Workflow2](scripts/snakemake/config/dag.png)
