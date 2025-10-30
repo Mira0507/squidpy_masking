@@ -65,6 +65,10 @@ chunksize = int(params['chunksize'])
 
 # Path to output directory
 outdir = params['outdir']
+
+# Specify the name of input and output layers
+lyr_processed = f"{lyr}_removal"
+lyr_seg = f"{lyr}_ntseg"
 ```
 
 # Loading input image
@@ -101,8 +105,7 @@ chosen as local minima of the image, from which basins are flooded.
 # packages
 # ------------------------------------------------------------------------------
 
-lyr_seg = f"{lyr}_ntseg"
-
+# Run watershed segmentation using the wrapper function from Squidpy
 for ch in range(img[lyr].shape[3]):
     new_layer = f"{lyr_seg}_channel_{ch}"
     sq.im.segment(img=img, 
