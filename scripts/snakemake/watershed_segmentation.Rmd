@@ -130,6 +130,8 @@ for ch in range(img[lyr].shape[3]):
         min_distance=5,
         labels=x_arr[::down_factor, ::down_factor])
     coords = coords_small * down_factor
+    # Select only those coordinates that are inside the image.
+    coords = coords[(coords[:,0] < x_arr.shape[0]) & (coords[:,1] < x_arr.shape[1])]
     # Mask
     mask = np.zeros(distance.shape, dtype=bool)
     mask[tuple(coords.T)] = True
