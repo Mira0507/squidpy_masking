@@ -38,6 +38,9 @@ source('config/helpers.R')
 import numpy as np
 import dask.array as da
 import matplotlib.pyplot as plt
+from scipy import ndimage as ndi
+from skimage.segmentation import watershed
+from skimage.feature import peak_local_max
 import squidpy as sq
 import xarray as xr
 import os
@@ -69,6 +72,9 @@ outdir = params['outdir']
 # Specify the name of input and output layers
 lyr_processed = f"{lyr}_removal"
 lyr_seg = f"{lyr}_ntseg"
+
+# Specify scaling factor for array downsampling
+down_factor = int(params['downfactor'])
 ```
 
 # Loading input image
@@ -105,16 +111,35 @@ chosen as local minima of the image, from which basins are flooded.
 # packages
 # ------------------------------------------------------------------------------
 
-# Run watershed segmentation using the wrapper function from Squidpy
+# Run watershed segmentation 
 for ch in range(img[lyr].shape[3]):
+    # Specify the name of new layer
     new_layer = f"{lyr_seg}_channel_{ch}"
-    sq.im.segment(img=img, 
-                  layer=lyr_processed, 
-                  method="watershed",
-                  channel=ch,
-                  chunks=chunksize, 
-                  lazy=True, 
-                  layer_added=new_layer)
+    # Extract the dask array for given channel
+    d_arr = img[lyr_processed].data[:, :, 0, ch]
+    # Convert the dask array into an xarray without chunking
+    x_arr = xr.DataArray(d_arr)
+    x_arr = x_arr.chunk(-1)
+    # Calculate the Euclidean distance of each foreground object 
+    # from the background
+    distance = ndi.distance_transform_edt(x_arr)
+    # Find local maxima
+    # NOTE: Optionally, we downsample and rescale before and after peak finding  
+    distance_small = distance[::down_factor, ::down_factor]
+    coords_small = peak_local_max(distance_small,
+        min_distance=5,
+        labels=x_arr[::down_factor, ::down_factor])
+    coords = coords_small * down_factor
+    # Mask
+    mask = np.zeros(distance.shape, dtype=bool)
+    mask[tuple(coords.T)] = True
+    markers, _ = ndi.label(mask)
+    # Run watershed segmentation and convert the output into an xarray
+    labels = xr.DataArray(watershed(-distance, markers, mask=x_arr))
+    # Convert the xarray into a dask array with proper chunksize
+    labels_chunked = labels.chunk(chunks=chunksize)
+    # Add the processed array to the `ImageContainer` obj
+    img.add_img(labels_chunked, layer=new_layer)
 
 
 # Prep a list consisting of channel corresponding to segmented images
@@ -139,6 +164,7 @@ for l in seg_lyrs:
 
 print("ImageContainer updated:")
 print(img)
+
 ```
 
 ```{r visualize_watershed, results='asis'}
