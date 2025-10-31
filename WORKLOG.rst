@@ -1321,6 +1321,25 @@ squidpy_masking
         - ``scripts/snakemake/watershed_segmentation.Rmd``
         - ``scripts/snakemake/Snakefile``
     - notes
-        - decided to call ``squidpy.im.segment(.., method="watershed")``
-          rather than native functions from the ``scikit-image`` package
         - specified the ``image_removal`` as input of watershed segmentation
+        - runs on xarrays with a single chunk converted from dask arrays 
+          to avoid mosaic effect across the chunks
+        - segmentation using ``squidpy.im.segment(.., method="watershed")`` failed
+          due to unreliable labeling patterns across the channels
+        - trying by following the demonstration in 
+          https://scikit-image.org/docs/0.25.x/auto_examples/segmentation/plot_watershed.html,
+          along with downsizing distance matrix in finding local maxima. This is intended
+          to save runtime because the input of this process is not a dask array.
+
+        .. code-block:: python
+
+            # Scikit-image demonstration
+            coords = peak_local_max(distance, footprint=np.ones((3, 3)), labels=image)
+
+            # Modification using downsizing
+            down_factor = 4 # This value is specified at config.yaml
+            distance_small = distance[::down_factor, ::down_factor]
+            mask_small = image[::down_factor, ::down_factor]
+            coords_small = peak_local_max(distance_small, min_distance=5, labels=mask_small)
+            coords = coords_small * down_factor
+            coords = coords[(coords[:,0]<image.shape[0]) & (coords[:,1]<image.shape[1])]
