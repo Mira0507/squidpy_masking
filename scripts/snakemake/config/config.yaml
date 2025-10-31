@@ -90,3 +90,7 @@ thresholding: "adaptive"
 
 # Specify the minimum size of foreground objects to be filtered
 minsize: 20
+
+# Specify the size factor for downsizing arrays
+# for finding local maxima of the distance to the background
+downfactor: 4
