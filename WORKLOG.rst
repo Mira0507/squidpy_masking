@@ -1326,7 +1326,7 @@ squidpy_masking
           to avoid mosaic effect across the chunks
         - segmentation using ``squidpy.im.segment(.., method="watershed")`` failed
           due to unreliable labeling patterns across the channels
-        - trying by following the demonstration in 
+        - trying with the following demonstration
           https://scikit-image.org/docs/0.25.x/auto_examples/segmentation/plot_watershed.html,
           along with downsizing distance matrix in finding local maxima. This is intended
           to save runtime because the input of this process is not a dask array.
@@ -1343,3 +1343,64 @@ squidpy_masking
             coords_small = peak_local_max(distance_small, min_distance=5, labels=mask_small)
             coords = coords_small * down_factor
             coords = coords[(coords[:,0]<image.shape[0]) & (coords[:,1]<image.shape[1])]
+
+
+2025-10-31
+----------
+
+@Mira0507
+
+- watershed segmentation worked as anticipated. no further updates are needed 
+  at this point
+
+- corrected the wrapper script for rule ``squidpy_segmentation``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/squidpy_segmentation.Rmd``
+    - code change
+
+    .. code-block:: python
+
+        # Before correction
+        for ch in range(img[lyr].shape[3]):
+            # Specify the name of layer for the new processed image
+            new_layer = f"seg_channel_{ch}"
+            # Run segmentation
+            sq.im.segment(img=img,
+                          layer=lyr_smth,
+                          method=seg_method,
+                          thresh=thr_method,
+                          chunks=chunksize,
+                          lazy=True,
+                          layer_added=new_layer,
+                          channel=ch)
+
+        # After correction
+        for ch in range(img[lyr].shape[3]):
+            # Specify layer names
+            new_layer = f"seg_channel_{ch}"
+            dechunked_layer = f"dech_channel_{ch}"
+            # Convert dask arrays into xarrays with no chunking in the `ImageContainer` object
+            arr = xr.DataArray(img[lyr_smth].data[:, :, 0, ch])
+            arr = arr.chunk(-1)
+            # Add the converted array to the `ImageContainer` object
+            img.add_img(arr, layer=dechunked_layer)
+            # Run segmentation on xarray
+            sq.im.segment(img=img,
+                          layer=dechunked_layer,
+                          method=seg_method,
+                          thresh=thr_method,
+                          lazy=False,
+                          layer_added=new_layer,
+                          channel=0)
+            # Convert the output segmented array into a dask array
+            arr = xr.DataArray(img[new_layer].data)
+            arr = arr.chunk(chunks=chunksize)
+            # Replace the new layer with the converted dask array
+            img.add_img(arr, layer=new_layer)
+            # Delete temporary layers
+            del img[dechunked_layer]
+
+    - note
+        - this update was made to avoid returning mosaic-like output images
+          when  the input layer consists of dask arrays with multiple chunks.
+
