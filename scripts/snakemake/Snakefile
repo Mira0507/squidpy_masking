@@ -264,9 +264,9 @@ rule native_thresholding:
         html = "{out_masked}/{name}/native_thresholding.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 400,
-        disk_mb = 1024 * 200,
-        runtime = 60 * 24
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 12
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
@@ -345,8 +345,8 @@ rule watershed_segmentation:
         html = "{out_masked}/{name}/watershed_segmentation.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
+        mem_mb = 1024 * 300,
+        disk_mb = 1024 * 150,
         runtime = 60 * 2
     params:
         conda_env = config['conda_env'],
