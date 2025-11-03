@@ -370,3 +370,43 @@ rule watershed_segmentation:
             output_file = "{output.html}")'
         """
 
+rule merge_channels:
+    """
+    This rule generates merged images for channels of interest.
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/watershed_segmentation.zarr",
+        rmd = "merge_channels.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/merge_channels.zarr"),
+        html = "{out_masked}/{name}/merge_channels.html"
+    threads: 4
+    resources:
+        mem_mb = 1024 * 100,
+        disk_mb = 1024 * 50,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
+        lyr = config['lyr'],
+        pseudo_cols = config['pseudo_cols'],
+        merge_list = config['merge_list'],
+        merge_layer = config['merge_layer']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            chunksize = "{params.chunksize}",
+            conda_env = "{params.conda_env}",
+            pseudo_cols = "{params.pseudo_cols}",
+            merge_list = "{params.merge_list}",
+            merge_layer = "{params.merge_layer}",
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
