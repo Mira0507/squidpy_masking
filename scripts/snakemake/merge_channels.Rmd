@@ -1,0 +1,109 @@
+---
+title: "Watershed segmentation"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to merge channels of interest.
+
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv(params[['conda_env']])
+source('config/helpers.R')
+```
+
+```{python ppackages}
+import numpy as np
+import dask.array as da
+import matplotlib.pyplot as plt
+import squidpy as sq
+from matplotlib.colors import ListedColormap
+import xarray as xr
+```
+
+```{python config}
+# ------------------------------------------------------------------------------
+# This chunk configures user-specified variables
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Convert `params` from R to Python
+params = r.params
+
+# Specify file paths to input and output files
+outdir = params['outdir']
+input_obj = params['input_obj']
+output_obj = params['output_obj']
+
+# Specify the names of layers to be used
+lyr = params['lyr']
+lyr_layer = params['merge_layer']
+lyr_processed = f"{lyr}_{lyr_layer}"
+
+# Specify pseudo-colors
+pseudo_cols = params['pseudo_cols']
+
+# Specify chunksize
+chunksize = int(params['chunksize'])
+
+# Specify antibodies to be merged
+merge_list = params['merge_list']
+```
+
+# Loading input image
+
+```{python loading_input}
+
+# ------------------------------------------------------------------------------
+# This chunk imports input image saved as zarr in the previous step
+# ------------------------------------------------------------------------------
+
+# Load the Zarr store into an ImageContainer
+# Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
+# You can also specify chunks for Dask if needed.
+img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks=chunksize)
+
+print(f"The following file has been loaded: {input_obj}")
+print(img)
+```
+
+```{python prep_merging}
+
+# Extract all binarized array data
+binary_arr = [img[lyr_processed].data[:, :, 0, ch] for ch in range(img[lyr].shape[3])]
+
+print("We are merging binarized signals across the antibodies of interest. Refer to the following pseudo-colors:")
+for ab, color in pseudo_cols.items():
+    print(f"- {ab}: {color}")
+```
+
+# Saving the `ImageContainer` object
+
+Output images are saved as the following object:
+
+```{python save_zarr, eval=FALSE}
+img.save(output_obj)
+print(output_obj)
+```
+
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```
