@@ -1403,4 +1403,25 @@ squidpy_masking
     - note
         - this update was made to avoid returning mosaic-like output images
           when  the input layer consists of dask arrays with multiple chunks.
+        - reran the pipeline from the ``squidpy_segmentation`` to 
+          ``watershed_segmentation`` during the weekend
 
+
+2025-11-03
+----------
+
+@Mira0507
+
+- Review the results from the weekend run
+    - all ran error-free
+    - images were generated as anticipated
+
+- Snakefile update
+    - script: ``scripts/snakemake/Snakefile``
+    - notes: updated the ``resources`` directives based on the up-to-date run
+
+- Add a new rule, ``merge_channels`` to the pipeline (in progress)
+    - updated scripts
+        - ``scripts/snakemake/Snakefile`` 
+        - ``scripts/snakemake/config/config.yaml``
+        - ``scripts/snakemake/merge_channels.Rmd``
