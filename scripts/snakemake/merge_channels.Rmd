@@ -18,7 +18,8 @@ knitr::opts_chunk$set(warning=FALSE,
 
 Last run: `r date()`
 
-This workflow is designed to merge channels of interest.
+This workflow is designed to merge channels of interest. Binary images are used to capture the merged 
+signals across these channels.
 
 
 ```{r temp}
@@ -99,6 +100,10 @@ print(f"The following file has been loaded: {input_obj}")
 print(img)
 ```
 
+# Merging channels {.tabset}
+
+The current workflow is set to use the following layer for input binary images: `r py$lyr_processed`
+
 ```{python prep_merging}
 
 # ------------------------------------------------------------------------------
@@ -143,13 +148,6 @@ remove_rownames() %>%
 knitr::kable()
 ```
 
-## DAPI + TDP43
-
-```{python adaptive_merge0, fig.width=12, fig.height=12}
-i = 0
-display_merge(merge_list[0])
-```
-
 ```{r visualize_merges, results='asis'}
 
 # ------------------------------------------------------------------------------
@@ -160,14 +158,13 @@ display_merge(merge_list[0])
 for (i in 1:length(py$merge_list)) {
     # Convert into 0-indexing
     i <- i - 1
-    cat("## Channel", i, "{.tabset}\n\n")
+    cat("## Channel", i, "\n\n")
     # Command to show image
-    t_deparsed_1 <- paste0("display_merge(", i, ")")
-    t_deparsed <- c(t_deparsed_1)
+    t_deparsed <- paste0("display_merge(merge_list[", i, "])\n")
     subchunkify(name=paste0("display_merge_", i), t_deparsed=t_deparsed)
 
     save_path <- paste0(py$outdir, "/", py$lyr_processed, "_", py$merge_name, ".png")
-    link_output()
+    link_output(save_path)
 }
 
 ```
