@@ -33,7 +33,7 @@ def all_input(wildcards):
                               )
 
         else: 
-            input_list.extend(expand("{out_masked}/{name}/merge_channels.zarr",
+            input_list.extend(expand("{out_masked}/{name}/merge_channels.html",
                                      out_masked=config['out_masked'],
                                      name=list(sample.index))
                               )
@@ -378,7 +378,6 @@ rule merge_channels:
         zarr_in = "{out_masked}/{name}/watershed_segmentation.zarr",
         rmd = "merge_channels.Rmd"
     output:
-        zarr_out = directory("{out_masked}/{name}/merge_channels.zarr"),
         html = "{out_masked}/{name}/merge_channels.html"
     threads: 4
     resources:
@@ -397,7 +396,6 @@ rule merge_channels:
         Rscript -e 'params = list(
             outdir = "{wildcards.out_masked}/{wildcards.name}",
             input_obj = "{input.zarr_in}",
-            output_obj = "{output.zarr_out}",
             chunksize = "{params.chunksize}",
             conda_env = "{params.conda_env}",
             pseudo_cols = "{params.pseudo_cols}",
