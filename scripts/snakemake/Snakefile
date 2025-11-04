@@ -33,7 +33,7 @@ def all_input(wildcards):
                               )
 
         else: 
-            input_list.extend(expand("{out_masked}/{name}/watershed_segmentation.zarr",
+            input_list.extend(expand("{out_masked}/{name}/merge_channels.zarr",
                                      out_masked=config['out_masked'],
                                      name=list(sample.index))
                               )
