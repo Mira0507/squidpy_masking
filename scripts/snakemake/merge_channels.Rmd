@@ -22,20 +22,6 @@ This workflow is designed to merge channels of interest. Binary images are used 
 signals across these channels.
 
 
-```{r temp}
-params = list(
-            outdir = "results/perm",
-            input_obj = "results/perm/watershed_segmentation.zarr",
-            output_obj = "results/perm/merge_channels.zarr",
-            chunksize = "5000",
-            conda_env = "../../env",
-            pseudo_cols = "{'dapi': 'dodgerblue', 'iba': 'orange', 'tdp': 'limegreen', 'map': 'violet', 'aldh': 'lightblue'}",
-            merge_list = "dapi_tdp iba_map_aldh tdp_map",
-            merge_layer = "removal",
-            lyr = "image")
-```
-
-
 ```{r rpackages}
 library(reticulate)
 library(tidyverse)
@@ -66,7 +52,6 @@ params = r.params
 # Specify file paths to input and output files
 outdir = params['outdir']
 input_obj = params['input_obj']
-output_obj = params['output_obj']
 
 # Specify the names of layers to be used
 lyr = params['lyr']
@@ -169,16 +154,7 @@ for (i in 1:length(py$merge_list)) {
 
 ```
 
-
-# Saving the `ImageContainer` object
-
-Output images are saved as the following object:
-
-```{python save_zarr, eval=FALSE}
-img.save(output_obj)
-print(output_obj)
-```
-
+# Packages
 
 ```{r session_info, collapse=FALSE}
 sessionInfo()
