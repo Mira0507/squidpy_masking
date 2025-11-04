@@ -80,6 +80,8 @@ speckles, using native functions from ``dask_image`` and ``scikit-image``.
 - `scripts/snakemake/watershed_segmentation.Rmd`: Wrapper script for labeling
 foreground objects using the Wathershed segmentation by relying on the 
 wrapper function from Squidpy.
+- `scripts/snakemake/merge_channels.Rmd`: Wrapper script for merging
+channels of interest.
 
 ![Workflow1](scripts/snakemake/config/dag_qc.png)
 ![Workflow2](scripts/snakemake/config/dag.png)
