@@ -1425,3 +1425,42 @@ squidpy_masking
         - ``scripts/snakemake/Snakefile`` 
         - ``scripts/snakemake/config/config.yaml``
         - ``scripts/snakemake/merge_channels.Rmd``
+
+
+2025-11-04
+----------
+
+@Mira0507
+
+- Update rule ``merge_channels``
+    - conda env: ``env``
+    - scripts: 
+        - ``scripts/snakemake/merge_channels.Rmd``
+        - ``scripts/snakemake/Snakefile``
+
+- Updated DAG: ``scripts/snakemake/config/dag.png``
+
+
+2025-11-12
+----------
+
+@Mira0507
+
+- Update rule ``merge_channels``
+    - conda env: ``env``
+    - scripts: 
+        - ``scripts/snakemake/merge_channels.Rmd``
+    - notes
+        - ``config["pseudo_cols"]`` was imported as a string instead of 
+          a dictionary, which ended up requiring a careful conversion
+        - encountered errors when tried with ``ast.literal_eval(<string>)`` 
+          and ``json.loads(<string>)``. These errors popped up only when 
+          executed within Snakemake. They ran error-free in Rmarkdown without 
+          Snakemake.
+        - the following manual conversion worked:
+
+        .. code-block:: python
+
+            # Specify pseudo-colors by converting string to dictionary
+            pseudo_cols = params['pseudo_cols'].strip("{}")
+            pseudo_cols = dict(item.split(": ") for item in pseudo_cols.split(", "))
