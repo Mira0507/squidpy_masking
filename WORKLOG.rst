@@ -1464,3 +1464,23 @@ squidpy_masking
             # Specify pseudo-colors by converting string to dictionary
             pseudo_cols = params['pseudo_cols'].strip("{}")
             pseudo_cols = dict(item.split(": ") for item in pseudo_cols.split(", "))
+
+
+2025-11-14
+----------
+
+@Mira0507
+
+- Clean wrapper scripts and rerun
+    - conda env: ``env``
+    - scripts
+        - ``scripts/snakemake/build_imagecontainer.Rmd``
+        - ``scripts/snakemake/merge_channels.Rmd``
+        - ``scripts/snakemake/native_thresholding.Rmd``
+        - ``scripts/snakemake/post_processing.Rmd``
+        - ``scripts/snakemake/smooth.Rmd``
+        - ``scripts/snakemake/squidpy_segmentation.Rmd``
+        - ``scripts/snakemake/watershed_segmentation.Rmd``
+    - notes
+        - redundant code deleted
+
