@@ -175,7 +175,6 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("erosion_", i), t_deparsed=t_deparsed)
 
-    save_path <- paste0(py$outdir, "/erosion_channel_", i, ".png")
     link_output(paste0("erosion_channel_", i, ".png"))
 }
 
@@ -249,7 +248,6 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("dilation_", i), t_deparsed=t_deparsed)
 
-    save_path <- paste0(py$outdir, "/dilation_channel_", i, ".png")
     link_output(paste0("dilation_channel_", i, ".png"))
 }
 
@@ -325,8 +323,8 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("removal_", i), t_deparsed=t_deparsed)
 
-    save_path <- paste0(py$outdir, "/removal_channel_", i, ".png")
     link_output(paste0("removal_channel_", i, ".png"))
+    cat('\n\n')
 }
 
 ```

@@ -146,8 +146,8 @@ for (merge_name in py$merge_list) {
     t_deparsed <- paste0("display_merge(r.merge_name)\n")
     subchunkify(name=paste0("display_merge_", merge_name), t_deparsed=t_deparsed)
 
-    save_path <- paste0(py$outdir, "/", py$lyr_processed, "_", merge_name, ".png")
-    link_output(save_path)
+    link_output(paste0(py$lyr_processed, "_", merge_name, ".png"))
+    cat("\n\n")
 }
 
 ```

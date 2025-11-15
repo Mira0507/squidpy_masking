@@ -187,8 +187,8 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("ntseg_", i), t_deparsed=t_deparsed)
 
-    save_path <- paste0(py$outdir, "/ntseg_channel_", i, ".png")
     link_output(paste0("ntseg_channel_", i, ".png"))
+    cat("\n\n")
 }
 
 ```

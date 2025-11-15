@@ -216,7 +216,6 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed <- c(t_deparsed_1, t_deparsed_2)
     subchunkify(name=paste0("sqbn_images_channel_", i), t_deparsed=t_deparsed)
 
-    path <- paste0(py$outdir, "/sqbn_channel_", i, ".png")
     link_output(paste0("sqbn_channel_", i, ".png"))
     cat('\n\n')
 }

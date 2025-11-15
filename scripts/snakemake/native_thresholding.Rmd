@@ -163,7 +163,6 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("otsu_", i), t_deparsed=t_deparsed)
 
-    save_path <- paste0(py$outdir, "/otsu_channel_", i, ".png")
     link_output(paste0("otsu_channel_", i, ".png"))
 }
 
@@ -268,8 +267,8 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("adaptive_", i), t_deparsed=t_deparsed)
 
-    save_path <- paste0(py$outdir, "/adaptive_channel_", i, ".png")
     link_output(paste0("adaptive_channel_", i, ".png"))
+    cat('\n\n')
 }
 
 ```
