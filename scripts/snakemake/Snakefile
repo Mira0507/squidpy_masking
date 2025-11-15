@@ -383,7 +383,7 @@ rule merge_channels:
     resources:
         mem_mb = 1024 * 100,
         disk_mb = 1024 * 50,
-        runtime = 60 * 2
+        runtime = 60 * 1
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
