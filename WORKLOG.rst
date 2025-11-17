@@ -1471,7 +1471,7 @@ squidpy_masking
 
 @Mira0507
 
-- Clean wrapper scripts and rerun
+- Clean up wrapper scripts and rerun
     - conda env: ``env``
     - scripts
         - ``scripts/snakemake/build_imagecontainer.Rmd``
@@ -1484,3 +1484,17 @@ squidpy_masking
     - notes
         - redundant code deleted
 
+
+2025-11-17
+----------
+
+@Mira0507
+
+- Rerun the pipeline
+    - conda env: ``env``
+    - scripts: ``scripts/snakemake/Snakefile``
+    - notes
+        - the ``mem_mb`` and ``disk_mb`` updated from ``1024 * 300``
+          and ``1024 * 150`` to ``1024 * 200`` and ``1024 * 100``,
+          respectively
+        - rerun completed for all rules
