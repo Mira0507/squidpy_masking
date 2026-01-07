@@ -33,7 +33,7 @@ def all_input(wildcards):
                               )
 
         else: 
-            input_list.extend(expand("{out_masked}/{name}/post_processing.zarr",
+            input_list.extend(expand("{out_masked}/{name}/merge_channels.html",
                                      out_masked=config['out_masked'],
                                      name=list(sample.index))
                               )
@@ -264,9 +264,9 @@ rule native_thresholding:
         html = "{out_masked}/{name}/native_thresholding.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 400,
-        disk_mb = 1024 * 200,
-        runtime = 60 * 24
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 12
     params:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
@@ -311,7 +311,8 @@ rule post_processing:
         conda_env = config['conda_env'],
         chunksize = config['chunksize'],
         lyr = config['lyr'],
-        thresholding = config['thresholding']
+        thresholding = config['thresholding'],
+        minsize = config['minsize']
     shell:
         """
         Rscript -e 'params = list(
@@ -320,6 +321,7 @@ rule post_processing:
             output_obj = "{output.zarr_out}",
             chunksize = "{params.chunksize}",
             conda_env = "{params.conda_env}",
+            minsize = "{params.minsize}",
             thresholding = "{params.thresholding}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
@@ -330,4 +332,79 @@ rule post_processing:
         """
 
 
+rule watershed_segmentation:
+    """
+    This rule runs watershed segmentation on masked images using native 
+    functions from the scikit-image and dask image packages.
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/post_processing.zarr",
+        rmd = "watershed_segmentation.Rmd"
+    output:
+        zarr_out = directory("{out_masked}/{name}/watershed_segmentation.zarr"),
+        html = "{out_masked}/{name}/watershed_segmentation.html"
+    threads: 12
+    resources:
+        mem_mb = 1024 * 200,
+        disk_mb = 1024 * 100,
+        runtime = 60 * 2
+    params:
+        conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
+        lyr = config['lyr'],
+        downfactor = config['downfactor']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            output_obj = "{output.zarr_out}",
+            chunksize = "{params.chunksize}",
+            conda_env = "{params.conda_env}",
+            downfactor = "{params.downfactor}",
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """
 
+rule merge_channels:
+    """
+    This rule generates merged images for channels of interest.
+    """
+    input:
+        zarr_in = "{out_masked}/{name}/watershed_segmentation.zarr",
+        rmd = "merge_channels.Rmd"
+    output:
+        html = "{out_masked}/{name}/merge_channels.html"
+    threads: 4
+    resources:
+        mem_mb = 1024 * 100,
+        disk_mb = 1024 * 50,
+        runtime = 60 * 1
+    params:
+        conda_env = config['conda_env'],
+        chunksize = config['chunksize'],
+        lyr = config['lyr'],
+        pseudo_cols = config['pseudo_cols'],
+        merge_list = config['merge_list'],
+        merge_layer = config['merge_layer']
+    shell:
+        """
+        Rscript -e 'params = list(
+            outdir = "{wildcards.out_masked}/{wildcards.name}",
+            input_obj = "{input.zarr_in}",
+            chunksize = "{params.chunksize}",
+            conda_env = "{params.conda_env}",
+            pseudo_cols = "{params.pseudo_cols}",
+            merge_list = "{params.merge_list}",
+            merge_layer = "{params.merge_layer}",
+            lyr = "{params.lyr}");
+        rmarkdown::render("{input.rmd}",
+            output_dir = "{wildcards.out_masked}/{wildcards.name}",
+            intermediates_dir = "{wildcards.out_masked}/{wildcards.name}",
+            params = params,
+            output_file = "{output.html}")'
+        """

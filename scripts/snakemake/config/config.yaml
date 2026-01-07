@@ -87,3 +87,28 @@ offset: None
 # - "adaptive": Adaptive (local) thresholding generated native functions from scikit-image/dask_image
 # - "": No selection. This will pause running the pipeline before the `post_processing` rule.
 thresholding: "adaptive"
+
+# Specify the minimum size of foreground objects to be filtered
+minsize: 20
+
+# Specify the size factor for downsizing arrays
+# for finding local maxima of the distance to the background
+downfactor: 4
+
+# Specify pseudo-colors for individual channels. Ensure the order aligns with
+# the order of your channels (0-indexing)
+pseudo_cols:
+  dapi: dodgerblue  # channel 0
+  iba: orange       # channel 1
+  tdp: limegreen    # channel 2
+  map: violet       # channel 3
+  aldh: lightblue   # channel 4
+
+# Specify antibodies of interest to be merged
+merge_list:
+  - dapi_tdp
+  - iba_map_aldh
+  - tdp_map
+  
+# Specify the suffix of image layers saved in Squidpy's `ImageContainer` object
+merge_layer: 'removal'

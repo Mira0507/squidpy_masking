@@ -1,0 +1,160 @@
+---
+title: "Merging channels"
+author: "Mira Sohn"
+output:
+    html_document:
+        code_folding: hide
+        df_print: paged
+        # toc: true
+        # toc_float: true
+        # toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE,
+                      message=FALSE,
+                      cache.lazy=FALSE)
+```
+
+Last run: `r date()`
+
+This workflow is designed to merge channels of interest. Binary images are used to capture the merged 
+signals across these channels.
+
+
+```{r rpackages}
+library(reticulate)
+library(tidyverse)
+use_condaenv(params[['conda_env']])
+source('config/helpers.R')
+```
+
+```{python ppackages}
+import numpy as np
+import dask.array as da
+import matplotlib.pyplot as plt
+import squidpy as sq
+from matplotlib.colors import ListedColormap
+import xarray as xr
+```
+
+```{python config}
+# ------------------------------------------------------------------------------
+# This chunk configures user-specified variables in Python
+# ------------------------------------------------------------------------------
+
+# reticulate::repl_python()
+
+# Convert `params` from R to Python
+params = r.params
+
+# Specify file paths to input and output files
+outdir = params['outdir']
+input_obj = params['input_obj']
+
+# Specify the names of layers to be used
+lyr = params['lyr']
+lyr_layer = params['merge_layer']
+lyr_processed = f"{lyr}_{lyr_layer}"
+
+# Specify pseudo-colors by converting string to dictionary
+pseudo_cols = params['pseudo_cols'].strip("{}")
+pseudo_cols = dict(item.split(": ") for item in pseudo_cols.split(", "))
+
+# Specify chunksize
+chunksize = int(params['chunksize'])
+
+# Specify antibodies to be merged
+merge_list = params['merge_list'].split(" ")
+```
+
+# Loading input image
+
+```{python loading_input}
+
+# ------------------------------------------------------------------------------
+# This chunk imports input image saved as zarr in the previous step
+# ------------------------------------------------------------------------------
+
+# Load the Zarr store into an ImageContainer
+# Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
+# You can also specify chunks for Dask if needed.
+img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks=chunksize)
+
+print(f"The following file has been loaded: {input_obj}")
+print(img)
+```
+
+# Merging channels {.tabset}
+
+The current workflow is set to use the following layer for input binary images: `r py$lyr_processed`
+
+```{python prep_merging}
+
+# ------------------------------------------------------------------------------
+# This chunk prepares input arrays and a function stacking arrays of interest 
+# with pseudo-colors
+# ------------------------------------------------------------------------------
+
+# Extract all binarized array data
+binary_arr = [img[lyr_processed].data[:, :, 0, ch] for ch in range(img[lyr].shape[3])]
+
+# Specify a function to merge layers
+def display_merge(merge_name):
+
+    # Extract antibody and channel
+    ch_list = list(merge_name.split("_"))
+    ch_dic = {ab: i for i, ab in enumerate(pseudo_cols.keys()) if ab in ch_list}
+
+    # Stack binary images
+    for ab, i in ch_dic.items():
+        ar = binary_arr[i]
+        plt.imshow(ar,
+                   cmap=ListedColormap([(1, 1, 1, 0), pseudo_cols[ab]]),
+                   alpha=0.5)
+    plt.xticks([])
+    plt.yticks([])
+    plt.savefig(f"{outdir}/{lyr_processed}_{merge_name}.png", dpi=1000)
+    plt.show()
+
+```
+
+Refer to the following staining and pseudo-colors:
+
+```{r pseudocolors, results='asis'}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to convey channel-pseudocolor information
+# ------------------------------------------------------------------------------
+
+data.frame(staining=names(py$pseudo_cols),
+           color=unlist(py$pseudo_cols)) %>%
+    remove_rownames() %>%
+    knitr::kable()
+```
+
+```{r visualize_merges, results='asis'}
+
+# ------------------------------------------------------------------------------
+# This chunk is used to prepare visualizing merged images
+# ------------------------------------------------------------------------------
+
+# Visualize processed images across the channels
+for (merge_name in py$merge_list) {
+    cat("##", merge_name, "\n\n")
+    # Command to show image
+    t_deparsed <- paste0("display_merge(r.merge_name)\n")
+    subchunkify(name=paste0("display_merge_", merge_name), t_deparsed=t_deparsed)
+
+    link_output(paste0(py$lyr_processed, "_", merge_name, ".png"))
+    cat("\n\n")
+}
+
+```
+
+# Packages
+
+```{r session_info, collapse=FALSE}
+sessionInfo()
+```
+

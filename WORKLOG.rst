@@ -1228,3 +1228,273 @@ squidpy_masking
     - notes
         - ran error-free
         - ``scripts/snakemake/config/dag.png`` updated
+
+
+2025-10-18
+----------
+
+@Mira0507
+
+- update wrapper script for rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes:
+        - retain the ``"image_erosion"`` layer
+
+
+2025-10-20
+----------
+
+@Mira0507
+
+- update the wrapper script for rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes
+        - retain the thresholding layer in use in addition to
+          the erosion layer
+        - rerun snakemake after this update
+
+
+2025-10-22
+----------
+
+@Mira0507
+
+- update the wrapper script for rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes
+        - further remove small foreground objects using 
+          the ``remove_small_objects`` function from ``skimage.morphology``.
+          the output images were added to the ``ImageContainer`` object
+          as the ``image_removal`` layer.
+        - this change was effective to remove small speckles. however,
+          it's hard to ensure that all removed objects are non-cell noise.
+          therefore, I decided to keep both the ``image_removal`` and
+          ``image_dilation`` layers.
+        - the minimum pixel of object is set to 20 based on empirical determination
+          after applying 2, 4, and 10 pixels.
+
+
+2025-10-28
+----------
+
+@Mira0507
+
+- update the wrapper script for rule ``post_processing``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/post_processing.Rmd``
+    - notes
+        - binarization added after the removal of small objects
+        - this modification ended up adding the following new
+          layers: 
+            - ``image_dilation``: the output of dilation
+            - ``image_removal``: the output of removing small 
+              foreground objects
+
+2025-10-29
+----------
+
+@Mira0507
+
+- bugfixes to rule ``post_processing``
+    - conda env: ``env``
+    - scripts:
+        - ``scripts/snakemake/post_processing.Rmd``
+        - ``scripts/snakemake/config/config.yaml``
+    - notes
+        - min size of foreground objects to be removed corrected 
+          from 10 to 20 by changing the ``minsize`` key in the 
+          ``scripts/snakemake/config/config.yaml``
+        - layer name for binarized images corrected
+
+
+2025-10-30
+----------
+
+@Mira0507
+
+- rule ``watershed_segmentation`` in progress
+    - conda env: ``env``
+    - scripts:
+        - ``scripts/snakemake/watershed_segmentation.Rmd``
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - specified the ``image_removal`` as input of watershed segmentation
+        - runs on xarrays with a single chunk converted from dask arrays 
+          to avoid mosaic effect across the chunks
+        - segmentation using ``squidpy.im.segment(.., method="watershed")`` failed
+          due to unreliable labeling patterns across the channels
+        - trying with the following demonstration
+          https://scikit-image.org/docs/0.25.x/auto_examples/segmentation/plot_watershed.html,
+          along with downsizing distance matrix in finding local maxima. This is intended
+          to save runtime because the input of this process is not a dask array.
+
+        .. code-block:: python
+
+            # Scikit-image demonstration
+            coords = peak_local_max(distance, footprint=np.ones((3, 3)), labels=image)
+
+            # Modification using downsizing
+            down_factor = 4 # This value is specified at config.yaml
+            distance_small = distance[::down_factor, ::down_factor]
+            mask_small = image[::down_factor, ::down_factor]
+            coords_small = peak_local_max(distance_small, min_distance=5, labels=mask_small)
+            coords = coords_small * down_factor
+            coords = coords[(coords[:,0]<image.shape[0]) & (coords[:,1]<image.shape[1])]
+
+
+2025-10-31
+----------
+
+@Mira0507
+
+- watershed segmentation worked as anticipated. no further updates are needed 
+  at this point
+
+- corrected the wrapper script for rule ``squidpy_segmentation``
+    - conda env: ``env``
+    - script: ``scripts/snakemake/squidpy_segmentation.Rmd``
+    - code change
+
+    .. code-block:: python
+
+        # Before correction
+        for ch in range(img[lyr].shape[3]):
+            # Specify the name of layer for the new processed image
+            new_layer = f"seg_channel_{ch}"
+            # Run segmentation
+            sq.im.segment(img=img,
+                          layer=lyr_smth,
+                          method=seg_method,
+                          thresh=thr_method,
+                          chunks=chunksize,
+                          lazy=True,
+                          layer_added=new_layer,
+                          channel=ch)
+
+        # After correction
+        for ch in range(img[lyr].shape[3]):
+            # Specify layer names
+            new_layer = f"seg_channel_{ch}"
+            dechunked_layer = f"dech_channel_{ch}"
+            # Convert dask arrays into xarrays with no chunking in the `ImageContainer` object
+            arr = xr.DataArray(img[lyr_smth].data[:, :, 0, ch])
+            arr = arr.chunk(-1)
+            # Add the converted array to the `ImageContainer` object
+            img.add_img(arr, layer=dechunked_layer)
+            # Run segmentation on xarray
+            sq.im.segment(img=img,
+                          layer=dechunked_layer,
+                          method=seg_method,
+                          thresh=thr_method,
+                          lazy=False,
+                          layer_added=new_layer,
+                          channel=0)
+            # Convert the output segmented array into a dask array
+            arr = xr.DataArray(img[new_layer].data)
+            arr = arr.chunk(chunks=chunksize)
+            # Replace the new layer with the converted dask array
+            img.add_img(arr, layer=new_layer)
+            # Delete temporary layers
+            del img[dechunked_layer]
+
+    - note
+        - this update was made to avoid returning mosaic-like output images
+          when  the input layer consists of dask arrays with multiple chunks.
+        - reran the pipeline from the ``squidpy_segmentation`` to 
+          ``watershed_segmentation`` during the weekend
+
+
+2025-11-03
+----------
+
+@Mira0507
+
+- Review the results from the weekend run
+    - all ran error-free
+    - images were generated as anticipated
+
+- Snakefile update
+    - script: ``scripts/snakemake/Snakefile``
+    - notes: updated the ``resources`` directives based on the up-to-date run
+
+- Add a new rule, ``merge_channels`` to the pipeline (in progress)
+    - updated scripts
+        - ``scripts/snakemake/Snakefile`` 
+        - ``scripts/snakemake/config/config.yaml``
+        - ``scripts/snakemake/merge_channels.Rmd``
+
+
+2025-11-04
+----------
+
+@Mira0507
+
+- Update rule ``merge_channels``
+    - conda env: ``env``
+    - scripts: 
+        - ``scripts/snakemake/merge_channels.Rmd``
+        - ``scripts/snakemake/Snakefile``
+
+- Updated DAG: ``scripts/snakemake/config/dag.png``
+
+
+2025-11-12
+----------
+
+@Mira0507
+
+- Update rule ``merge_channels``
+    - conda env: ``env``
+    - scripts: 
+        - ``scripts/snakemake/merge_channels.Rmd``
+    - notes
+        - ``config["pseudo_cols"]`` was imported as a string instead of 
+          a dictionary, which ended up requiring a careful conversion
+        - encountered errors when tried with ``ast.literal_eval(<string>)`` 
+          and ``json.loads(<string>)``. These errors popped up only when 
+          executed within Snakemake. They ran error-free in Rmarkdown without 
+          Snakemake.
+        - the following manual conversion worked:
+
+        .. code-block:: python
+
+            # Specify pseudo-colors by converting string to dictionary
+            pseudo_cols = params['pseudo_cols'].strip("{}")
+            pseudo_cols = dict(item.split(": ") for item in pseudo_cols.split(", "))
+
+
+2025-11-14
+----------
+
+@Mira0507
+
+- Clean up wrapper scripts and rerun
+    - conda env: ``env``
+    - scripts
+        - ``scripts/snakemake/build_imagecontainer.Rmd``
+        - ``scripts/snakemake/merge_channels.Rmd``
+        - ``scripts/snakemake/native_thresholding.Rmd``
+        - ``scripts/snakemake/post_processing.Rmd``
+        - ``scripts/snakemake/smooth.Rmd``
+        - ``scripts/snakemake/squidpy_segmentation.Rmd``
+        - ``scripts/snakemake/watershed_segmentation.Rmd``
+    - notes
+        - redundant code deleted
+
+
+2025-11-17
+----------
+
+@Mira0507
+
+- Rerun the pipeline
+    - conda env: ``env``
+    - scripts: ``scripts/snakemake/Snakefile``
+    - notes
+        - the ``mem_mb`` and ``disk_mb`` updated from ``1024 * 300``
+          and ``1024 * 150`` to ``1024 * 200`` and ``1024 * 100``,
+          respectively
+        - rerun completed for all rules

@@ -110,17 +110,29 @@ regions based on topographic analysis of pixel intensities.
 # ------------------------------------------------------------------------------
 
 for ch in range(img[lyr].shape[3]):
-    # Specify the name of layer for the new processed image
+    # Specify layer names
     new_layer = f"seg_channel_{ch}"
-    # Run segmentation
+    dechunked_layer = f"dech_channel_{ch}"
+    # Convert dask arrays into xarrays with no chunking in the `ImageContainer` object
+    arr = xr.DataArray(img[lyr_smth].data[:, :, 0, ch])
+    arr = arr.chunk(-1)
+    # Add the converted array to the `ImageContainer` object
+    img.add_img(arr, layer=dechunked_layer)
+    # Run segmentation on xarray
     sq.im.segment(img=img,
-                  layer=lyr_smth,
+                  layer=dechunked_layer,
                   method=seg_method,
                   thresh=thr_method,
-                  chunks=chunksize,
-                  lazy=True,
+                  lazy=False,
                   layer_added=new_layer,
-                  channel=ch)
+                  channel=0)
+    # Convert the output segmented array into a dask array
+    arr = xr.DataArray(img[new_layer].data)
+    arr = arr.chunk(chunks=chunksize)
+    # Replace the new layer with the converted dask array
+    img.add_img(arr, layer=new_layer)
+    # Delete temporary layers
+    del img[dechunked_layer]
 
 # Prep a list consisting of channel corresponding to segmented images
 seg_lyrs = [c for c in list(img) if "seg" in c]
@@ -204,7 +216,6 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     t_deparsed <- c(t_deparsed_1, t_deparsed_2)
     subchunkify(name=paste0("sqbn_images_channel_", i), t_deparsed=t_deparsed)
 
-    path <- paste0(py$outdir, "/sqbn_channel_", i, ".png")
     link_output(paste0("sqbn_channel_", i, ".png"))
     cat('\n\n')
 }
