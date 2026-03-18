@@ -1498,3 +1498,17 @@ squidpy_masking
           and ``1024 * 150`` to ``1024 * 200`` and ``1024 * 100``,
           respectively
         - rerun completed for all rules
+
+2026-03-18
+----------
+
+@Mira0507
+
+- Download the Visium probeset (Visium Human Transcriptome Probe Set v2.1)
+    - Source: https://www.10xgenomics.com/support/software/space-ranger/downloads
+    - Link: 
+      https://cf.10xgenomics.com/supp/spatial-exp/probeset/Visium_Human_Transcriptome_Probe_Set_v2.0_GRCh38-2020-A.csv
+    - saved as 
+      ``probes/Visium_Human_Transcriptome_Probe_Set_v2.0_GRCh38-2020-A.csv``
+
+
