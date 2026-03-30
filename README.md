@@ -56,8 +56,9 @@ preprocessed with adaptive equalization before smoothing
 
 - `scripts/snakemake/Snakefile`: Running Snakemake pipeline to convert `vsi` to `tif`
 - `scripts/snakemake/config/config.yaml`: Configuring Snakemake
-- `scripts/snakemake/config/sampletable.txt`: 
-Specifying sample names and corresponding input image paths
+- `scripts/snakemake/config/sampletable.txt`: Specifying sample names 
+and corresponding input image paths. Specify the `channel` column to 
+`single` (non-fluorescence) or `multi` (fluorescence) for each input image.
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
 - `scripts/snakemake/build_imagecontainer.Rmd`: 
