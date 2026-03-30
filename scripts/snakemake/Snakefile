@@ -13,6 +13,9 @@ configfile: 'config/config.yaml'
 # Prep sampletable
 sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False)
 
+# Filter rows for fluorescence images
+multi_channel = sample[sample['channel'] == "multi"]
+
 # Set up a function determining all input
 def all_input(wildcards):
     input_list = []
@@ -29,21 +32,20 @@ def all_input(wildcards):
         if config['thresholding'] == "":
             input_list.extend(expand("{out_masked}/{name}/native_thresholding.zarr",
                                      out_masked=config['out_masked'],
-                                     name=list(sample.index))
+                                     name=list(multi_channel.index))
                               )
 
         else: 
             input_list.extend(expand("{out_masked}/{name}/merge_channels.html",
                                      out_masked=config['out_masked'],
-                                     name=list(sample.index))
+                                     name=list(multi_channel.index))
                               )
     # Specify QC results
     else:
         input_list.extend(expand("{out_masked}/{name}/qc_normalization.zarr",
                                  out_masked=config['out_masked'],
-                                 name=list(sample.index))
+                                 name=list(multi_channel.index))
                           )
-
     return input_list
 
 rule all:
