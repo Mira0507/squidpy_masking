@@ -1,3 +1,4 @@
-samplename	input_image
-perm	../../images/input/Perm/Image_168.vsi
-noperm	../../images/input/NoPerm/Image_169.vsi
+samplename	input_image	channel
+perm	../../images/input/Perm/Image_168.vsi	multi
+noperm	../../images/input/NoPerm/Image_169.vsi	multi
+
