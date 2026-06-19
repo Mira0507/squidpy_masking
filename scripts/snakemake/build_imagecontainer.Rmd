@@ -95,16 +95,7 @@ The following image object loaded:
 # This chunk is used to load input image files
 # ------------------------------------------------------------------------------
 
-# Initialize ImageContainer without chunks parameter to assess the dimensions
-img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True)
-
-# Assess the dimensions of the input image
-height, width = img.shape
-
-# Specify the chunk size separately as 1/8 of either width or height (choosing smaller value)
-chunksize = int(min(height, width) / 8)
-
-# Re-load with the dynamically calculated chunksize
+# Load input image
 img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks=chunksize)
 
 # Crop input images if specified
