@@ -164,10 +164,10 @@ rule build_imagecontainer:
         lyr = config['lyr'],
         chunksize = get_chunksize,
         crop = config['crop_images'],
-        crop_height=config['crop_height'],
-        crop_width=config['crop_width'],
-        crop_size=config['crop_size'],
-        crop_scale=config['crop_scale']
+        crop_height = config['crop_height'],
+        crop_width = config['crop_width'],
+        crop_size = config['crop_size'],
+        crop_scale = config['crop_scale']
     shell:
         """
         Rscript -e 'params = list(
