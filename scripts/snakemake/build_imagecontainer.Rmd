@@ -113,7 +113,7 @@ if crop_images == "Y":
 
 ```{python print_status}
 print(input_image)
-print(f"Chunksize (1/8 of min dimension): {chunksize}")
+print(f"Chunksize: {chunksize}")
 print(img)
 ```
 
