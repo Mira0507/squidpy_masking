@@ -25,7 +25,7 @@ def get_chunksize(wildcards):
     import tifffile
 
     tif_path = os.path.join(config['out_converted'], wildcards.name, "converted.ome.tif")
-    default_chunk = config.get('chunksize', 5000)
+    default_chunk = config.get('chunk_size', 5000)
 
     # Dry-run or pre-conversion safety check
     if not os.path.exists(tif_path):
@@ -63,8 +63,8 @@ def get_chunksize(wildcards):
             
             if best_shape:
                 height, width = best_shape
-                # 1/8 of the smaller spatial dimension of the largest resolution series
-                return min(height, width) // 8
+                # 1/n of the smaller spatial dimension of the largest resolution series
+                return min(height, width) // int(config['chunk_ratio'])
     except Exception:
         pass
     
