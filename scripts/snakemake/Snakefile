@@ -13,7 +13,7 @@ configfile: 'config/config.yaml'
 # Prep sampletable
 sample = pd.read_table(config['sampletable']).set_index('samplename', drop=False)
 
-# Filter rows for fluorescence images
+# Filter rows for multi-channel fluorescence images
 multi_channel = sample[sample['channel'] == "multi"]
 
 def get_chunksize(wildcards):
