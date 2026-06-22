@@ -26,12 +26,11 @@ ser: None
 # See https://www.microscopesinternational.com/support/kb/article/ngn1076.aspx
 pyramidal: Y
 
-# Configure chunk size in ratio (1/chunk_ratio) or pixel (chunk_size)
-# NOTE: If both the input image and `chunk_ratio` is provided, the chunk size is set to 
-#       the minimum dimension of either width or height divided by `chunk_ratio`.
-#       Otherwise, the chunk size is set to `chunk_size` by default.
-#       This design is intended to specify chunk size dynamically based on 
-#       input mage dimensions instead of hard-coded values.
+# Configure chunk size mode.
+# - dynamic: set chunk size to the smaller image dimension, either width or height,
+#            divided by chunk_ratio.
+# - fixed: use chunk_size directly.
+chunk_mode: dynamic
 chunk_ratio: 8
 chunk_size: 5000
 

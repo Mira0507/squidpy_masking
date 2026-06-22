@@ -18,18 +18,25 @@ multi_channel = sample[sample['channel'] == "multi"]
 
 def get_chunksize(wildcards):
     """
-    Safely calculates the chunk size as 1/8th of the smaller spatial dimension
-    of the largest resolution series inside a pyramidal TIFF.
+    Returns a fixed chunk size or dynamically calculates it as 1/chunk_ratio
+    of the smaller spatial dimension in the largest OME-TIFF series.
     """
     import os
     import tifffile
 
+    chunk_mode = str(config.get('chunk_mode', 'dynamic')).lower()
+    if chunk_mode not in {'dynamic', 'fixed'}:
+        raise ValueError("chunk_mode must be either 'dynamic' or 'fixed'")
+
+    chunk_size = int(config.get('chunk_size', 5000))
+    if chunk_mode == 'fixed':
+        return chunk_size
+
     tif_path = os.path.join(config['out_converted'], wildcards.name, "converted.ome.tif")
-    default_chunk = config.get('chunk_size', 5000)
 
     # Dry-run or pre-conversion safety check
     if not os.path.exists(tif_path):
-        return default_chunk
+        return chunk_size
 
     try:
         with tifffile.TiffFile(tif_path) as tif:
@@ -68,7 +75,7 @@ def get_chunksize(wildcards):
     except Exception:
         pass
     
-    return default_chunk
+    return chunk_size
 
 # Set up a function determining all input
 def all_input(wildcards):
