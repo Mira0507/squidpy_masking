@@ -54,7 +54,7 @@ preprocessed with adaptive equalization before smoothing
 
 ### Snakemake wrappers
 
-- `scripts/snakemake/Snakefile`: Running Snakemake pipeline to convert `vsi` to `tif`
+- `scripts/snakemake/Snakefile`: Running Snakemake pipeline
 - `scripts/snakemake/config/config.yaml`: Configuring Snakemake
 - `scripts/snakemake/config/sampletable.txt`: Specifying sample names 
 and corresponding input image paths. Specify the `channel` column to 
@@ -62,12 +62,12 @@ and corresponding input image paths. Specify the `channel` column to
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
 - `scripts/snakemake/build_imagecontainer.Rmd`: 
-Wrapper script building an `ImageConainer` object of Squidpy from the `tif` image
-with and without adaptive equalization
+Wrapper script building an `ImageConainer` object of Squidpy from the `tif` image,
+optionally crops and saves as a `zarr` file.
 - `scripts/snakemake/qc_normalization.Rmd`: Wrapper script normalizing input image
 intensities. Currently three normalization methods are applied in parallel: 
 Contrast Limited Adaptive Histogram Equalization (CLAHE), log1p transformation,
-and percentile rescaling.
+and percentile rescaling. Both images and intensity histograms are saved and printed.
 - `scripts/snakemake/smooth.Rmd`: Wrapper script conducting Gaussian smoothing
 - `scripts/snakemake/squidpy_segmentation.Rmd`: Wrapper script conducting global 
 thresholding (Otsu) and watershed segmentation using the Squidpy's default 
