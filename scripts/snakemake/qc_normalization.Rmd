@@ -158,22 +158,41 @@ def clean_normalized_obj(img=img, in_keyword='clahe_channel', out_keyword='clahe
     return img
 ```
 
-```{r histogram_input, results='asis'}
+```{r vis_input, results='asis'}
 
 # ------------------------------------------------------------------------------
-# This chunk explores the intensity distribution of input images
+# This chunk iteratively visualizes images transformed using CLAHE
 # ------------------------------------------------------------------------------
+
+cat('## Images {.tabset}\n\n')
+
+# Visualize input images across the channels
+for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+    # Convert into 0-indexing
+    i <- i - 1
+    cat("### Channel", i, "{.tabset}\n\n")
+    # Command to show image
+    t_deparsed_1 <- paste0("img.show('", py$lyr, "', channel=", i, ", cmap='gray')")
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/input_channel_", i,  ".png', dpi=1000)")
+    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
+    subchunkify(name=paste0("input_", i), t_deparsed=t_deparsed)
+
+    link_output(paste0("input_channel_", i, ".png"))
+}
+
+cat('## Histograms {.tabset}\n\n')
 
 # Visualize input intensities across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
     # Convert into 0-indexing
     i <- i - 1
-    cat("\n\n## Channel", i, "{.tabset}\n\n")
+    cat("\n\n### Channel", i, "{.tabset}\n\n")
     # Command to show image
     t_deparsed <- paste0("intensity_histogram(layer='", py$lyr, "', channel=", i, ")")
     subchunkify(name=paste0("inputhist_", i), t_deparsed=t_deparsed, width=6, height=4)
     image_path <- paste0("histogram_", py$lyr, "_channel_", i, ".png")
     link_output(image_path)
+
 }
 ```
 

@@ -30,6 +30,7 @@ with `squidpy.im.process` to reduce noise.
 4. (Optional) **Additional processing**:
    - [Adaptive equalization](https://en.wikipedia.org/wiki/Adaptive_histogram_equalization)
    - [Erosion](https://en.wikipedia.org/wiki/Erosion_(morphology))
+   - [Dilation](https://en.wikipedia.org/wiki/Dilation_(morphology))
 
 5. **Visualization**: Compare pre/post-smoothing and pre/post-segmentation results.  
 
@@ -54,20 +55,26 @@ preprocessed with adaptive equalization before smoothing
 
 ### Snakemake wrappers
 
-- `scripts/snakemake/Snakefile`: Running Snakemake pipeline to convert `vsi` to `tif`
-- `scripts/snakemake/config/config.yaml`: Configuring Snakemake
+- `scripts/snakemake/Snakefile`: Running Snakemake pipeline with 
+config-dependent stopping points
+- `scripts/snakemake/config/config.yaml`: Configuring Snakemake, including
+dynamic chunk-size settings (`chunk_ratio`/`chunk_size`) and review-stop options
+(`norm_method: ""` stops after `qc_normalization`; `thresholding: ""` stops
+before `post_processing`)
 - `scripts/snakemake/config/sampletable.txt`: Specifying sample names 
 and corresponding input image paths. Specify the `channel` column to 
-`single` (non-fluorescence) or `multi` (fluorescence) for each input image.
+`single` (non-fluorescence) or `multi` (fluorescence) for each input image;
+only `multi` samples are processed through masking, QC, and segmentation targets.
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
 - `scripts/snakemake/build_imagecontainer.Rmd`: 
-Wrapper script building an `ImageConainer` object of Squidpy from the `tif` image
-with and without adaptive equalization
+Wrapper script building an `ImageContainer` object of Squidpy from the `tif` image,
+optionally crops the image, and saves it as a `zarr` file.
 - `scripts/snakemake/qc_normalization.Rmd`: Wrapper script normalizing input image
 intensities. Currently three normalization methods are applied in parallel: 
 Contrast Limited Adaptive Histogram Equalization (CLAHE), log1p transformation,
-and percentile rescaling.
+and percentile rescaling. Both images and intensity histograms are saved and
+rendered in the HTML report.
 - `scripts/snakemake/smooth.Rmd`: Wrapper script conducting Gaussian smoothing
 - `scripts/snakemake/squidpy_segmentation.Rmd`: Wrapper script conducting global 
 thresholding (Otsu) and watershed segmentation using the Squidpy's default 

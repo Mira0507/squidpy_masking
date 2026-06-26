@@ -95,7 +95,7 @@ The following image object loaded:
 # This chunk is used to load input image files
 # ------------------------------------------------------------------------------
 
-# Initialize ImageContainer
+# Load input image
 img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks=chunksize)
 
 # Crop input images if specified
@@ -113,31 +113,9 @@ if crop_images == "Y":
 
 ```{python print_status}
 print(input_image)
+print(f"Chunksize: {chunksize}")
 print(img)
 ```
-
-
-```{r vis_input, results='asis'}
-
-# ------------------------------------------------------------------------------
-# This chunk iteratively visualizes images before and after smoothing
-# ------------------------------------------------------------------------------
-
-# Visualize input images across the channels
-for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
-    # Convert into 0-indexing
-    i <- i - 1
-    cat("## Channel", i, "{.tabset}\n\n")
-    # Command to show image
-    t_deparsed_1 <- paste0("img.show('", py$lyr, "', channel=", i, ", cmap='gray')")
-    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/input_channel_", i,  ".png', dpi=1000)")
-    t_deparsed <- c(t_deparsed_1, t_deparsed_2)
-    subchunkify(name=paste0("input_", i), t_deparsed=t_deparsed)
-
-    link_output(paste0("input_channel_", i, ".png"))
-}
-```
-
 
 # Saving the `ImageContainer` object
 
