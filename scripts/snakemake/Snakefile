@@ -356,15 +356,16 @@ rule native_thresholding:
 
 rule post_processing:
     """
-    This rule runs erosion and dilation to clean small noisy speckles
-    using the dask_image package
+    This rule cleans foreground masks after thresholding. It supports fixed
+    cleaning, adaptive cleaning, or pass-through behavior based on config.
     """
     input:
         zarr_in = "{out_masked}/{name}/native_thresholding.zarr",
         rmd = "post_processing.Rmd"
     output:
         zarr_out = directory("{out_masked}/{name}/post_processing.zarr"),
-        html = "{out_masked}/{name}/post_processing.html"
+        html = "{out_masked}/{name}/post_processing.html",
+        summary = "{out_masked}/{name}/" + config.get('cleaning_summary', 'cleaning_summary.tsv')
     threads: 12
     resources:
         mem_mb = 1024 * 200,
@@ -375,17 +376,40 @@ rule post_processing:
         chunksize = get_chunksize,
         lyr = config['lyr'],
         thresholding = config['thresholding'],
-        minsize = config['minsize']
+        cleaning_mode = config.get('cleaning_mode', 'fixed'),
+        minsize = config.get('minsize', 20),
+        adaptive_minsize_method = config.get('adaptive_minsize_method', 'log_otsu'),
+        adaptive_minsize_quantile = config.get('adaptive_minsize_quantile', 0.10),
+        adaptive_minsize_floor = config.get('adaptive_minsize_floor', config.get('minsize', 20)),
+        adaptive_minsize_ceiling = config.get('adaptive_minsize_ceiling', 500),
+        adaptive_min_components = config.get('adaptive_min_components', 25),
+        morphology_mode = config.get('morphology_mode', 'fixed'),
+        fixed_erosion_connectivity = config.get('fixed_erosion_connectivity', 2),
+        fixed_dilation_connectivity = config.get('fixed_dilation_connectivity', 1),
+        adaptive_foreground_fraction_min = config.get('adaptive_foreground_fraction_min', 0.001),
+        adaptive_foreground_fraction_max = config.get('adaptive_foreground_fraction_max', 0.50)
     shell:
         """
         Rscript -e 'params = list(
             outdir = "{wildcards.out_masked}/{wildcards.name}",
             input_obj = "{input.zarr_in}",
             output_obj = "{output.zarr_out}",
+            summary_out = "{output.summary}",
             chunksize = "{params.chunksize}",
             conda_env = "{params.conda_env}",
-            minsize = "{params.minsize}",
             thresholding = "{params.thresholding}",
+            cleaning_mode = "{params.cleaning_mode}",
+            minsize = "{params.minsize}",
+            adaptive_minsize_method = "{params.adaptive_minsize_method}",
+            adaptive_minsize_quantile = "{params.adaptive_minsize_quantile}",
+            adaptive_minsize_floor = "{params.adaptive_minsize_floor}",
+            adaptive_minsize_ceiling = "{params.adaptive_minsize_ceiling}",
+            adaptive_min_components = "{params.adaptive_min_components}",
+            morphology_mode = "{params.morphology_mode}",
+            fixed_erosion_connectivity = "{params.fixed_erosion_connectivity}",
+            fixed_dilation_connectivity = "{params.fixed_dilation_connectivity}",
+            adaptive_foreground_fraction_min = "{params.adaptive_foreground_fraction_min}",
+            adaptive_foreground_fraction_max = "{params.adaptive_foreground_fraction_max}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
