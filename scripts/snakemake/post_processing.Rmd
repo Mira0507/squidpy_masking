@@ -1,5 +1,5 @@
 ---
-title: "Post processing using erosion and dilation"
+title: "Post processing with configurable cleaning"
 author: "Mira Sohn"
 output:
     html_document:
@@ -11,6 +11,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+# Keep report rendering quiet so the HTML focuses on generated QC outputs.
 knitr::opts_chunk$set(warning=FALSE,
                       message=FALSE,
                       cache.lazy=FALSE)
@@ -18,7 +19,7 @@ knitr::opts_chunk$set(warning=FALSE,
 
 Last run: `r date()`
 
-This workflow is designed to demonstrate image segmentation for Visium analysis 
+This workflow is designed to demonstrate image segmentation for Visium analysis
 using the [squidpy (Palla, Spitzer et al., 2022)](https://doi.org/10.1038/s41592-021-01358-2) package.
 Refer to the following resources for technical details:
 
@@ -28,28 +29,37 @@ Refer to the following resources for technical details:
 
 
 ```{r rpackages}
+# reticulate exposes Snakemake/R Markdown params to the Python chunks below.
 library(reticulate)
 library(tidyverse)
 use_condaenv(params[['conda_env']])
+
+# Helper functions render repeated per-channel Python visualizations in tabsets.
 source('config/helpers.R')
 ```
 
 ```{python ppackages}
+# Python handles the image-array work; R is used mainly for report rendering.
 import numpy as np
 import dask.array as da
 import matplotlib.pyplot as plt
 import squidpy as sq
-from dask_image.ndmorph import binary_erosion, binary_dilation
 from scipy.ndimage import generate_binary_structure
-from skimage.morphology import remove_small_objects
+
+# Use scipy morphology on whole-channel NumPy masks after global parameter
+# selection. This avoids choosing cleaning parameters independently per chunk.
+from scipy.ndimage import binary_erosion as scipy_binary_erosion
+from scipy.ndimage import binary_dilation as scipy_binary_dilation
+from skimage.filters import threshold_otsu
 from skimage.measure import label
-import xarray as xr
+from skimage.morphology import remove_small_objects
+import pandas as pd
 import os
 ```
 
 ```{python config}
 # ------------------------------------------------------------------------------
-# This chunk configures user-specified variables
+# Parse Snakemake/R Markdown params, validate cleaning options, and resolve layer names.
 # ------------------------------------------------------------------------------
 
 # reticulate::repl_python()
@@ -57,28 +67,130 @@ import os
 # Convert `params` from R to Python
 params = r.params
 
-# Paths to input and output obj
-input_obj = params['input_obj']
-output_obj = params['output_obj']
 
-# Specify the name of input image layer to be processed
-lyr = params['lyr']
-thresholding = params['thresholding']
+# Helper parsers keep Snakemake/R Markdown params consistent across old and
+# new Snakefile versions.
+def get_param(name, default=None):
+    # Return a default when params are omitted or explicitly NULL-like.
+    try:
+        value = params[name]
+    except Exception:
+        return default
+    if value is None:
+        return default
+    return value
+
+
+def as_string(name, default=""):
+    # Normalize R/CLI-style missing values before downstream type conversion.
+    value = get_param(name, default)
+    if value is None:
+        return default
+    value = str(value)
+    if value in {"None", "NULL", "NA", "nan"}:
+        return default
+    return value
+
+
+def as_int(name, default):
+    # Convert numeric params safely after string normalization.
+    value = as_string(name, str(default))
+    if value == "":
+        return int(default)
+    return int(float(value))
+
+
+def as_float(name, default):
+    # Floats are used for quantiles and foreground-fraction thresholds.
+    value = as_string(name, str(default))
+    if value == "":
+        return float(default)
+    return float(value)
+
+
+# Paths to the input Zarr, output Zarr, and machine-readable cleaning summary.
+input_obj = as_string('input_obj')
+output_obj = as_string('output_obj')
+summary_out = as_string('summary_out')
+
+# Base image layer and selected thresholding method. The method is resolved
+# below to the concrete binary-mask layer used for cleaning.
+lyr = as_string('lyr', 'image')
+thresholding = as_string('thresholding', 'squidpy').lower()
 
 # Specify the size of chunks for height and width
-chunksize = int(params['chunksize'])
+chunksize = as_int('chunksize', 5000)
 
 # Path to output directory
-outdir = params['outdir']
+outdir = as_string('outdir', os.path.dirname(output_obj))
+if summary_out == "":
+    summary_out = os.path.join(outdir, 'cleaning_summary.tsv')
 
-# Specify layer to be processed
-if thresholding in ["adaptive", "otsu"]:
-    lyr_thr = f"image_{thresholding}"
+# Cleaning options. Fixed mode preserves historical behavior; adaptive mode
+# estimates per-channel settings; off mode passes the mask through unchanged.
+cleaning_mode = as_string('cleaning_mode', 'fixed').lower()
+morphology_mode = as_string('morphology_mode', 'fixed').lower()
+min_size = as_int('minsize', 20)
+adaptive_minsize_method = as_string('adaptive_minsize_method', 'log_otsu').lower()
+adaptive_minsize_quantile = as_float('adaptive_minsize_quantile', 0.10)
+adaptive_minsize_floor = as_int('adaptive_minsize_floor', min_size)
+adaptive_minsize_ceiling = as_int('adaptive_minsize_ceiling', 500)
+adaptive_min_components = as_int('adaptive_min_components', 25)
+fixed_erosion_connectivity = as_int('fixed_erosion_connectivity', 2)
+fixed_dilation_connectivity = as_int('fixed_dilation_connectivity', 1)
+adaptive_foreground_fraction_min = as_float('adaptive_foreground_fraction_min', 0.001)
+adaptive_foreground_fraction_max = as_float('adaptive_foreground_fraction_max', 0.50)
+
+# Validate config early so failures point to the configuration problem rather
+# than an obscure downstream array operation.
+valid_cleaning_modes = {'fixed', 'adaptive', 'off'}
+valid_morphology_modes = {'fixed', 'adaptive', 'off'}
+valid_minsize_methods = {'log_otsu', 'quantile'}
+
+if cleaning_mode not in valid_cleaning_modes:
+    raise ValueError(f"cleaning_mode must be one of {sorted(valid_cleaning_modes)}")
+if morphology_mode not in valid_morphology_modes:
+    raise ValueError(f"morphology_mode must be one of {sorted(valid_morphology_modes)}")
+if adaptive_minsize_method not in valid_minsize_methods:
+    raise ValueError(f"adaptive_minsize_method must be one of {sorted(valid_minsize_methods)}")
+if not 0 <= adaptive_minsize_quantile <= 1:
+    raise ValueError("adaptive_minsize_quantile must be between 0 and 1")
+if adaptive_minsize_floor < 1:
+    raise ValueError("adaptive_minsize_floor must be >= 1")
+if adaptive_minsize_ceiling < adaptive_minsize_floor:
+    raise ValueError("adaptive_minsize_ceiling must be >= adaptive_minsize_floor")
+if fixed_erosion_connectivity not in {1, 2} or fixed_dilation_connectivity not in {1, 2}:
+    raise ValueError("fixed morphology connectivity must be 1 or 2 for 2D masks")
+
+# Resolve the selected thresholding option to the layer created upstream.
+# `watershed_segmentation.Rmd` consumes the final `image_removal` layer.
+if thresholding in ['adaptive', 'otsu']:
+    lyr_thr = f"{lyr}_{thresholding}"
+elif thresholding in ['squidpy', 'sqbn']:
+    lyr_thr = f"{lyr}_sqbn"
 else:
-    lyr_thr = "image_sqbn"
+    raise ValueError('thresholding must be adaptive, otsu, squidpy, sqbn, or stop before post_processing')
 
-# Specify the minimum size of foreground objects to be filtered
-min_size = int(params['minsize'])
+# Standard output layer names preserve downstream compatibility and existing
+# visual-review expectations.
+lyr_erosion = f"{lyr}_erosion"
+lyr_dilation = f"{lyr}_dilation"
+lyr_removal = f"{lyr}_removal"
+
+sample_name = os.path.basename(os.path.normpath(outdir))
+
+# Connectivity 2 includes diagonal neighbors; connectivity 1 uses orthogonal
+# neighbors only. These defaults match the original fixed-cleaning workflow.
+structure_fixed_erosion = generate_binary_structure(rank=2, connectivity=fixed_erosion_connectivity)
+structure_fixed_dilation = generate_binary_structure(rank=2, connectivity=fixed_dilation_connectivity)
+structure_adaptive = generate_binary_structure(rank=2, connectivity=1)
+
+print("Post-processing configuration:")
+print("- thresholding layer:", lyr_thr)
+print("- cleaning_mode:", cleaning_mode)
+print("- morphology_mode:", morphology_mode)
+print("- fixed min_size:", min_size)
+print("- summary_out:", summary_out)
 ```
 
 # Loading input image
@@ -86,239 +198,373 @@ min_size = int(params['minsize'])
 ```{python loading_input}
 
 # ------------------------------------------------------------------------------
-# This chunk imports input image saved as zarr in the previous step
+# Load the upstream ImageContainer and confirm the selected mask layer exists.
 # ------------------------------------------------------------------------------
 
-# Load the Zarr store into an ImageContainer
-# Set lazy=True to enable Dask-backed lazy loading, which is memory-efficient for large images.
-# You can also specify chunks for Dask if needed.
+# Load the Zarr store lazily so large images stay Dask-backed until a whole
+# channel must be materialized for global component statistics.
+# The configured chunksize is still used when the object is loaded and saved.
 img = sq.im.ImageContainer.load(input_obj, lazy=True, chunks=chunksize)
+
+# Fail before expensive work if the requested upstream mask does not exist.
+if lyr_thr not in list(img):
+    raise ValueError(f"Required thresholding layer '{lyr_thr}' not found. Available layers: {list(img)}")
 
 print(f"The following file has been loaded: {input_obj}")
 print(img)
 ```
 
-# Erosion {.tabset}
+# Cleaning masks
 
-[Erosion](https://en.wikipedia.org/wiki/Erosion_%28morphology%29) removes pixels on object boundaries.
-After erosion, remaining lines appear thinner and shapes appear smaller.
+The selected cleaning mode is `r py$cleaning_mode`. The selected thresholding
+layer is `r py$lyr_thr`.
 
-We perform erosion to remove small noisy speckles using the 
-[`binary_erosion`](https://image.dask.org/en/latest/dask_image.ndmorph.html#dask_image.ndmorph.binary_erosion) 
-function from the `dask_image` package.
-
-```{python erosion}
+```{python clean_masks}
 
 # ------------------------------------------------------------------------------
-# This chunk runs erosion using the dask_image package
+# This chunk applies fixed, adaptive, or pass-through foreground mask cleaning.
+# Adaptive parameters are estimated once per channel before cleaning, rather than
+# separately inside each Dask chunk.
 # ------------------------------------------------------------------------------
 
-# Prep 2D structure for connectivity 2
-# NOTE: 
-# - rank (int): number of dimensions of the structuring element
-# - connectivity (int): from 1 (no diagonal elements are neighbors) to rank 
-#                       (all elements are neighbors). Greater connectivity 
-#                       results in more pixels removed or added.
-structure_c2 = generate_binary_structure(rank=2, connectivity=2)
-structure_c1 = generate_binary_structure(rank=2, connectivity=1)
 
-for ch in range(img[lyr].shape[3]):
-    # Specify the name of layer for the new processed image
-    new_layer = f"erosion_channel_{ch}"
-    # Retrieve an array corresponding to the channel
-    arr = img[lyr_thr].data[:, :, 0, ch]
-    # Run erosion
-    arr_er = binary_erosion(arr, structure=structure_c2)
-    # Add the processed array to the `ImageContainer` obj
-    img.add_img(arr_er, layer=new_layer)
+def compute_bool_channel(layer, channel):
+    # Pull one full channel into memory to apply one consistent set of
+    # cleaning parameters across the channel.
+    arr = img[layer].data[:, :, 0, channel]
+    if hasattr(arr, 'compute'):
+        arr = arr.compute()
+    return np.asarray(arr).astype(bool)
 
-# Prep a list consisting of channel corresponding to processed images
-er_lyrs = [c for c in list(img) if 'erosion_channel' in c]
 
-# Create a list storing all dask arrays generated by erosion
-er_arrays = [img[l].data for l in er_lyrs]
+def channel_chunks(mask):
+    # Rechunk saved output masks without exceeding spatial dimensions.
+    return (min(chunksize, mask.shape[0]), min(chunksize, mask.shape[1]))
 
-# Stack the arrays along the last axis
-stacked_array = np.dstack(er_arrays)
-stacked_array = stacked_array.reshape(img[lyr].shape)
 
-# Add the stacked array to the ImageContainer obj
-lyr_processed = f"{lyr}_erosion"
-try:
-    img[lyr_processed] = stacked_array
-except:
-    ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
+def to_dask_channel(mask):
+    # Convert computed NumPy masks back to Dask arrays for ImageContainer storage.
+    return da.from_array(mask.astype(bool), chunks=channel_chunks(mask))
 
-# Delete unnecessary layers
-for l in er_lyrs:
-    del img[l]
+
+def stack_channels(channels):
+    # Restore Squidpy's expected image shape: height, width, z, channel.
+    stacked = da.stack(channels, axis=-1)
+    stacked = stacked[:, :, None, :]
+    return stacked.rechunk((min(chunksize, stacked.shape[0]),
+                            min(chunksize, stacked.shape[1]),
+                            1,
+                            1))
+
+
+def component_summary(mask):
+    # Connected-component areas drive adaptive min-size estimation and provide
+    # before/after QC metrics for the summary TSV.
+    labeled = label(mask)
+    areas = np.bincount(labeled.ravel())[1:]
+    foreground_pixels = int(mask.sum())
+    total_pixels = int(mask.size)
+    foreground_fraction = foreground_pixels / total_pixels if total_pixels else 0.0
+
+    if len(areas) == 0:
+        # Empty masks are valid; preserve NA-like values in the summary table.
+        quantiles = [np.nan, np.nan, np.nan]
+        min_area = np.nan
+        max_area = np.nan
+        mean_area = np.nan
+    else:
+        quantiles = np.quantile(areas, [0.10, 0.50, 0.90])
+        min_area = int(np.min(areas))
+        max_area = int(np.max(areas))
+        mean_area = float(np.mean(areas))
+
+    summary = {
+        'foreground_pixels': foreground_pixels,
+        'total_pixels': total_pixels,
+        'foreground_fraction': float(foreground_fraction),
+        'object_count': int(len(areas)),
+        'area_min': min_area,
+        'area_q10': float(quantiles[0]) if not np.isnan(quantiles[0]) else np.nan,
+        'area_median': float(quantiles[1]) if not np.isnan(quantiles[1]) else np.nan,
+        'area_q90': float(quantiles[2]) if not np.isnan(quantiles[2]) else np.nan,
+        'area_max': max_area,
+        'area_mean': mean_area,
+    }
+    return labeled, areas, summary
+
+
+def bounded_min_size(value):
+    # Clamp adaptive estimates so unusual channels cannot choose extremes.
+    value = int(np.ceil(value))
+    return min(max(value, adaptive_minsize_floor), adaptive_minsize_ceiling)
+
+
+def estimate_adaptive_min_size(areas):
+    # Estimate one min_size per channel from the global area distribution.
+    # The log-Otsu path separates tiny speckles from larger objects.
+    fallback_reason = ''
+
+    if len(areas) < adaptive_min_components:
+        # Too few objects makes area-distribution estimates unstable.
+        return adaptive_minsize_floor, adaptive_minsize_floor, 'floor', 'too_few_components'
+
+    if adaptive_minsize_method == 'quantile':
+        # Quantile mode is simpler and useful when component areas are unimodal.
+        raw = np.quantile(areas, adaptive_minsize_quantile)
+        return bounded_min_size(raw), int(np.ceil(raw)), 'quantile', fallback_reason
+
+    try:
+        log_areas = np.log1p(areas.astype(float))
+        if len(np.unique(log_areas)) < 2:
+            raise ValueError('component areas have fewer than two unique values')
+        raw = np.expm1(threshold_otsu(log_areas))
+        return bounded_min_size(raw), int(np.ceil(raw)), 'log_otsu', fallback_reason
+    except Exception as exc:
+        raw = np.quantile(areas, adaptive_minsize_quantile)
+        fallback_reason = f'log_otsu_failed_quantile_fallback: {exc}'
+        return bounded_min_size(raw), int(np.ceil(raw)), 'quantile', fallback_reason
+
+
+def choose_morphology_action(pre_summary, selected_min_size):
+    # Decide whether morphology should run after min_size selection.
+    # The action string is recorded in the summary for reproducibility.
+    if cleaning_mode == 'off' or morphology_mode == 'off':
+        return 'off', False
+    if cleaning_mode == 'fixed' or morphology_mode == 'fixed':
+        return f'fixed_erosion_c{fixed_erosion_connectivity}_dilation_c{fixed_dilation_connectivity}', True
+
+    if pre_summary['object_count'] == 0:
+        # No foreground means there is nothing morphology can improve.
+        return 'adaptive_skipped_empty', False
+    if pre_summary['foreground_fraction'] < adaptive_foreground_fraction_min:
+        # Sparse masks are easy to over-erode, so keep them unchanged.
+        return 'adaptive_skipped_sparse', False
+    if not np.isnan(pre_summary['area_median']) and pre_summary['area_median'] <= selected_min_size * 2:
+        # If typical components are close to the removal cutoff, morphology may
+        # remove plausible foreground objects rather than just noise.
+        return 'adaptive_skipped_small_components', False
+    if pre_summary['foreground_fraction'] > adaptive_foreground_fraction_max:
+        return 'adaptive_opening_c1_dense_mask', True
+    return 'adaptive_opening_c1', True
+
+
+def apply_morphology(mask, action):
+    # Apply the selected opening operation. Skipped actions return the original
+    # mask for both intermediate layers.
+    if action.startswith('fixed'):
+        eroded = scipy_binary_erosion(mask, structure=structure_fixed_erosion)
+        dilated = scipy_binary_dilation(eroded, structure=structure_fixed_dilation)
+        return eroded, dilated
+    if action.startswith('adaptive_opening'):
+        eroded = scipy_binary_erosion(mask, structure=structure_adaptive)
+        dilated = scipy_binary_dilation(eroded, structure=structure_adaptive)
+        return eroded, dilated
+    return mask, mask
+
+
+def prefixed_stats(prefix, stats):
+    return {f'{prefix}_{key}': value for key, value in stats.items()}
+
+
+# Accumulate one 2D mask per channel, then stack once at the end. This keeps
+# the ImageContainer update path consistent across cleaning modes.
+num_channels = img[lyr].shape[3]
+erosion_arrays = []
+dilation_arrays = []
+removal_arrays = []
+summary_rows = []
+any_morphology_applied = False
+
+for ch in range(num_channels):
+    # Each channel is cleaned independently, but parameters are estimated
+    # globally from that channel's full mask.
+    source_mask = compute_bool_channel(lyr_thr, ch)
+    _, source_areas, source_summary = component_summary(source_mask)
+
+    if cleaning_mode == 'off':
+        # Pass-through mode supports reviewing raw thresholding output and
+        # isolating effects of later watershed/merge steps.
+        selected_min_size = 0
+        raw_min_size = 0
+        min_size_method_used = 'off'
+        fallback_reason = ''
+        morphology_action = 'off'
+        morphology_applied = False
+        eroded_mask = source_mask
+        dilated_mask = source_mask
+        final_mask = source_mask
+    else:
+        if cleaning_mode == 'fixed':
+            # Fixed mode should match the original post_processing.Rmd behavior.
+            selected_min_size = min_size
+            raw_min_size = min_size
+            min_size_method_used = 'fixed'
+            fallback_reason = ''
+        else:
+            selected_min_size, raw_min_size, min_size_method_used, fallback_reason = estimate_adaptive_min_size(source_areas)
+
+        morphology_action, morphology_applied = choose_morphology_action(source_summary, selected_min_size)
+
+        # Morphology, when enabled, runs before small-object removal.
+        eroded_mask, dilated_mask = apply_morphology(source_mask, morphology_action)
+        any_morphology_applied = any_morphology_applied or morphology_applied
+
+        removal_input = dilated_mask if morphology_applied else source_mask
+
+        # remove_small_objects expects labeled components; convert back to a
+        # binary mask after removing components below the selected size.
+        removal_labels = label(removal_input)
+        final_mask = remove_small_objects(removal_labels, min_size=selected_min_size) > 0
+
+    _, final_areas, final_summary = component_summary(final_mask)
+
+    erosion_arrays.append(to_dask_channel(eroded_mask))
+    dilation_arrays.append(to_dask_channel(dilated_mask))
+    removal_arrays.append(to_dask_channel(final_mask))
+
+    # Record chosen parameters and before/after statistics so this step can be
+    # audited without reopening large Zarr outputs.
+    row = {
+        'sample': sample_name,
+        'outdir': outdir,
+        'channel': ch,
+        'threshold_layer': lyr_thr,
+        'cleaning_mode': cleaning_mode,
+        'morphology_mode': morphology_mode,
+        'morphology_action': morphology_action,
+        'morphology_applied': morphology_applied,
+        'selected_min_size': selected_min_size,
+        'raw_min_size': raw_min_size,
+        'min_size_method_used': min_size_method_used,
+        'fallback_reason': fallback_reason,
+        'fixed_erosion_connectivity': fixed_erosion_connectivity,
+        'fixed_dilation_connectivity': fixed_dilation_connectivity,
+        'adaptive_minsize_method': adaptive_minsize_method,
+        'adaptive_minsize_quantile': adaptive_minsize_quantile,
+        'adaptive_minsize_floor': adaptive_minsize_floor,
+        'adaptive_minsize_ceiling': adaptive_minsize_ceiling,
+        'adaptive_min_components': adaptive_min_components,
+        'adaptive_foreground_fraction_min': adaptive_foreground_fraction_min,
+        'adaptive_foreground_fraction_max': adaptive_foreground_fraction_max,
+    }
+    row.update(prefixed_stats('before', source_summary))
+    row.update(prefixed_stats('after', final_summary))
+    summary_rows.append(row)
+
+# Keep morphology review layers only when morphology was actually applied.
+if any_morphology_applied:
+    img[lyr_erosion] = stack_channels(erosion_arrays)
+    img[lyr_dilation] = stack_channels(dilation_arrays)
+
+# The final cleaned mask must always be available under this layer name because
+# downstream watershed segmentation reads `image_removal`.
+img[lyr_removal] = stack_channels(removal_arrays)
+
+has_erosion_layer = lyr_erosion in list(img)
+has_dilation_layer = lyr_dilation in list(img)
+
+# Write a small TSV sidecar for Snakemake's declared summary output.
+summary_df = pd.DataFrame(summary_rows)
+summary_dir = os.path.dirname(summary_out)
+if summary_dir:
+    os.makedirs(summary_dir, exist_ok=True)
+summary_df.to_csv(summary_out, sep='\t', index=False)
 
 print("ImageContainer updated:")
 print(img)
+print("Cleaning summary written:", summary_out)
+print(summary_df)
 ```
+
+# Cleaning summary
+
+```{r cleaning_summary, results='asis'}
+# Render the machine-readable TSV into the HTML report for quick inspection.
+readr::read_tsv(py$summary_out, show_col_types=FALSE) %>%
+    knitr::kable()
+```
+
+# Erosion {.tabset}
+
+Erosion is displayed when morphology was applied to at least one channel.
 
 ```{r visualize_erosion, results='asis'}
 
 # ------------------------------------------------------------------------------
-# This chunk is used to prepare visualizing processed images
+# Render erosion review images only when an erosion layer was generated.
 # ------------------------------------------------------------------------------
 
-# Visualize binary images across the channels
-for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
-    # Convert into 0-indexing
-    i <- i - 1
-    cat("## Channel", i, "{.tabset}\n\n")
-    # Command to show image
-    t_deparsed_1 <- paste0("img.show('", py$lyr_processed, "', channel=", i, ", cmap='gray')")
-     t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/erosion_channel_", i,  ".png', dpi=1000)")
-    t_deparsed_3 <- "plt.close()"
-    t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
-    subchunkify(name=paste0("erosion_", i), t_deparsed=t_deparsed)
+if (isTRUE(py$has_erosion_layer)) {
+    # Python uses 0-indexed channels, so the R loop converts from 1-indexing.
+    for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+        # Convert R's 1-indexed loop value to the Python channel index.
+        i <- i - 1
+        cat("## Channel", i, "{.tabset}\n\n")
+        # Build a Python plotting subchunk for this channel and save a PNG.
+        t_deparsed_1 <- paste0("img.show('", py$lyr_erosion, "', channel=", i, ", cmap='gray')")
+        t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/erosion_channel_", i,  ".png', dpi=1000)")
+        t_deparsed_3 <- "plt.close()"
+        t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
+        subchunkify(name=paste0("erosion_", i), t_deparsed=t_deparsed)
 
-    link_output(paste0("erosion_channel_", i, ".png"))
+        link_output(paste0("erosion_channel_", i, ".png"))
+    }
+} else {
+    cat("Morphology was not applied; no erosion layer was created.\n\n")
 }
 
 ```
 
 # Dilation {.tabset}
 
-[Dilation](https://en.wikipedia.org/wiki/Dilation_(morphology)) adds pixels to the boundaries 
-of objects in an image. After dilation, lines appear thicker, and filled shapes appear larger.
-
-We apply dilation after erosion to recover the area of the original foreground objects using the
-[`binary_dilation`](https://image.dask.org/en/latest/dask_image.ndmorph.html#dask_image.ndmorph.binary_dilation)
-function from the `dask_image` package.
-
-```{python dilation}
-
-# ------------------------------------------------------------------------------
-# This chunk runs erosion using the dask_image package
-# ------------------------------------------------------------------------------
-
-for ch in range(img[lyr].shape[3]):
-    # Specify the name of layer for the new processed image
-    new_layer = f"dilation_channel_{ch}"
-    # Retrieve an array corresponding to the channel
-    arr = img[lyr_processed].data[:, :, 0, ch]
-    # Run erosion
-    arr_dil = binary_dilation(arr, structure=structure_c1)
-    # Add the processed array to the `ImageContainer` obj
-    img.add_img(arr_dil, layer=new_layer)
-
-# Prep a list consisting of channel corresponding to processed images
-dil_lyrs = [c for c in list(img) if "dilation_channel" in c]
-
-# Create a list storing all dask arrays generated by erosion
-dil_arrays = [img[l].data for l in dil_lyrs]
-
-# Stack the arrays along the last axis
-stacked_array = np.dstack(dil_arrays)
-stacked_array = stacked_array.reshape(img[lyr].shape)
-
-# Add the stacked array to the ImageContainer obj
-lyr_processed = f"{lyr}_dilation"
-try:
-    img[lyr_processed] = stacked_array
-except:
-    ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
-
-# Delete unnecessary layers
-for l in dil_lyrs:
-    del img[l]
-
-print("ImageContainer updated:")
-print(img)
-```
+Dilation is displayed when morphology was applied to at least one channel.
 
 ```{r visualize_dilation, results='asis'}
 
 # ------------------------------------------------------------------------------
-# This chunk is used to prepare visualizing processed images
+# Render dilation review images only when a dilation layer was generated.
 # ------------------------------------------------------------------------------
 
-# Visualize binary images across the channels
-for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
-    # Convert into 0-indexing
-    i <- i - 1
-    cat("## Channel", i, "{.tabset}\n\n")
-    # Command to show image
-    t_deparsed_1 <- paste0("img.show('", py$lyr_processed, "', channel=", i, ", cmap='gray')")
-     t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/dilation_channel_", i,  ".png', dpi=1000)")
-    t_deparsed_3 <- "plt.close()"
-    t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
-    subchunkify(name=paste0("dilation_", i), t_deparsed=t_deparsed)
+if (isTRUE(py$has_dilation_layer)) {
+    # Python uses 0-indexed channels, so the R loop converts from 1-indexing.
+    for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
+        # Convert R's 1-indexed loop value to the Python channel index.
+        i <- i - 1
+        cat("## Channel", i, "{.tabset}\n\n")
+        # Build a Python plotting subchunk for this channel and save a PNG.
+        t_deparsed_1 <- paste0("img.show('", py$lyr_dilation, "', channel=", i, ", cmap='gray')")
+        t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/dilation_channel_", i,  ".png', dpi=1000)")
+        t_deparsed_3 <- "plt.close()"
+        t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
+        subchunkify(name=paste0("dilation_", i), t_deparsed=t_deparsed)
 
-    link_output(paste0("dilation_channel_", i, ".png"))
+        link_output(paste0("dilation_channel_", i, ".png"))
+    }
+} else {
+    cat("Morphology was not applied; no dilation layer was created.\n\n")
 }
 
 ```
 
 # Removal of remaining small foreground objects {.tabset}
 
-Currently, the threshold is set to `r py$min_size`, so any foreground 
-objects with a pixel count below this threshold are removed.
-
-```{python remove_small_obj}
-
-# ------------------------------------------------------------------------------
-# This chunk removes small foreground objects
-# ------------------------------------------------------------------------------
-
-for ch in range(img[lyr].shape[3]):
-    # Specify the name of layer for the new processed image
-    new_layer = f"removal_channel_{ch}"
-    # Retrieve an array corresponding to the channel
-    arr = img[lyr_processed].data[:, :, 0, ch]
-
-    # Removing small foreground objects
-    objects = label(arr)
-    arr_remove = remove_small_objects(objects, min_size=min_size)
-
-    # Add the processed array to the `ImageContainer` obj
-    img.add_img(arr_remove, layer=new_layer)
-
-# Prep a list consisting of channel corresponding to processed images
-rm_lyrs = [c for c in list(img) if "removal_channel" in c]
-
-# Create a list storing all dask arrays generated by erosion
-rm_arrays = [img[l].data for l in rm_lyrs]
-
-# Stack the arrays along the last axis
-stacked_array = np.dstack(rm_arrays)
-stacked_array = stacked_array.reshape(img[lyr].shape)
-
-# Prep a binary array storing masking information
-binary_array = stacked_array > 0
-
-# Add the binary array to the ImageContainer obj
-lyr_processed = f"{lyr}_removal"
-try:
-    img[lyr_processed] = binary_array
-except:
-    ValueError("Can't add the binary array to ImageContainer. Wrong dimension!")
-
-# Delete unnecessary layers
-for l in rm_lyrs:
-    del img[l]
-
-print("ImageContainer updated:")
-print(img)
-```
+The final binary mask is saved as `r py$lyr_removal`.
 
 ```{r visualize_removal, results='asis'}
 
+# Always visualize the final mask because downstream steps depend on it.
+
 # ------------------------------------------------------------------------------
-# This chunk is used to prepare visualizing processed images
+# Render the final cleaned mask layer for every channel.
 # ------------------------------------------------------------------------------
 
-# Visualize binary images across the channels
 for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
-    # Convert into 0-indexing
+    # Convert R's 1-indexed loop value to the Python channel index.
     i <- i - 1
     cat("## Channel", i, "{.tabset}\n\n")
-    # Command to show image
-    t_deparsed_1 <- paste0("img.show('", py$lyr_processed, "', channel=", i, ", cmap='gray')")
-     t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/removal_channel_", i,  ".png', dpi=1000)")
+    # Build a Python plotting subchunk for this channel and save a PNG.
+    t_deparsed_1 <- paste0("img.show('", py$lyr_removal, "', channel=", i, ", cmap='gray')")
+    t_deparsed_2 <- paste0("plt.savefig('", py$outdir, "/removal_channel_", i,  ".png', dpi=1000)")
     t_deparsed_3 <- "plt.close()"
     t_deparsed <- c(t_deparsed_1, t_deparsed_2, t_deparsed_3)
     subchunkify(name=paste0("removal_", i), t_deparsed=t_deparsed)
@@ -334,17 +580,19 @@ for (i in 1:py$img[[py$lyr]][['shape']][[4]]) {
 ```{python clean_layers}
 
 # ------------------------------------------------------------------------------
-# This chunk is used to delete unwanted layers
+# Remove intermediate layers while preserving downstream and review layers.
 # ------------------------------------------------------------------------------
 
-# Delete unnecessary layers
+# Delete unnecessary layers. Keep the selected thresholding layer, final removal
+# layer, and dilation layer when it exists for visual review.
 layers_del = [
-    'image_erosion',
+    lyr_erosion,
     'image_adaptive',
     'image_otsu',
     'image_sqbn',
     'image_smooth']
-layers_del = [l for l in layers_del if l not in ['image_removal', 'image_dilation', lyr_thr]]
+layers_keep = [lyr_removal, lyr_dilation, lyr_thr]
+layers_del = [l for l in layers_del if l in list(img) and l not in layers_keep]
 
 print("The following layers are deleted: ", layers_del)
 for l in layers_del:
@@ -355,6 +603,7 @@ for l in layers_del:
 `ImageContainer` updated:
 
 ```{r final_img}
+# Print the final layer inventory after cleanup and before saving.
 print(py$img)
 ```
 
@@ -363,11 +612,13 @@ print(py$img)
 Output images are saved as the following object:
 
 ```{python save_zarr}
+# Persist the updated ImageContainer for watershed segmentation and channel merge.
 img.save(output_obj)
 print(output_obj)
 ```
 
 
 ```{r session_info, collapse=FALSE}
+# Capture package versions in the rendered report for reproducibility.
 sessionInfo()
 ```
