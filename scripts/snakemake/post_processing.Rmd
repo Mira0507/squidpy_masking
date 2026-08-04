@@ -138,6 +138,7 @@ adaptive_minsize_ceiling = as_int('adaptive_minsize_ceiling', 500)
 adaptive_min_components = as_int('adaptive_min_components', 25)
 fixed_erosion_connectivity = as_int('fixed_erosion_connectivity', 2)
 fixed_dilation_connectivity = as_int('fixed_dilation_connectivity', 1)
+component_connectivity = as_int('component_connectivity', 2)
 adaptive_foreground_fraction_min = as_float('adaptive_foreground_fraction_min', 0.001)
 adaptive_foreground_fraction_max = as_float('adaptive_foreground_fraction_max', 0.50)
 
@@ -161,6 +162,8 @@ if adaptive_minsize_ceiling < adaptive_minsize_floor:
     raise ValueError("adaptive_minsize_ceiling must be >= adaptive_minsize_floor")
 if fixed_erosion_connectivity not in {1, 2} or fixed_dilation_connectivity not in {1, 2}:
     raise ValueError("fixed morphology connectivity must be 1 or 2 for 2D masks")
+if component_connectivity not in {1, 2}:
+    raise ValueError("component_connectivity must be 1 or 2 for 2D masks")
 
 # Resolve the selected thresholding option to the layer created upstream.
 # `watershed_segmentation.Rmd` consumes the final `image_removal` layer.
@@ -190,6 +193,7 @@ print("- thresholding layer:", lyr_thr)
 print("- cleaning_mode:", cleaning_mode)
 print("- morphology_mode:", morphology_mode)
 print("- fixed min_size:", min_size)
+print("- component_connectivity:", component_connectivity)
 print("- summary_out:", summary_out)
 ```
 
@@ -257,10 +261,17 @@ def stack_channels(channels):
                             1))
 
 
+def label_components(mask):
+    # Use one explicit component definition for adaptive estimation, removal,
+    # and before/after QC. Connectivity 2 matches skimage's historical default
+    # for 2D masks, where diagonal foreground pixels belong to the same object.
+    return label(mask, connectivity=component_connectivity)
+
+
 def component_summary(mask):
     # Connected-component areas drive adaptive min-size estimation and provide
     # before/after QC metrics for the summary TSV.
-    labeled = label(mask)
+    labeled = label_components(mask)
     areas = np.bincount(labeled.ravel())[1:]
     foreground_pixels = int(mask.sum())
     total_pixels = int(mask.size)
@@ -413,7 +424,7 @@ for ch in range(num_channels):
 
         # remove_small_objects expects labeled components; convert back to a
         # binary mask after removing components below the selected size.
-        removal_labels = label(removal_input)
+        removal_labels = label_components(removal_input)
         final_mask = remove_small_objects(removal_labels, min_size=selected_min_size) > 0
 
     _, final_areas, final_summary = component_summary(final_mask)
@@ -437,6 +448,7 @@ for ch in range(num_channels):
         'raw_min_size': raw_min_size,
         'min_size_method_used': min_size_method_used,
         'fallback_reason': fallback_reason,
+        'component_connectivity': component_connectivity,
         'fixed_erosion_connectivity': fixed_erosion_connectivity,
         'fixed_dilation_connectivity': fixed_dilation_connectivity,
         'adaptive_minsize_method': adaptive_minsize_method,
@@ -479,8 +491,16 @@ print(summary_df)
 # Cleaning summary
 
 ```{r cleaning_summary, results='asis'}
-# Render the machine-readable TSV into the HTML report for quick inspection.
+# Render a compact view of the one machine-readable TSV written by this rule.
+# The full TSV remains available at py$summary_out for Snakemake bookkeeping.
+summary_cols <- c(
+    "sample", "channel", "threshold_layer", "cleaning_mode", "morphology_mode",
+    "component_connectivity", "before_foreground_fraction", "before_object_count",
+    "before_area_q10", "before_area_median", "before_area_q90",
+    "selected_min_size", "raw_min_size", "min_size_method_used", "fallback_reason")
+
 readr::read_tsv(py$summary_out, show_col_types=FALSE) %>%
+    dplyr::select(dplyr::any_of(summary_cols)) %>%
     knitr::kable()
 ```
 
