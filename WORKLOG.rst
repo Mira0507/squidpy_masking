@@ -1512,3 +1512,9 @@ squidpy_masking
       ``probes/Visium_Human_Transcriptome_Probe_Set_v2.0_GRCh38-2020-A.csv``
 
 
+2026-08-03
+----------
+
+@Mira0507
+
+- Update the ``post_processing`` rule to dynamically clean masking
