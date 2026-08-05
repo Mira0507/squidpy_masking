@@ -386,6 +386,7 @@ rule post_processing:
         morphology_mode = config.get('morphology_mode', 'fixed'),
         fixed_erosion_connectivity = config.get('fixed_erosion_connectivity', 2),
         fixed_dilation_connectivity = config.get('fixed_dilation_connectivity', 1),
+        component_connectivity = config.get('component_connectivity', 2),
         adaptive_foreground_fraction_min = config.get('adaptive_foreground_fraction_min', 0.001),
         adaptive_foreground_fraction_max = config.get('adaptive_foreground_fraction_max', 0.50)
     shell:
@@ -408,6 +409,7 @@ rule post_processing:
             morphology_mode = "{params.morphology_mode}",
             fixed_erosion_connectivity = "{params.fixed_erosion_connectivity}",
             fixed_dilation_connectivity = "{params.fixed_dilation_connectivity}",
+            component_connectivity = "{params.component_connectivity}",
             adaptive_foreground_fraction_min = "{params.adaptive_foreground_fraction_min}",
             adaptive_foreground_fraction_max = "{params.adaptive_foreground_fraction_max}",
             lyr = "{params.lyr}");
