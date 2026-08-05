@@ -194,6 +194,19 @@ adaptive_foreground_fraction_min: 0.001
 #   merged foreground regions.
 adaptive_foreground_fraction_max: 0.50
 
+# adaptive_morphology_area_ratio_min:
+#   In adaptive morphology mode, apply conservative opening when the 90th
+#   percentile component area is at least this many times larger than the
+#   median component area and also exceeds the selected min_size safety check.
+adaptive_morphology_area_ratio_min: 8.0
+
+# adaptive_morphology_max_area_ratio_min:
+#   In adaptive morphology mode, apply conservative opening when the largest
+#   component area is at least this many times larger than the median component
+#   area and also exceeds the selected min_size safety check. This threshold is
+#   intentionally higher because max area is more sensitive to outliers.
+adaptive_morphology_max_area_ratio_min: 25.0
+
 # cleaning_summary:
 #   Name of the tab-separated summary file written by post_processing. It will
 #   contain per-sample/per-channel object statistics and the selected adaptive

@@ -141,6 +141,8 @@ fixed_dilation_connectivity = as_int('fixed_dilation_connectivity', 1)
 component_connectivity = as_int('component_connectivity', 2)
 adaptive_foreground_fraction_min = as_float('adaptive_foreground_fraction_min', 0.001)
 adaptive_foreground_fraction_max = as_float('adaptive_foreground_fraction_max', 0.50)
+adaptive_morphology_area_ratio_min = as_float('adaptive_morphology_area_ratio_min', 8.0)
+adaptive_morphology_max_area_ratio_min = as_float('adaptive_morphology_max_area_ratio_min', 25.0)
 
 # Validate config early so failures point to the configuration problem rather
 # than an obscure downstream array operation.
@@ -164,6 +166,10 @@ if fixed_erosion_connectivity not in {1, 2} or fixed_dilation_connectivity not i
     raise ValueError("fixed morphology connectivity must be 1 or 2 for 2D masks")
 if component_connectivity not in {1, 2}:
     raise ValueError("component_connectivity must be 1 or 2 for 2D masks")
+if adaptive_morphology_area_ratio_min <= 1:
+    raise ValueError("adaptive_morphology_area_ratio_min must be > 1")
+if adaptive_morphology_max_area_ratio_min <= 1:
+    raise ValueError("adaptive_morphology_max_area_ratio_min must be > 1")
 
 # Resolve the selected thresholding option to the layer created upstream.
 # `watershed_segmentation.Rmd` consumes the final `image_removal` layer.
@@ -194,6 +200,8 @@ print("- cleaning_mode:", cleaning_mode)
 print("- morphology_mode:", morphology_mode)
 print("- fixed min_size:", min_size)
 print("- component_connectivity:", component_connectivity)
+print("- adaptive_morphology_area_ratio_min:", adaptive_morphology_area_ratio_min)
+print("- adaptive_morphology_max_area_ratio_min:", adaptive_morphology_max_area_ratio_min)
 print("- summary_out:", summary_out)
 ```
 
@@ -350,13 +358,34 @@ def choose_morphology_action(pre_summary, selected_min_size):
     if pre_summary['foreground_fraction'] < adaptive_foreground_fraction_min:
         # Sparse masks are easy to over-erode, so keep them unchanged.
         return 'adaptive_skipped_sparse', False
-    if not np.isnan(pre_summary['area_median']) and pre_summary['area_median'] <= selected_min_size * 2:
+    if np.isnan(pre_summary['area_median']) or pre_summary['area_median'] <= 0:
+        return 'adaptive_skipped_no_area_scale', False
+    if pre_summary['area_median'] <= selected_min_size * 2:
         # If typical components are close to the removal cutoff, morphology may
         # remove plausible foreground objects rather than just noise.
         return 'adaptive_skipped_small_components', False
-    if pre_summary['foreground_fraction'] > adaptive_foreground_fraction_max:
-        return 'adaptive_opening_c1_dense_mask', True
-    return 'adaptive_opening_c1', True
+
+    # Adaptive morphology is deliberately stricter than fixed morphology. It
+    # runs only when the mask is dense or component areas suggest merged objects.
+    foreground_fraction = pre_summary['foreground_fraction']
+    area_median = pre_summary['area_median']
+    area_q90 = pre_summary['area_q90']
+    area_max = pre_summary['area_max']
+
+    if foreground_fraction > adaptive_foreground_fraction_max:
+        return 'adaptive_opening_c1_dense_fraction', True
+
+    if not np.isnan(area_q90):
+        q90_ratio = area_q90 / area_median
+        if q90_ratio >= adaptive_morphology_area_ratio_min and area_q90 >= selected_min_size * 4:
+            return 'adaptive_opening_c1_merged_q90_ratio', True
+
+    if not np.isnan(area_max):
+        max_ratio = area_max / area_median
+        if max_ratio >= adaptive_morphology_max_area_ratio_min and area_max >= selected_min_size * 10:
+            return 'adaptive_opening_c1_merged_max_ratio', True
+
+    return 'adaptive_skipped_not_dense_or_merged', False
 
 
 def apply_morphology(mask, action):
@@ -458,6 +487,8 @@ for ch in range(num_channels):
         'adaptive_min_components': adaptive_min_components,
         'adaptive_foreground_fraction_min': adaptive_foreground_fraction_min,
         'adaptive_foreground_fraction_max': adaptive_foreground_fraction_max,
+        'adaptive_morphology_area_ratio_min': adaptive_morphology_area_ratio_min,
+        'adaptive_morphology_max_area_ratio_min': adaptive_morphology_max_area_ratio_min,
     }
     row.update(prefixed_stats('before', source_summary))
     row.update(prefixed_stats('after', final_summary))
@@ -495,7 +526,8 @@ print(summary_df)
 # The full TSV remains available at py$summary_out for Snakemake bookkeeping.
 summary_cols <- c(
     "sample", "channel", "threshold_layer", "cleaning_mode", "morphology_mode",
-    "component_connectivity", "before_foreground_fraction", "before_object_count",
+    "morphology_action", "morphology_applied", "component_connectivity",
+    "before_foreground_fraction", "before_object_count",
     "before_area_q10", "before_area_median", "before_area_q90",
     "selected_min_size", "raw_min_size", "min_size_method_used", "fallback_reason")
 

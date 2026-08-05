@@ -388,7 +388,9 @@ rule post_processing:
         fixed_dilation_connectivity = config.get('fixed_dilation_connectivity', 1),
         component_connectivity = config.get('component_connectivity', 2),
         adaptive_foreground_fraction_min = config.get('adaptive_foreground_fraction_min', 0.001),
-        adaptive_foreground_fraction_max = config.get('adaptive_foreground_fraction_max', 0.50)
+        adaptive_foreground_fraction_max = config.get('adaptive_foreground_fraction_max', 0.50),
+        adaptive_morphology_area_ratio_min = config.get('adaptive_morphology_area_ratio_min', 8.0),
+        adaptive_morphology_max_area_ratio_min = config.get('adaptive_morphology_max_area_ratio_min', 25.0)
     shell:
         """
         Rscript -e 'params = list(
@@ -412,6 +414,8 @@ rule post_processing:
             component_connectivity = "{params.component_connectivity}",
             adaptive_foreground_fraction_min = "{params.adaptive_foreground_fraction_min}",
             adaptive_foreground_fraction_max = "{params.adaptive_foreground_fraction_max}",
+            adaptive_morphology_area_ratio_min = "{params.adaptive_morphology_area_ratio_min}",
+            adaptive_morphology_max_area_ratio_min = "{params.adaptive_morphology_max_area_ratio_min}",
             lyr = "{params.lyr}");
         rmarkdown::render("{input.rmd}",
             output_dir = "{wildcards.out_masked}/{wildcards.name}",
