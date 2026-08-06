@@ -277,39 +277,29 @@ def label_components(mask):
 
 
 def component_summary(mask):
-    # Connected-component areas drive adaptive min-size estimation and provide
-    # before/after QC metrics for the summary TSV.
+    # Component summaries are intentionally limited to values used for adaptive
+    # decisions or written to the essential cleaning summary.
     labeled = label_components(mask)
     areas = np.bincount(labeled.ravel())[1:]
-    foreground_pixels = int(mask.sum())
     total_pixels = int(mask.size)
-    foreground_fraction = foreground_pixels / total_pixels if total_pixels else 0.0
+    foreground_fraction = int(mask.sum()) / total_pixels if total_pixels else 0.0
 
     if len(areas) == 0:
-        # Empty masks are valid; preserve NA-like values in the summary table.
         quantiles = [np.nan, np.nan, np.nan]
-        min_area = np.nan
         max_area = np.nan
-        mean_area = np.nan
     else:
         quantiles = np.quantile(areas, [0.10, 0.50, 0.90])
-        min_area = int(np.min(areas))
         max_area = int(np.max(areas))
-        mean_area = float(np.mean(areas))
 
     summary = {
-        'foreground_pixels': foreground_pixels,
-        'total_pixels': total_pixels,
         'foreground_fraction': float(foreground_fraction),
         'object_count': int(len(areas)),
-        'area_min': min_area,
         'area_q10': float(quantiles[0]) if not np.isnan(quantiles[0]) else np.nan,
         'area_median': float(quantiles[1]) if not np.isnan(quantiles[1]) else np.nan,
         'area_q90': float(quantiles[2]) if not np.isnan(quantiles[2]) else np.nan,
         'area_max': max_area,
-        'area_mean': mean_area,
     }
-    return labeled, areas, summary
+    return areas, summary
 
 
 def bounded_min_size(value):
@@ -325,23 +315,23 @@ def estimate_adaptive_min_size(areas):
 
     if len(areas) < adaptive_min_components:
         # Too few objects makes area-distribution estimates unstable.
-        return adaptive_minsize_floor, adaptive_minsize_floor, 'floor', 'too_few_components'
+        return adaptive_minsize_floor, 'floor', 'too_few_components'
 
     if adaptive_minsize_method == 'quantile':
         # Quantile mode is simpler and useful when component areas are unimodal.
         raw = np.quantile(areas, adaptive_minsize_quantile)
-        return bounded_min_size(raw), int(np.ceil(raw)), 'quantile', fallback_reason
+        return bounded_min_size(raw), 'quantile', fallback_reason
 
     try:
         log_areas = np.log1p(areas.astype(float))
         if len(np.unique(log_areas)) < 2:
             raise ValueError('component areas have fewer than two unique values')
         raw = np.expm1(threshold_otsu(log_areas))
-        return bounded_min_size(raw), int(np.ceil(raw)), 'log_otsu', fallback_reason
+        return bounded_min_size(raw), 'log_otsu', fallback_reason
     except Exception as exc:
         raw = np.quantile(areas, adaptive_minsize_quantile)
         fallback_reason = f'log_otsu_failed_quantile_fallback: {exc}'
-        return bounded_min_size(raw), int(np.ceil(raw)), 'quantile', fallback_reason
+        return bounded_min_size(raw), 'quantile', fallback_reason
 
 
 def choose_morphology_action(pre_summary, selected_min_size):
@@ -402,10 +392,6 @@ def apply_morphology(mask, action):
     return mask, mask
 
 
-def prefixed_stats(prefix, stats):
-    return {f'{prefix}_{key}': value for key, value in stats.items()}
-
-
 # Accumulate one 2D mask per channel, then stack once at the end. This keeps
 # the ImageContainer update path consistent across cleaning modes.
 num_channels = img[lyr].shape[3]
@@ -419,13 +405,12 @@ for ch in range(num_channels):
     # Each channel is cleaned independently, but parameters are estimated
     # globally from that channel's full mask.
     source_mask = compute_bool_channel(lyr_thr, ch)
-    _, source_areas, source_summary = component_summary(source_mask)
+    source_areas, source_summary = component_summary(source_mask)
 
     if cleaning_mode == 'off':
         # Pass-through mode supports reviewing raw thresholding output and
         # isolating effects of later watershed/merge steps.
         selected_min_size = 0
-        raw_min_size = 0
         min_size_method_used = 'off'
         fallback_reason = ''
         morphology_action = 'off'
@@ -437,11 +422,10 @@ for ch in range(num_channels):
         if cleaning_mode == 'fixed':
             # Fixed mode should match the original post_processing.Rmd behavior.
             selected_min_size = min_size
-            raw_min_size = min_size
             min_size_method_used = 'fixed'
             fallback_reason = ''
         else:
-            selected_min_size, raw_min_size, min_size_method_used, fallback_reason = estimate_adaptive_min_size(source_areas)
+            selected_min_size, min_size_method_used, fallback_reason = estimate_adaptive_min_size(source_areas)
 
         morphology_action, morphology_applied = choose_morphology_action(source_summary, selected_min_size)
 
@@ -456,43 +440,36 @@ for ch in range(num_channels):
         removal_labels = label_components(removal_input)
         final_mask = remove_small_objects(removal_labels, min_size=selected_min_size) > 0
 
-    _, final_areas, final_summary = component_summary(final_mask)
+    _, final_summary = component_summary(final_mask)
 
     erosion_arrays.append(to_dask_channel(eroded_mask))
     dilation_arrays.append(to_dask_channel(dilated_mask))
     removal_arrays.append(to_dask_channel(final_mask))
 
-    # Record chosen parameters and before/after statistics so this step can be
-    # audited without reopening large Zarr outputs.
-    row = {
+    # Keep the machine-readable summary focused on the fields needed to audit
+    # cleaning decisions and before/after mask effects.
+    summary_rows.append({
         'sample': sample_name,
         'outdir': outdir,
         'channel': ch,
         'threshold_layer': lyr_thr,
         'cleaning_mode': cleaning_mode,
         'morphology_mode': morphology_mode,
-        'morphology_action': morphology_action,
-        'morphology_applied': morphology_applied,
+        'before_foreground_fraction': source_summary['foreground_fraction'],
+        'after_foreground_fraction': final_summary['foreground_fraction'],
+        'before_object_count': source_summary['object_count'],
+        'after_object_count': final_summary['object_count'],
+        'before_area_q10': source_summary['area_q10'],
+        'before_area_median': source_summary['area_median'],
+        'before_area_q90': source_summary['area_q90'],
+        'after_area_q10': final_summary['area_q10'],
+        'after_area_median': final_summary['area_median'],
+        'after_area_q90': final_summary['area_q90'],
         'selected_min_size': selected_min_size,
-        'raw_min_size': raw_min_size,
         'min_size_method_used': min_size_method_used,
+        'morphology_action': morphology_action,
         'fallback_reason': fallback_reason,
-        'component_connectivity': component_connectivity,
-        'fixed_erosion_connectivity': fixed_erosion_connectivity,
-        'fixed_dilation_connectivity': fixed_dilation_connectivity,
-        'adaptive_minsize_method': adaptive_minsize_method,
-        'adaptive_minsize_quantile': adaptive_minsize_quantile,
-        'adaptive_minsize_floor': adaptive_minsize_floor,
-        'adaptive_minsize_ceiling': adaptive_minsize_ceiling,
-        'adaptive_min_components': adaptive_min_components,
-        'adaptive_foreground_fraction_min': adaptive_foreground_fraction_min,
-        'adaptive_foreground_fraction_max': adaptive_foreground_fraction_max,
-        'adaptive_morphology_area_ratio_min': adaptive_morphology_area_ratio_min,
-        'adaptive_morphology_max_area_ratio_min': adaptive_morphology_max_area_ratio_min,
-    }
-    row.update(prefixed_stats('before', source_summary))
-    row.update(prefixed_stats('after', final_summary))
-    summary_rows.append(row)
+    })
 
 # Keep morphology review layers only when morphology was actually applied.
 if any_morphology_applied:
@@ -522,17 +499,8 @@ print(summary_df)
 # Cleaning summary
 
 ```{r cleaning_summary, results='asis'}
-# Render a compact view of the one machine-readable TSV written by this rule.
-# The full TSV remains available at py$summary_out for Snakemake bookkeeping.
-summary_cols <- c(
-    "sample", "channel", "threshold_layer", "cleaning_mode", "morphology_mode",
-    "morphology_action", "morphology_applied", "component_connectivity",
-    "before_foreground_fraction", "before_object_count",
-    "before_area_q10", "before_area_median", "before_area_q90",
-    "selected_min_size", "raw_min_size", "min_size_method_used", "fallback_reason")
-
+# The TSV is already limited to the essential cleaning audit columns.
 readr::read_tsv(py$summary_out, show_col_types=FALSE) %>%
-    dplyr::select(dplyr::any_of(summary_cols)) %>%
     knitr::kable()
 ```
 
