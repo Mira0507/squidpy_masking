@@ -22,19 +22,20 @@ taken using the Olympus VS200 scanner.
 2. **Smoothing**: Apply [Gaussian smoothing](https://en.wikipedia.org/wiki/Gaussian_blur) 
 with `squidpy.im.process` to reduce noise.  
 
-3. **Segmentation**: Segment images using the following approaches
-   - [Otsu thresholding](https://en.wikipedia.org/wiki/Otsu's_method)
-   - [Watershed segmentation](https://en.wikipedia.org/wiki/Watershed_(image_processing))
-   - [Adaptive thresholding](https://scikit-image.org/docs/0.25.x/auto_examples/applications/plot_thresholding_guide.html#local-thresholding)
+3. **Thresholding and segmentation**: Generate foreground masks using Otsu,
+   adaptive/local thresholding, or Squidpy-derived binary masks, then optionally
+   run watershed segmentation on cleaned masks.
 
-4. (Optional) **Additional processing**:
-   - [Adaptive equalization](https://en.wikipedia.org/wiki/Adaptive_histogram_equalization)
-   - [Erosion](https://en.wikipedia.org/wiki/Erosion_(morphology))
-   - [Dilation](https://en.wikipedia.org/wiki/Dilation_(morphology))
+4. **Post-processing**: Clean foreground masks with configurable fixed,
+   adaptive, or pass-through behavior. Adaptive cleaning estimates per-channel
+   connected-component statistics, selects a minimum object size, optionally
+   applies conservative morphology, writes `cleaning_summary.tsv`, and preserves
+   the final binary mask as `image_removal`.
 
-5. **Visualization**: Compare pre/post-smoothing and pre/post-segmentation results.  
+5. **Visualization**: Compare pre/post-smoothing, thresholding, cleaning, and
+   segmentation results.
 
-6. **Channel merge**: Merge channels of interest
+6. **Channel merge**: Merge channels of interest.
 
 
 ## Scripts
@@ -48,9 +49,9 @@ using the `bftools` package.
 - `scripts/individual/segmentation_<sample>_<dimension>.Rmd`: masking `tif` fluorescence images 
 using Squidpy’s default segmentation workflow (Otsu thresholding and Watershed 
 segmentation) with different cropping dimensions
-- `scripts/individual/segmentation_<sample>_dimension>_adaptive.Rmd`: masking `tif` fluorescence
+- `scripts/individual/segmentation_<sample>_<dimension>_adaptive.Rmd`: masking `tif` fluorescence
 images using adaptive thresholding and erosion with different cropping dimensions
-- `scripts/individual/segmentation_<sample>_dimension>_adaptive_eq.Rmd`: input image 
+- `scripts/individual/segmentation_<sample>_<dimension>_adaptive_eq.Rmd`: input image
 preprocessed with adaptive equalization before smoothing
 
 ### Snakemake wrappers
@@ -58,13 +59,16 @@ preprocessed with adaptive equalization before smoothing
 - `scripts/snakemake/Snakefile`: Running Snakemake pipeline with 
 config-dependent stopping points
 - `scripts/snakemake/config/config.yaml`: Configuring Snakemake, including
-dynamic chunk-size settings (`chunk_ratio`/`chunk_size`) and review-stop options
-(`norm_method: ""` stops after `qc_normalization`; `thresholding: ""` stops
-before `post_processing`)
-- `scripts/snakemake/config/sampletable.txt`: Specifying sample names 
-and corresponding input image paths. Specify the `channel` column to 
-`single` (non-fluorescence) or `multi` (fluorescence) for each input image;
-only `multi` samples are processed through masking, QC, and segmentation targets.
+the active sample table path, dynamic chunk-size settings
+(`chunk_ratio`/`chunk_size`), review-stop options (`norm_method: ""` stops
+after `qc_normalization`; `thresholding: ""` stops before `post_processing`),
+and adaptive cleaning parameters.
+- `scripts/snakemake/config/sampletable.txt` and
+`scripts/snakemake/config/sampletable_new.txt`: Example sample tables specifying
+sample names and corresponding input image paths. The active table is selected
+with `sampletable` in `config.yaml`. Specify the `channel` column as `single`
+(non-fluorescence) or `multi` (fluorescence) for each input image; only `multi`
+samples are processed through masking, QC, and segmentation targets.
 - `scripts/snakemake/image_conversion.Rmd`: 
 Wrapper script running `bftools` for image conversion
 - `scripts/snakemake/build_imagecontainer.Rmd`: 
@@ -82,12 +86,15 @@ functionality, global thresholding conducted by chunk
 - `scripts/snakemake/native_thresholding.Rmd`: Wrapper script conducting global
  (Otsu) thresholding and adaptive (local) thresholding, using native functions
  from the `scikit-image` and `dask_image` packages
-- `scripts/snakemake/post_processing.Rmd`: Wrapper script performing erosion,
-dilation, and removal of small foreground objects to clean noisy non-cell
-speckles, using native functions from ``dask_image`` and ``scikit-image``.
+- `scripts/snakemake/post_processing.Rmd`: Wrapper script cleaning selected
+threshold masks with configurable `cleaning_mode` (`fixed`, `adaptive`, or
+`off`) and `morphology_mode` (`fixed`, `adaptive`, or `off`). It estimates
+adaptive parameters globally per sample/channel, writes `cleaning_summary.tsv`,
+keeps the final binary mask as `image_removal`, and keeps `image_dilation` when
+morphology is run for visual review.
 - `scripts/snakemake/watershed_segmentation.Rmd`: Wrapper script for labeling
-foreground objects using the Wathershed segmentation by relying on the 
-wrapper function from Squidpy.
+foreground objects using watershed segmentation on the cleaned `image_removal`
+mask.
 - `scripts/snakemake/merge_channels.Rmd`: Wrapper script for merging
 channels of interest.
 
