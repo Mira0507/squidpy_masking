@@ -274,7 +274,7 @@ rule smooth:
             output_file = "{output.html}")'
         """
 
-rule suidpy_segmentation:
+rule squidpy_segmentation:
     """
     This rule runs Squidpy's default segmentation using Otsu 
     thresholding and watershed segmentation
@@ -284,7 +284,7 @@ rule suidpy_segmentation:
         rmd = "squidpy_segmentation.Rmd"
     output:
         zarr_out = directory("{out_masked}/{name}/squidpy_segmentation.zarr"),
-        html = "{out_masked}/{name}/squipy_segmentation.html"
+        html = "{out_masked}/{name}/squidpy_segmentation.html"
     threads: 12
     resources:
         mem_mb = 1024 * 2000,
@@ -438,9 +438,9 @@ rule watershed_segmentation:
         html = "{out_masked}/{name}/watershed_segmentation.html"
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
-        disk_mb = 1024 * 100,
-        runtime = 60 * 2
+        mem_mb = 1024 * 1000,
+        disk_mb = 1024 * 200,
+        runtime = 60 * 8
     params:
         conda_env = config['conda_env'],
         chunksize = get_chunksize,
