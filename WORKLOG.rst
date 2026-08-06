@@ -1518,3 +1518,44 @@ squidpy_masking
 @Mira0507
 
 - Update the ``post_processing`` rule to dynamically clean masking
+    - scripts
+        - ``scripts/snakemake/post_processing.Rmd``
+        - ``scripts/snakemake/config/config.yaml``
+    - notes
+        - design ``clean_mode`` to choose "fixed", "adaptive", or "off"
+
+
+2026-08-04
+----------
+
+@Mira0507
+
+- Update the ``post_processing`` rule to adaptively clean masking
+    - scripts
+        - ``scripts/snakemake/post_processing.Rmd``
+        - ``scripts/snakemake/config/config.yaml``
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - make component connectivity explicit
+
+
+2026-08-05
+----------
+
+@Mira0507
+
+- Update the ``post_processing`` rule to dynamically clean masking
+    - scripts
+        - ``scripts/snakemake/post_processing.Rmd``
+        - ``scripts/snakemake/config/config.yaml``
+        - ``scripts/snakemake/Snakefile``
+    - notes
+        - refined adaptive morphology mode
+        - tightened the post-processing summary
+
+2026-08-06
+----------
+
+@Mira0507
+
+- Update ``README.md``
