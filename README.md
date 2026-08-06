@@ -63,8 +63,7 @@ the active sample table path, dynamic chunk-size settings
 (`chunk_ratio`/`chunk_size`), review-stop options (`norm_method: ""` stops
 after `qc_normalization`; `thresholding: ""` stops before `post_processing`),
 and adaptive cleaning parameters.
-- `scripts/snakemake/config/sampletable.txt` and
-`scripts/snakemake/config/sampletable_new.txt`: Example sample tables specifying
+- `scripts/snakemake/config/sampletable.txt`: Example sample table specifying
 sample names and corresponding input image paths. The active table is selected
 with `sampletable` in `config.yaml`. Specify the `channel` column as `single`
 (non-fluorescence) or `multi` (fluorescence) for each input image; only `multi`
