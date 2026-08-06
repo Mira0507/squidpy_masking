@@ -368,9 +368,9 @@ rule post_processing:
         summary = "{out_masked}/{name}/" + config.get('cleaning_summary', 'cleaning_summary.tsv')
     threads: 12
     resources:
-        mem_mb = 1024 * 200,
+        mem_mb = 1024 * 1000,
         disk_mb = 1024 * 100,
-        runtime = 60 * 2
+        runtime = 60 * 12
     params:
         conda_env = config['conda_env'],
         chunksize = get_chunksize,
