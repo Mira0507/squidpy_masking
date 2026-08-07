@@ -1559,3 +1559,17 @@ squidpy_masking
 @Mira0507
 
 - Update ``README.md``
+
+2026-08-07
+----------
+
+@Mira0507
+
+- Update scripts to raise error when initiated
+    - scripts
+        - ``scripts/snakemake/native_thresholding.Rmd``
+        - ``scripts/snakemake/qc_normalization.Rmd``
+        - ``scripts/snakemake/squidpy_segmentation.Rmd``
+        - ``scripts/snakemake/watershed_segmentation.Rmd``
+    - notes: 
+        - ``raise`` added before ``ValueError(...)``
