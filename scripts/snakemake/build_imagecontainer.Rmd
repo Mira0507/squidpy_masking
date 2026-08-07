@@ -36,6 +36,7 @@ source('config/helpers.R')
 
 ```{python ppackages}
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import squidpy as sq
 from matplotlib.colors import ListedColormap
@@ -100,7 +101,16 @@ img = sq.im.ImageContainer(input_image, layer=lyr, lazy=True, chunks=chunksize)
 
 # Crop input images if specified
 if crop_images == "Y":
-    print("Image cropped. Refer to the following dimension:", crop_coord)
+    # Summarize cropped image dimensions
+    crop_dic = {
+        'height': crop_height,
+        'width': crop_width,
+        'size': crop_size,
+        'scale': crop_scale
+    }
+    crop_df = pd.DataFrame([crop_dic])
+    print("Image cropped. Refer to the following dimension:\n", crop_df)
+    # Crop
     img = img.crop_corner(x=crop_width,
                           y=crop_height,
                           size=crop_size,

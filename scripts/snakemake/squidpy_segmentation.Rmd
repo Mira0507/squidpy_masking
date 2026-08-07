@@ -149,7 +149,7 @@ lyr_seg = f"{lyr}_sqseg"
 try:
     img[lyr_seg] = stacked_array
 except:
-    ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
+    raise ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
 
 # Delete unnecessary layers
 for l in seg_lyrs:

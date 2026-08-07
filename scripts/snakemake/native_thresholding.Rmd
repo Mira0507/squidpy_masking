@@ -134,7 +134,7 @@ lyr_bn = f"{lyr}_otsu"
 try:
     img[lyr_bn] = stacked_array
 except:
-    ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
+    raise ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
 
 # Delete unnecessary layers
 for l in bn_lyrs:

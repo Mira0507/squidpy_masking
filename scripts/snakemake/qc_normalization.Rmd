@@ -149,7 +149,7 @@ def clean_normalized_obj(img=img, in_keyword='clahe_channel', out_keyword='clahe
     try:
         img[lyr_norm] = stacked_array
     except:
-        ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
+        raise ValueError("Can't add the stacked array to ImageContainer. Wrong dimension!")
 
     # Delete unnecessary layers
     for l in norm_lyrs:
